@@ -121,3 +121,61 @@ EXCLUDE USING GIST (
   tsrange(data_inicio, data_fim) WITH &&
 )
 WHERE (estado = 'agendada');
+
+
+
+CREATE TABLE fichas_avaliacao (
+  id SERIAL PRIMARY KEY,
+  utente_id INTEGER NOT NULL REFERENCES users(id),
+  consulta_id INTEGER REFERENCES consultas(id),
+  nome_completo VARCHAR(150),
+  numero_processo VARCHAR(50),
+  data_nascimento DATE,
+  idade INTEGER,
+  sexo VARCHAR(20),
+  peso_kg NUMERIC(5,2),
+  altura_m NUMERIC(4,2),
+  imc NUMERIC(5,2),
+  diagnostico_queixa_principal TEXT,
+  tipo_registo VARCHAR(20) DEFAULT 'grupo',
+  diagnostico_fisioterapia TEXT,
+  objetivos_prognostico TEXT,
+  plano_terapeutico TEXT,
+  plano_progressao TEXT,
+  historia_pessoal TEXT,
+  perspetivas TEXT,
+  limitacoes TEXT,
+  mcd TEXT,
+  historia_condicao TEXT,
+  medicacao TEXT,
+  hist_med_atual TEXT,
+  hist_med_anterior TEXT,
+  hist_med_familiar TEXT,
+  sinss TEXT,
+  created_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE avaliacoes_objetivas (
+  id SERIAL PRIMARY KEY,
+  ficha_id INTEGER NOT NULL REFERENCES fichas_avaliacao(id) ON DELETE CASCADE,
+  tipo_teste VARCHAR(100) NOT NULL,
+  valor VARCHAR(100),
+  data DATE,
+  reavaliacao_valor VARCHAR(100),
+  reavaliacao_data DATE
+);
+
+
+
+CREATE TYPE assiduidade_estado AS ENUM ('P', 'A', 'FJ', 'FI');
+
+CREATE TABLE assiduidade (
+  id SERIAL PRIMARY KEY,
+  utente_id INTEGER NOT NULL REFERENCES users(id),
+  data DATE NOT NULL,
+  estado assiduidade_estado NOT NULL,
+  observacao TEXT,
+  created_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

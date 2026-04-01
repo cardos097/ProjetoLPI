@@ -27,5 +27,11 @@ func main() {
 	r.GET("/utentes/:id/consultas", controllers.GetConsultasByUtenteID)
 	r.GET("/utentes/:id/registos-clinicos", controllers.GetRegistosClinicosByUtenteID)
 
+	r.GET("/fichas-avaliacao", controllers.GetFichasAvaliacao)
+	r.POST("/fichas-avaliacao", controllers.CreateFichaAvaliacao)
+
+	r.GET("/assiduidade", controllers.GetAssiduidade)
+	r.POST("/assiduidade", controllers.CreateAssiduidade)
+
 	r.Run(":8080")
 }
