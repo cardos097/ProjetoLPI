@@ -11,6 +11,8 @@ type User struct {
 	Active       bool      `gorm:"column:active"`
 	CreatedAt    time.Time `gorm:"column:created_at"`
 	UpdatedAt    time.Time `gorm:"column:updated_at"`
+
+	Terapeuta *Terapeuta `gorm:"foreignKey:UserID;references:ID"`
 }
 
 func (User) TableName() string {

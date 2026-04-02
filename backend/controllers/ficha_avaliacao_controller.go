@@ -175,3 +175,132 @@ func CreateFichaAvaliacao(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, ficha)
 }
+
+type UpdateFichaRequest struct {
+	NomeCompleto               *string  `json:"nome_completo"`
+	NumeroProcesso             *string  `json:"numero_processo"`
+	DataNascimento             *string  `json:"data_nascimento"`
+	Idade                      *uint    `json:"idade"`
+	Sexo                       *string  `json:"sexo"`
+	PesoKg                     *float64 `json:"peso_kg"`
+	AlturaM                    *float64 `json:"altura_m"`
+	IMC                        *float64 `json:"imc"`
+	DiagnosticoQueixaPrincipal *string  `json:"diagnostico_queixa_principal"`
+	TipoRegisto                *string  `json:"tipo_registo"`
+	DiagnosticoFisioterapia    *string  `json:"diagnostico_fisioterapia"`
+	ObjetivosPrognostico       *string  `json:"objetivos_prognostico"`
+	PlanoTerapeutico           *string  `json:"plano_terapeutico"`
+	PlanoProgressao            *string  `json:"plano_progressao"`
+	HistoriaPessoal            *string  `json:"historia_pessoal"`
+	Perspetivas                *string  `json:"perspetivas"`
+	Limitacoes                 *string  `json:"limitacoes"`
+	MCD                        *string  `json:"mcd"`
+	HistoriaCondicao           *string  `json:"historia_condicao"`
+	Medicacao                  *string  `json:"medicacao"`
+	HistMedAtual               *string  `json:"hist_med_atual"`
+	HistMedAnterior            *string  `json:"hist_med_anterior"`
+	HistMedFamiliar            *string  `json:"hist_med_familiar"`
+	SINSS                      *string  `json:"sinss"`
+}
+
+func UpdateFichaAvaliacao(c *gin.Context) {
+	var req UpdateFichaRequest
+	id := c.Param("id")
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		return
+	}
+
+	var ficha models.FichaAvaliacao
+	if err := config.DB.First(&ficha, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Ficha não encontrada"})
+		return
+	}
+
+	// Atualizar apenas os campos fornecidos
+	if req.NomeCompleto != nil {
+		ficha.NomeCompleto = *req.NomeCompleto
+	}
+	if req.NumeroProcesso != nil {
+		ficha.NumeroProcesso = *req.NumeroProcesso
+	}
+	if req.DataNascimento != nil {
+		parsed, err := time.Parse("2006-01-02", *req.DataNascimento)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Data de nascimento inválida. Use o formato YYYY-MM-DD"})
+			return
+		}
+		ficha.DataNascimento = &parsed
+	}
+	if req.Idade != nil {
+		ficha.Idade = req.Idade
+	}
+	if req.Sexo != nil {
+		ficha.Sexo = *req.Sexo
+	}
+	if req.PesoKg != nil {
+		ficha.PesoKg = req.PesoKg
+	}
+	if req.AlturaM != nil {
+		ficha.AlturaM = req.AlturaM
+	}
+	if req.IMC != nil {
+		ficha.IMC = req.IMC
+	}
+	if req.DiagnosticoQueixaPrincipal != nil {
+		ficha.DiagnosticoQueixaPrincipal = *req.DiagnosticoQueixaPrincipal
+	}
+	if req.TipoRegisto != nil {
+		ficha.TipoRegisto = *req.TipoRegisto
+	}
+	if req.DiagnosticoFisioterapia != nil {
+		ficha.DiagnosticoFisioterapia = *req.DiagnosticoFisioterapia
+	}
+	if req.ObjetivosPrognostico != nil {
+		ficha.ObjetivosPrognostico = *req.ObjetivosPrognostico
+	}
+	if req.PlanoTerapeutico != nil {
+		ficha.PlanoTerapeutico = *req.PlanoTerapeutico
+	}
+	if req.PlanoProgressao != nil {
+		ficha.PlanoProgressao = *req.PlanoProgressao
+	}
+	if req.HistoriaPessoal != nil {
+		ficha.HistoriaPessoal = *req.HistoriaPessoal
+	}
+	if req.Perspetivas != nil {
+		ficha.Perspetivas = *req.Perspetivas
+	}
+	if req.Limitacoes != nil {
+		ficha.Limitacoes = *req.Limitacoes
+	}
+	if req.MCD != nil {
+		ficha.MCD = *req.MCD
+	}
+	if req.HistoriaCondicao != nil {
+		ficha.HistoriaCondicao = *req.HistoriaCondicao
+	}
+	if req.Medicacao != nil {
+		ficha.Medicacao = *req.Medicacao
+	}
+	if req.HistMedAtual != nil {
+		ficha.HistMedAtual = *req.HistMedAtual
+	}
+	if req.HistMedAnterior != nil {
+		ficha.HistMedAnterior = *req.HistMedAnterior
+	}
+	if req.HistMedFamiliar != nil {
+		ficha.HistMedFamiliar = *req.HistMedFamiliar
+	}
+	if req.SINSS != nil {
+		ficha.SINSS = *req.SINSS
+	}
+
+	if err := config.DB.Save(&ficha).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ficha)
+}

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -20,6 +21,32 @@ type CreateConsultaRequest struct {
 	DataInicio    string `json:"data_inicio"`
 	DataFim       string `json:"data_fim"`
 	CreatedBy     uint   `json:"created_by"`
+}
+
+type RemarcarConsultaRequest struct {
+	DataInicio string `json:"data_inicio"`
+	DataFim    string `json:"data_fim"`
+}
+
+type UpdateConsultaRequest struct {
+	TerapeutaID   *uint   `json:"terapeuta_id"`
+	SalaID        *uint   `json:"sala_id"`
+	AreaClinicaID *uint   `json:"area_clinica_id"`
+	DataInicio    *string `json:"data_inicio"`
+	DataFim       *string `json:"data_fim"`
+}
+
+func parseDateTime(value string) (time.Time, error) {
+	layouts := []string{"2006-01-02 15:04:05", "2006-01-02 15:04"}
+
+	for _, layout := range layouts {
+		parsed, err := time.Parse(layout, value)
+		if err == nil {
+			return parsed, nil
+		}
+	}
+
+	return time.Time{}, errors.New("formato de data inválido")
 }
 
 func GetConsultas(c *gin.Context) {
@@ -48,8 +75,22 @@ func CreateConsulta(c *gin.Context) {
 		return
 	}
 
-	dataInicio, _ := time.Parse("2006-01-02 15:04:05", req.DataInicio)
-	dataFim, _ := time.Parse("2006-01-02 15:04:05", req.DataFim)
+	dataInicio, err := parseDateTime(req.DataInicio)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data de início inválida. Use YYYY-MM-DD HH:MM[:SS]"})
+		return
+	}
+
+	dataFim, err := parseDateTime(req.DataFim)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data de fim inválida. Use YYYY-MM-DD HH:MM[:SS]"})
+		return
+	}
+
+	if !dataFim.After(dataInicio) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "A data de fim deve ser posterior à data de início"})
+		return
+	}
 
 	consulta := models.Consulta{
 		UtenteID:      req.UtenteID,
@@ -62,7 +103,7 @@ func CreateConsulta(c *gin.Context) {
 		CreatedBy:     req.CreatedBy,
 	}
 
-	err := config.DB.Create(&consulta).Error
+	err = config.DB.Create(&consulta).Error
 	if err != nil {
 		msg := strings.ToLower(err.Error())
 
@@ -89,10 +130,162 @@ func CancelConsulta(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Consulta não encontrada"})
 			return
 		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if consulta.Estado == "cancelada" {
+		c.JSON(http.StatusConflict, gin.H{"error": "Consulta já está cancelada"})
+		return
 	}
 
 	consulta.Estado = "cancelada"
-	config.DB.Save(&consulta)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Cancelada"})
+	if err := config.DB.Save(&consulta).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Consulta cancelada com sucesso"})
+}
+
+func RemarcarConsulta(c *gin.Context) {
+	id := c.Param("id")
+	var req RemarcarConsultaRequest
+	var consulta models.Consulta
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		return
+	}
+
+	if err := config.DB.First(&consulta, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Consulta não encontrada"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	dataInicio, err := parseDateTime(req.DataInicio)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data de início inválida. Use YYYY-MM-DD HH:MM[:SS]"})
+		return
+	}
+
+	dataFim, err := parseDateTime(req.DataFim)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data de fim inválida. Use YYYY-MM-DD HH:MM[:SS]"})
+		return
+	}
+
+	if !dataFim.After(dataInicio) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "A data de fim deve ser posterior à data de início"})
+		return
+	}
+
+	consulta.DataInicio = dataInicio
+	consulta.DataFim = dataFim
+	consulta.Estado = "agendada"
+
+	if err := config.DB.Save(&consulta).Error; err != nil {
+		msg := strings.ToLower(err.Error())
+
+		if strings.Contains(msg, "no_overlap") {
+			c.JSON(http.StatusConflict, gin.H{"error": "Horário já ocupado"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Consulta remarcada com sucesso", "consulta": consulta})
+}
+
+func UpdateConsulta(c *gin.Context) {
+	id := c.Param("id")
+	var req UpdateConsultaRequest
+	var consulta models.Consulta
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		return
+	}
+
+	if err := config.DB.First(&consulta, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Consulta não encontrada"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Não permitir atualizar consultas canceladas
+	if consulta.Estado == "cancelada" {
+		c.JSON(http.StatusConflict, gin.H{"error": "Não é possível atualizar uma consulta cancelada"})
+		return
+	}
+
+	// Atualizar apenas os campos fornecidos
+	if req.TerapeutaID != nil {
+		consulta.TerapeutaID = *req.TerapeutaID
+	}
+	if req.SalaID != nil {
+		consulta.SalaID = *req.SalaID
+	}
+	if req.AreaClinicaID != nil {
+		consulta.AreaClinicaID = *req.AreaClinicaID
+	}
+
+	// Se houver mudança de datas, validar
+	if req.DataInicio != nil || req.DataFim != nil {
+		dataInicio := consulta.DataInicio
+		dataFim := consulta.DataFim
+
+		if req.DataInicio != nil {
+			parsed, err := parseDateTime(*req.DataInicio)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Data de início inválida. Use YYYY-MM-DD HH:MM[:SS]"})
+				return
+			}
+			dataInicio = parsed
+		}
+
+		if req.DataFim != nil {
+			parsed, err := parseDateTime(*req.DataFim)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Data de fim inválida. Use YYYY-MM-DD HH:MM[:SS]"})
+				return
+			}
+			dataFim = parsed
+		}
+
+		if !dataFim.After(dataInicio) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "A data de fim deve ser posterior à data de início"})
+			return
+		}
+
+		consulta.DataInicio = dataInicio
+		consulta.DataFim = dataFim
+	}
+
+	if err := config.DB.Save(&consulta).Error; err != nil {
+		msg := strings.ToLower(err.Error())
+
+		if strings.Contains(msg, "no_overlap") {
+			c.JSON(http.StatusConflict, gin.H{"error": "Horário já ocupado"})
+			return
+		}
+
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, consulta)
 }
