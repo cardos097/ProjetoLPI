@@ -33,6 +33,9 @@ type FichaAvaliacao struct {
 	CreatedBy                  uint       `gorm:"column:created_by"`
 	CreatedAt                  time.Time  `gorm:"column:created_at"`
 
+	Utente              *Utente             `gorm:"foreignKey:UtenteID;references:UserID"`
+	Consulta            *Consulta           `gorm:"foreignKey:ConsultaID"`
+	User                *User               `gorm:"foreignKey:CreatedBy"`
 	AvaliacoesObjetivas []AvaliacaoObjetiva `gorm:"foreignKey:FichaID"`
 }
 

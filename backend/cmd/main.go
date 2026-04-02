@@ -33,6 +33,7 @@ func main() {
 	r.GET("/terapeutas", controllers.GetTerapeutas)
 
 	r.GET("/fichas-avaliacao", controllers.GetFichasAvaliacao)
+	r.GET("/fichas-avaliacao/:id", controllers.GetFichaAvaliacaoByID)
 	r.POST("/fichas-avaliacao", controllers.CreateFichaAvaliacao)
 	r.PATCH("/fichas-avaliacao/:id", controllers.UpdateFichaAvaliacao)
 

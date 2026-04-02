@@ -99,8 +99,14 @@ type CreateFichaRequest struct {
 
 func GetFichasAvaliacao(c *gin.Context) {
 	var fichas []models.FichaAvaliacao
+	query := config.DB
 
-	if err := config.DB.Preload("AvaliacoesObjetivas").Order("id DESC").Find(&fichas).Error; err != nil {
+	// Filtrar por utente_id se fornecido
+	if utenteID := c.Query("utente_id"); utenteID != "" {
+		query = query.Where("utente_id = ?", utenteID)
+	}
+
+	if err := query.Preload("Utente").Preload("Utente.User").Preload("Consulta").Preload("User").Preload("AvaliacoesObjetivas").Order("id DESC").Find(&fichas).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -113,6 +119,23 @@ func GetFichasAvaliacao(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, fichas)
+}
+
+func GetFichaAvaliacaoByID(c *gin.Context) {
+	id := c.Param("id")
+	var ficha models.FichaAvaliacao
+
+	if err := config.DB.Preload("Utente").Preload("Utente.User").Preload("Consulta").Preload("User").Preload("AvaliacoesObjetivas").First(&ficha, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Ficha não encontrada"})
+		return
+	}
+
+	if err := fillFichaFromUtenteData(&ficha); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, ficha)
 }
 
 func CreateFichaAvaliacao(c *gin.Context) {
