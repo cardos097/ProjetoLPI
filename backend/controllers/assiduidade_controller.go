@@ -4,6 +4,7 @@ import (
 	"clinica-backend/config"
 	"clinica-backend/models"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,13 +15,34 @@ type CreateAssiduidadeRequest struct {
 	Data       string `json:"data"`
 	Estado     string `json:"estado"`
 	Observacao string `json:"observacao"`
-	CreatedBy  uint   `json:"created_by"`
+}
+
+func isValidAssiduidadeEstado(estado string) bool {
+	validStates := map[string]bool{
+		"P":  true,
+		"A":  true,
+		"FJ": true,
+		"FI": true,
+	}
+
+	return validStates[strings.ToUpper(estado)]
 }
 
 func GetAssiduidade(c *gin.Context) {
 	var registos []models.Assiduidade
+	query := config.DB.Order("id DESC")
 
-	if err := config.DB.Order("id DESC").Find(&registos).Error; err != nil {
+	// filtro opcional por utente
+	if utenteID := c.Query("utente_id"); utenteID != "" {
+		query = query.Where("utente_id = ?", utenteID)
+	}
+
+	// filtro opcional por data
+	if data := c.Query("data"); data != "" {
+		query = query.Where("data = ?", data)
+	}
+
+	if err := query.Find(&registos).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -36,18 +58,43 @@ func CreateAssiduidade(c *gin.Context) {
 		return
 	}
 
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado não encontrado"})
+		return
+	}
+
+	createdBy, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado inválido"})
+		return
+	}
+
+	if req.UtenteID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "utente_id é obrigatório"})
+		return
+	}
+
 	data, err := time.Parse("2006-01-02", req.Data)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Data inválida. Use o formato YYYY-MM-DD"})
 		return
 	}
 
+	estado := strings.ToUpper(strings.TrimSpace(req.Estado))
+	if !isValidAssiduidadeEstado(estado) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Estado inválido. Valores permitidos: P, A, FJ, FI",
+		})
+		return
+	}
+
 	reg := models.Assiduidade{
 		UtenteID:   req.UtenteID,
 		Data:       data,
-		Estado:     req.Estado,
+		Estado:     estado,
 		Observacao: req.Observacao,
-		CreatedBy:  req.CreatedBy,
+		CreatedBy:  createdBy,
 	}
 
 	if err := config.DB.Create(&reg).Error; err != nil {

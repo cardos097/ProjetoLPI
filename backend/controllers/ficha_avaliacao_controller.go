@@ -1,10 +1,11 @@
 package controllers
 
 import (
-	"clinica-backend/config"
-	"clinica-backend/models"
 	"net/http"
 	"time"
+
+	"clinica-backend/config"
+	"clinica-backend/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -94,19 +95,51 @@ type CreateFichaRequest struct {
 	HistMedAnterior            string   `json:"hist_med_anterior"`
 	HistMedFamiliar            string   `json:"hist_med_familiar"`
 	SINSS                      string   `json:"sinss"`
-	CreatedBy                  uint     `json:"created_by"`
+}
+
+type UpdateFichaRequest struct {
+	NomeCompleto               *string  `json:"nome_completo"`
+	NumeroProcesso             *string  `json:"numero_processo"`
+	DataNascimento             *string  `json:"data_nascimento"`
+	Idade                      *uint    `json:"idade"`
+	Sexo                       *string  `json:"sexo"`
+	PesoKg                     *float64 `json:"peso_kg"`
+	AlturaM                    *float64 `json:"altura_m"`
+	IMC                        *float64 `json:"imc"`
+	DiagnosticoQueixaPrincipal *string  `json:"diagnostico_queixa_principal"`
+	TipoRegisto                *string  `json:"tipo_registo"`
+	DiagnosticoFisioterapia    *string  `json:"diagnostico_fisioterapia"`
+	ObjetivosPrognostico       *string  `json:"objetivos_prognostico"`
+	PlanoTerapeutico           *string  `json:"plano_terapeutico"`
+	PlanoProgressao            *string  `json:"plano_progressao"`
+	HistoriaPessoal            *string  `json:"historia_pessoal"`
+	Perspetivas                *string  `json:"perspetivas"`
+	Limitacoes                 *string  `json:"limitacoes"`
+	MCD                        *string  `json:"mcd"`
+	HistoriaCondicao           *string  `json:"historia_condicao"`
+	Medicacao                  *string  `json:"medicacao"`
+	HistMedAtual               *string  `json:"hist_med_atual"`
+	HistMedAnterior            *string  `json:"hist_med_anterior"`
+	HistMedFamiliar            *string  `json:"hist_med_familiar"`
+	SINSS                      *string  `json:"sinss"`
 }
 
 func GetFichasAvaliacao(c *gin.Context) {
 	var fichas []models.FichaAvaliacao
 	query := config.DB
 
-	// Filtrar por utente_id se fornecido
 	if utenteID := c.Query("utente_id"); utenteID != "" {
 		query = query.Where("utente_id = ?", utenteID)
 	}
 
-	if err := query.Preload("Utente").Preload("Utente.User").Preload("Consulta").Preload("User").Preload("AvaliacoesObjetivas").Order("id DESC").Find(&fichas).Error; err != nil {
+	if err := query.
+		Preload("Utente").
+		Preload("Utente.User").
+		Preload("Consulta").
+		Preload("User").
+		Preload("AvaliacoesObjetivas").
+		Order("id DESC").
+		Find(&fichas).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -125,7 +158,13 @@ func GetFichaAvaliacaoByID(c *gin.Context) {
 	id := c.Param("id")
 	var ficha models.FichaAvaliacao
 
-	if err := config.DB.Preload("Utente").Preload("Utente.User").Preload("Consulta").Preload("User").Preload("AvaliacoesObjetivas").First(&ficha, id).Error; err != nil {
+	if err := config.DB.
+		Preload("Utente").
+		Preload("Utente.User").
+		Preload("Consulta").
+		Preload("User").
+		Preload("AvaliacoesObjetivas").
+		First(&ficha, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Ficha não encontrada"})
 		return
 	}
@@ -144,6 +183,18 @@ func CreateFichaAvaliacao(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		return
+	}
+
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado não encontrado"})
+		return
+	}
+
+	createdBy, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado inválido"})
 		return
 	}
 
@@ -183,7 +234,7 @@ func CreateFichaAvaliacao(c *gin.Context) {
 		HistMedAnterior:            req.HistMedAnterior,
 		HistMedFamiliar:            req.HistMedFamiliar,
 		SINSS:                      req.SINSS,
-		CreatedBy:                  req.CreatedBy,
+		CreatedBy:                  createdBy,
 	}
 
 	if err := fillFichaFromUtenteData(&ficha); err != nil {
@@ -197,33 +248,6 @@ func CreateFichaAvaliacao(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, ficha)
-}
-
-type UpdateFichaRequest struct {
-	NomeCompleto               *string  `json:"nome_completo"`
-	NumeroProcesso             *string  `json:"numero_processo"`
-	DataNascimento             *string  `json:"data_nascimento"`
-	Idade                      *uint    `json:"idade"`
-	Sexo                       *string  `json:"sexo"`
-	PesoKg                     *float64 `json:"peso_kg"`
-	AlturaM                    *float64 `json:"altura_m"`
-	IMC                        *float64 `json:"imc"`
-	DiagnosticoQueixaPrincipal *string  `json:"diagnostico_queixa_principal"`
-	TipoRegisto                *string  `json:"tipo_registo"`
-	DiagnosticoFisioterapia    *string  `json:"diagnostico_fisioterapia"`
-	ObjetivosPrognostico       *string  `json:"objetivos_prognostico"`
-	PlanoTerapeutico           *string  `json:"plano_terapeutico"`
-	PlanoProgressao            *string  `json:"plano_progressao"`
-	HistoriaPessoal            *string  `json:"historia_pessoal"`
-	Perspetivas                *string  `json:"perspetivas"`
-	Limitacoes                 *string  `json:"limitacoes"`
-	MCD                        *string  `json:"mcd"`
-	HistoriaCondicao           *string  `json:"historia_condicao"`
-	Medicacao                  *string  `json:"medicacao"`
-	HistMedAtual               *string  `json:"hist_med_atual"`
-	HistMedAnterior            *string  `json:"hist_med_anterior"`
-	HistMedFamiliar            *string  `json:"hist_med_familiar"`
-	SINSS                      *string  `json:"sinss"`
 }
 
 func UpdateFichaAvaliacao(c *gin.Context) {
@@ -241,7 +265,6 @@ func UpdateFichaAvaliacao(c *gin.Context) {
 		return
 	}
 
-	// Atualizar apenas os campos fornecidos
 	if req.NomeCompleto != nil {
 		ficha.NomeCompleto = *req.NomeCompleto
 	}
@@ -318,6 +341,11 @@ func UpdateFichaAvaliacao(c *gin.Context) {
 	}
 	if req.SINSS != nil {
 		ficha.SINSS = *req.SINSS
+	}
+
+	if err := fillFichaFromUtenteData(&ficha); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := config.DB.Save(&ficha).Error; err != nil {

@@ -20,7 +20,6 @@ type CreateConsultaRequest struct {
 	AreaClinicaID uint   `json:"area_clinica_id"`
 	DataInicio    string `json:"data_inicio"`
 	DataFim       string `json:"data_fim"`
-	CreatedBy     uint   `json:"created_by"`
 }
 
 type RemarcarConsultaRequest struct {
@@ -75,6 +74,18 @@ func CreateConsulta(c *gin.Context) {
 		return
 	}
 
+	userIDValue, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado não encontrado"})
+		return
+	}
+
+	createdBy, ok := userIDValue.(uint)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado inválido"})
+		return
+	}
+
 	dataInicio, err := parseDateTime(req.DataInicio)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Data de início inválida. Use YYYY-MM-DD HH:MM[:SS]"})
@@ -100,7 +111,7 @@ func CreateConsulta(c *gin.Context) {
 		DataInicio:    dataInicio,
 		DataFim:       dataFim,
 		Estado:        "agendada",
-		CreatedBy:     req.CreatedBy,
+		CreatedBy:     createdBy,
 	}
 
 	err = config.DB.Create(&consulta).Error
@@ -226,13 +237,11 @@ func UpdateConsulta(c *gin.Context) {
 		return
 	}
 
-	// Não permitir atualizar consultas canceladas
 	if consulta.Estado == "cancelada" {
 		c.JSON(http.StatusConflict, gin.H{"error": "Não é possível atualizar uma consulta cancelada"})
 		return
 	}
 
-	// Atualizar apenas os campos fornecidos
 	if req.TerapeutaID != nil {
 		consulta.TerapeutaID = *req.TerapeutaID
 	}
@@ -243,7 +252,6 @@ func UpdateConsulta(c *gin.Context) {
 		consulta.AreaClinicaID = *req.AreaClinicaID
 	}
 
-	// Se houver mudança de datas, validar
 	if req.DataInicio != nil || req.DataFim != nil {
 		dataInicio := consulta.DataInicio
 		dataFim := consulta.DataFim
