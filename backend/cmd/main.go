@@ -17,7 +17,7 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:8001", "http://127.0.0.1:8000", "http://localhost:8000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-User-ID", "X-User-Role"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -32,6 +32,14 @@ func main() {
 		})
 	})
 
+	// Rutas de autenticação
+	r.POST("/auth/login", controllers.Login)
+
+	// ========================
+	// UTENTES (públicos registar)
+	// ========================
+	r.POST("/utentes", controllers.CreateUtente)
+
 	// Grupo protegido por autenticação
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware())
@@ -40,6 +48,7 @@ func main() {
 		// CONSULTAS
 		// ========================
 		auth.GET("/consultas", controllers.GetConsultas)
+		auth.GET("/consultas/:id", controllers.GetConsultaByID)
 		auth.POST("/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateConsulta)
 		auth.PATCH("/consultas/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UpdateConsulta)
 		auth.PUT("/consultas/:id/cancelar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CancelConsulta)
@@ -50,6 +59,8 @@ func main() {
 		// ========================
 		auth.GET("/utentes", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetUtentes)
 		auth.GET("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetUtenteByID)
+		auth.PATCH("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo", "utente"), controllers.UpdateUtente)
+		auth.DELETE("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo"), controllers.DeleteUtente)
 		auth.GET("/utentes/:id/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetConsultasByUtenteID)
 		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetRegistosClinicosByUtenteID)
 

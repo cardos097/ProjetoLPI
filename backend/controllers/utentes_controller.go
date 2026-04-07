@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"clinica-backend/config"
 	"clinica-backend/models"
@@ -212,4 +213,197 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+
+
+type CreateUtenteRequest struct {
+	Nome           string `json:"nome" binding:"required"`
+	Email          string `json:"email" binding:"required,email"`
+	NumeroProcesso string `json:"numero_processo"`
+	Telefone       string `json:"telefone"`
+	Morada         string `json:"morada"`
+	DataNascimento string `json:"data_nascimento"` // "2000-01-15"
+	Password       string `json:"password" binding:"required,min=6"`
+}
+
+type UpdateUtenteRequest struct {
+	Nome           string `json:"nome"`
+	Email          string `json:"email"`
+	NumeroProcesso string `json:"numero_processo"`
+	Telefone       string `json:"telefone"`
+	Morada         string `json:"morada"`
+	DataNascimento string `json:"data_nascimento"` // "2000-01-15"
+}
+
+func CreateUtente(c *gin.Context) {
+	var req CreateUtenteRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		return
+	}
+
+	// Criar User
+	user := models.User{
+		Nome:         req.Nome,
+		Email:        req.Email,
+		PasswordHash: req.Password,
+		Role:         "utente",
+		Active:       true,
+	}
+
+	if err := config.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email já existe"})
+		return
+	}
+
+	// Criar Utente
+	var dataNascimento *time.Time
+	if req.DataNascimento != "" {
+		parsed, err := time.Parse("2006-01-02", req.DataNascimento)
+		if err == nil {
+			dataNascimento = &parsed
+		}
+	}
+
+	numeroProcesso := ""
+	if req.NumeroProcesso != "" {
+		numeroProcesso = req.NumeroProcesso
+	}
+
+	telefone := ""
+	if req.Telefone != "" {
+		telefone = req.Telefone
+	}
+
+	morada := ""
+	if req.Morada != "" {
+		morada = req.Morada
+	}
+
+	utente := models.Utente{
+		UserID:         user.ID,
+		DataNascimento: dataNascimento,
+		NumeroProcesso: &numeroProcesso,
+		Telefone:       &telefone,
+		Morada:         &morada,
+	}
+
+	if err := config.DB.Create(&utente).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Criar ProcessoClinico
+	processo := models.ProcessoClinico{
+		UtenteID: user.ID,
+	}
+	config.DB.Create(&processo)
+
+	response := UtenteDetailResponse{
+		ID:             user.ID,
+		Nome:           user.Nome,
+		Email:          user.Email,
+		NumeroProcesso: numeroProcesso,
+		Telefone:       telefone,
+		Morada:         morada,
+	}
+
+	c.JSON(http.StatusCreated, response)
+}
+
+func UpdateUtente(c *gin.Context) {
+	id := c.Param("id")
+
+	var req UpdateUtenteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		return
+	}
+
+	// Atualizar User
+	user := models.User{}
+	if err := config.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Utente não encontrado"})
+		return
+	}
+
+	if req.Nome != "" {
+		user.Nome = req.Nome
+	}
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email já existe"})
+		return
+	}
+
+	// Atualizar Utente
+	utente := models.Utente{}
+	if err := config.DB.Where("user_id = ?", id).First(&utente).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Utente não encontrado"})
+		return
+	}
+
+	if req.NumeroProcesso != "" {
+		utente.NumeroProcesso = &req.NumeroProcesso
+	}
+	if req.Telefone != "" {
+		utente.Telefone = &req.Telefone
+	}
+	if req.Morada != "" {
+		utente.Morada = &req.Morada
+	}
+	if req.DataNascimento != "" {
+		parsed, err := time.Parse("2006-01-02", req.DataNascimento)
+		if err == nil {
+			utente.DataNascimento = &parsed
+		}
+	}
+
+	if err := config.DB.Save(&utente).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := UtenteDetailResponse{
+		ID:    user.ID,
+		Nome:  user.Nome,
+		Email: user.Email,
+	}
+	if utente.NumeroProcesso != nil {
+		response.NumeroProcesso = *utente.NumeroProcesso
+	}
+	if utente.Telefone != nil {
+		response.Telefone = *utente.Telefone
+	}
+	if utente.Morada != nil {
+		response.Morada = *utente.Morada
+	}
+	if utente.DataNascimento != nil {
+		response.DataNascimento = &[]string{utente.DataNascimento.Format("2006-01-02")}[0]
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func DeleteUtente(c *gin.Context) {
+	id := c.Param("id")
+
+	// Eliminar Utente
+	if err := config.DB.Where("user_id = ?", id).Delete(&models.Utente{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Eliminar User
+	if err := config.DB.Delete(&models.User{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Utente eliminado com sucesso"})
 }
