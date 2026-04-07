@@ -66,6 +66,30 @@ func GetConsultas(c *gin.Context) {
 	c.JSON(http.StatusOK, consultas)
 }
 
+func GetConsultaByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var consulta models.Consulta
+
+	err := config.DB.
+		Preload("Utente").
+		Preload("Terapeuta").
+		Preload("Sala").
+		Preload("AreaClinica").
+		First(&consulta, id).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Consulta não encontrada"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, consulta)
+}
+
 func CreateConsulta(c *gin.Context) {
 	var req CreateConsultaRequest
 
