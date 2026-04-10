@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { loginRequest } from '../services/auth.jsx';
+import { loginRequest, loginWithGoogle } from '../services/auth.jsx';
+import { GoogleLogin } from '@react-oauth/google';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -26,6 +27,25 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const session = await loginWithGoogle(credentialResponse.credential);
+      login(session);
+      navigate('/');
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || 'Falha no login Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Falha no login Google. Tenta novamente.');
   };
 
   return (
@@ -58,6 +78,21 @@ export function LoginPage() {
         <button type="submit" disabled={loading}>
           {loading ? 'A entrar...' : 'Entrar'}
         </button>
+
+        <hr style={{ margin: '20px 0' }} />
+
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ marginBottom: '10px', fontSize: '0.9em', color: '#666' }}>
+            Ou entrar com Google (apenas @ufp.edu.pt)
+          </p>
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            text="signin_with"
+            theme="outline"
+            size="large"
+          />
+        </div>
       </form>
     </div>
   );

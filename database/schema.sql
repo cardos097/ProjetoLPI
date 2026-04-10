@@ -27,6 +27,8 @@ CREATE TABLE users (
   password_hash TEXT NOT NULL,
   role user_role NOT NULL,
   active BOOLEAN DEFAULT TRUE,
+  google_sub VARCHAR(255) UNIQUE,
+  last_login_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

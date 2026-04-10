@@ -4,6 +4,10 @@ import (
 	"clinica-backend/config"
 	"clinica-backend/controllers"
 	"clinica-backend/middleware"
+	"clinica-backend/routes"
+	"clinica-backend/utils"
+	"context"
+	"log"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -13,6 +17,18 @@ import (
 func main() {
 	config.LoadEnv()
 	config.ConnectDB()
+
+	// Inicializar Google OAuth
+	googleClientID := config.GetEnvOptional("GOOGLE_CLIENT_ID", "")
+	if googleClientID != "" {
+		if err := utils.InitGoogle(context.Background(), googleClientID); err != nil {
+			log.Printf("Aviso: Falha ao inicializar Google OAuth: %v", err)
+		}
+	}
+
+	// Configurar JWT Secret
+	jwtSecret := config.GetEnvOptional("JWT_SECRET", "your-secret-key-change-in-production")
+	utils.SetJWTSecret(jwtSecret)
 
 	r := gin.Default()
 
@@ -32,8 +48,8 @@ func main() {
 		})
 	})
 
-	// Rutas de autenticação
-	r.POST("/auth/login", controllers.Login)
+	// Registar rotas de autenticação
+	routes.RegisterAuthRoutes(r)
 
 	// ========================
 	// UTENTES (públicos registar)
