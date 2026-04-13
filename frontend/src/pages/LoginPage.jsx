@@ -49,51 +49,85 @@ export function LoginPage() {
   };
 
   return (
-    <div className="page centered">
-      <form className="card" onSubmit={handleSubmit}>
-        <h1>Login</h1>
+    <div className="login-page">
+      <div className="login-container">
+        {/* Left: Form Content */}
+        <div className="login-content">
+          <div className="login-form-wrapper">
+            <div className="login-header">
+              <div className="login-logo">
+                <img
+                  src="/images/ufp-logo.png"
+                  alt="Logo Clínica Universitária"
+                />
+              </div>
+              <h1>Bem-vindo</h1>
+              <p>Acesso à Clínica Universitária</p>
+            </div>
 
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
+            <form className="login-form" onSubmit={handleSubmit}>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu.email@ufp.edu.pt"
+                  required
+                />
+              </label>
 
-        <label>
-          Palavra-passe
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
+              <label>
+                Palavra-passe
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Insira sua palavra-passe"
+                  required
+                />
+              </label>
 
-        {error ? <p style={{ color: 'crimson', margin: 0 }}>{error}</p> : null}
+              {error && <p className="login-error">{error}</p>}
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'A entrar...' : 'Entrar'}
-        </button>
+              <button type="submit" className="login-button" disabled={loading}>
+                {loading ? 'A entrar...' : 'Entrar'}
+              </button>
+            </form>
 
-        <hr style={{ margin: '20px 0' }} />
+            <div className="login-divider">
+              <span className="login-divider-text">Ou continue com</span>
+            </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ marginBottom: '10px', fontSize: '0.9em', color: '#666' }}>
-            Ou entrar com Google (apenas @ufp.edu.pt)
-          </p>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            text="signin_with"
-            theme="outline"
-            size="large"
-          />
+            <div className="login-google-wrapper">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                text="signin_with"
+                theme="outline"
+                size="large"
+              />
+            </div>
+
+            <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '20px' }}>
+              ⓘ Apenas utilizadores com email @ufp.edu.pt podem aceder
+            </p>
+          </div>
         </div>
-      </form>
+
+        {/* Right: Image with Gradient Overlay */}
+        <div
+          className="login-image"
+          style={{
+            backgroundImage: `linear-gradient(135deg, rgba(0, 84, 63, 0.8), rgba(45, 155, 109, 0.8)), url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&auto=format&fit=crop&q=80')`,
+          }}
+        >
+          <div className="login-image-content">
+            <h2>Clínica Universitária</h2>
+            <p>Cuidados de saúde especializados com profissionais qualificados</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

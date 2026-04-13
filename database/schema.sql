@@ -24,7 +24,7 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
   email VARCHAR(150) UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
+  password_hash TEXT,
   role user_role NOT NULL,
   active BOOLEAN DEFAULT TRUE,
   google_sub VARCHAR(255) UNIQUE,
