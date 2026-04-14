@@ -21,7 +21,7 @@ export function LoginPage() {
     try {
       const session = await loginRequest({ email, password });
       login(session);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err?.response?.data?.error || err.message || 'Falha no login');
     } finally {
@@ -36,7 +36,7 @@ export function LoginPage() {
     try {
       const session = await loginWithGoogle(credentialResponse.credential);
       login(session);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err?.response?.data?.error || err.message || 'Falha no login Google');
     } finally {
