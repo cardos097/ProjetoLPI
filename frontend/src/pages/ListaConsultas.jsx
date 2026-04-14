@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getConsultas, cancelConsulta } from '../services/consultas.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
+import { ModalAgendarConsulta } from '../components/ModalAgendarConsulta.jsx';
 
 export function ListaConsultas() {
   const navigate = useNavigate();
@@ -13,6 +15,9 @@ export function ListaConsultas() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEstado, setFilterEstado] = useState('todas');
   const [cancelConfirm, setCancelConfirm] = useState(null);
+  const [viewMode, setViewMode] = useState('tabela'); // 'tabela' | 'calendario'
+  const [modalOpen, setModalOpen] = useState(false);
+  const [dataSelecionada, setDataSelecionada] = useState(null);
 
   // Carregar consultas
   useEffect(() => {
@@ -73,6 +78,27 @@ export function ListaConsultas() {
     }
   };
 
+  const handleDateClick = (dateStr) => {
+    setDataSelecionada(dateStr);
+    setModalOpen(true);
+  };
+
+  const handleModalSubmit = (formData) => {
+    // Redireciona para o formulário completo com os dados pré-preenchidos
+    navigate('/consultas/nova', {
+      state: {
+        dataInicio: formData.data_inicio,
+        tipo: formData.tipo
+      }
+    });
+    setModalOpen(false);
+  };
+
+  const handleEventClick = (consultaId, consultaData) => {
+    // Abre modal para ver/editar a consulta
+    navigate(`/consultas/${consultaId}/editar`);
+  };
+
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('pt-PT', {
@@ -97,14 +123,32 @@ export function ListaConsultas() {
           <h1>Gestão de Consultas</h1>
           <p>Total: {filteredConsultas.length} consultas</p>
         </div>
-        {canManageConsultas && (
-          <button
-            className="btn btn-primary"
-            onClick={() => navigate('/consultas/nova')}
-          >
-            + Nova Consulta
-          </button>
-        )}
+        <div className="header-actions">
+          <div className="view-toggle">
+            <button
+              className={`view-btn ${viewMode === 'tabela' ? 'active' : ''}`}
+              onClick={() => setViewMode('tabela')}
+              title="Visualizar como tabela"
+            >
+              📋 Tabela
+            </button>
+            <button
+              className={`view-btn ${viewMode === 'calendario' ? 'active' : ''}`}
+              onClick={() => setViewMode('calendario')}
+              title="Visualizar como calendário"
+            >
+              📅 Calendário
+            </button>
+          </div>
+          {canManageConsultas && (
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate('/consultas/nova')}
+            >
+              + Nova Consulta
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -242,6 +286,30 @@ export function ListaConsultas() {
           </div>
         </div>
       )}
+
+      {/* Calendário */}
+      {viewMode === 'calendario' && (
+        <div className="calendario-section">
+          <CalendarioVisualizacao
+            consultas={filteredConsultas}
+            onDateClick={handleDateClick}
+            onEventClick={handleEventClick}
+            mode="month"
+          />
+        </div>
+      )}
+
+      {/* Modal para Agendar */}
+      <ModalAgendarConsulta
+        isOpen={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setDataSelecionada(null);
+        }}
+        onSubmit={handleModalSubmit}
+        dataSelecionada={dataSelecionada}
+      />
     </div>
   );
 }
+

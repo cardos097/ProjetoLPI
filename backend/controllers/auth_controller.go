@@ -102,12 +102,10 @@ func GoogleLogin(c *gin.Context) {
 		return
 	}
 
-	// ⚠️ VALIDAÇÃO CRÍTICA: Aceitar apenas @ufp.edu.pt
-	if !utils.ValidateUFPEmail(claims.Email) {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "Email não autorizado. Apenas @ufp.edu.pt permitido.",
-		})
-		return
+	// Determinar role baseado no domínio do email
+	role := "utente" // Role padrão para emails externos
+	if utils.ValidateUFPEmail(claims.Email) {
+		role = "terapeuta" // Role padrão para @ufp.edu.pt
 	}
 
 	// Procurar ou criar utilizador
@@ -120,7 +118,7 @@ func GoogleLogin(c *gin.Context) {
 			Email:     claims.Email,
 			Nome:      claims.Name,
 			GoogleSub: &claims.Sub,
-			Role:      "utente", // Role padrão para novos utilizadores
+			Role:      role, // Role baseado no domínio
 			Active:    true,
 		}
 

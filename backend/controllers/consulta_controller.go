@@ -63,7 +63,13 @@ func GetConsultas(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, consultas)
+	// Converter para DTO
+	var result []models.ConsultaDTO
+	for _, consulta := range consultas {
+		result = append(result, *consulta.ConvertToDTO())
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 func GetConsultaByID(c *gin.Context) {

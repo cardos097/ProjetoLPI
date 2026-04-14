@@ -58,15 +58,26 @@ export function Navbar() {
                     Ver Consultas
                   </a>
                   <a
-                    href="/consultas"
+                    href="/calendario"
                     className="dropdown-item"
                     onClick={(e) => {
                       e.preventDefault();
-                      navigate('/consultas');
+                      navigate('/calendario');
                       setConsultasDropdownOpen(false);
                     }}
                   >
-                    Marcar Consulta
+                    📅 Calendário
+                  </a>
+                  <a
+                    href="/consultas/nova"
+                    className="dropdown-item"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/consultas/nova');
+                      setConsultasDropdownOpen(false);
+                    }}
+                  >
+                    ➕ Marcar Consulta
                   </a>
                 </div>
               )}

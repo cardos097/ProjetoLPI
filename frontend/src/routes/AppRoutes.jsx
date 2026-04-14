@@ -3,12 +3,15 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { HomePage } from '../pages/HomePage.jsx';
 import { LoginPage } from '../pages/LoginPage.jsx';
 import { UserPage } from '../pages/UserPage.jsx';
+import { DashboardUtente } from '../pages/DashboardUtente.jsx';
+import { DashboardStaff } from '../pages/DashboardStaff.jsx';
 import { ListaUtentes } from '../pages/ListaUtentes.jsx';
 import { CriarUtente } from '../pages/CriarUtente.jsx';
 import { EditarUtente } from '../pages/EditarUtente.jsx';
 import { ListaConsultas } from '../pages/ListaConsultas.jsx';
 import { AgendarConsulta } from '../pages/AgendarConsulta.jsx';
 import { EditarConsulta } from '../pages/EditarConsulta.jsx';
+import { PaginaCalendario } from '../pages/PaginaCalendario.jsx';
 import { Layout } from '../components/Layout.jsx';
 import { Navbar } from '../components/Navbar.jsx';
 
@@ -29,7 +32,7 @@ function ProtectedRoute({ children }) {
 }
 
 export function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <Routes>
@@ -42,12 +45,51 @@ export function AppRoutes() {
           </PublicLayout>
         }
       />
+
+      {/* Dashboard Routes - Redirect based on role */}
+      <Route
+        path="/dashboard"
+        element={
+          isAuthenticated ? (
+            user?.role === 'utente' ? (
+              <Layout><DashboardUtente /></Layout>
+            ) : (
+              <Layout><DashboardStaff /></Layout>
+            )
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      <Route
+        path="/dashboard/staff"
+        element={
+          isAuthenticated && user?.role !== 'utente' ? (
+            <Layout><DashboardStaff /></Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
       <Route
         path="/user"
         element={
           <ProtectedRoute>
             <UserPage />
           </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/calendario"
+        element={
+          isAuthenticated ? (
+            <Layout><PaginaCalendario /></Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
         }
       />
       <Route

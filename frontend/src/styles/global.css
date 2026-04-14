@@ -14,9 +14,18 @@
   --ufp-accent-purple: #C9A5D9;
 }
 
-* { box-sizing: border-box; }
-body { margin: 0; }
-button, input { font: inherit; }
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
 
 .page.centered {
   min-height: 100vh;
@@ -31,11 +40,17 @@ button, input { font: inherit; }
   padding: 24px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
 }
 
-.card label { display: grid; gap: 6px; }
-.home { padding: 24px; }
+.card label {
+  display: grid;
+  gap: 6px;
+}
+
+.home {
+  padding: 24px;
+}
 
 /* User Profile Styles */
 .user-profile {
@@ -205,7 +220,7 @@ table tr:hover {
 .navbar {
   background: white;
   border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -403,6 +418,9 @@ table tr:hover {
 .main-content {
   flex: 1;
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 /* Home Page Dashboard */
@@ -1759,6 +1777,7 @@ textarea:focus {
     display: block;
   }
 }
+
 /* Login Page Styles */
 .login-page {
   min-height: 100vh;
@@ -1884,6 +1903,7 @@ textarea:focus {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1940,7 +1960,7 @@ textarea:focus {
   width: 100%;
 }
 
-.login-google-wrapper > div {
+.login-google-wrapper>div {
   width: 100%;
 }
 
@@ -1949,11 +1969,9 @@ textarea:focus {
   width: 40%;
   background-size: cover;
   background-position: center;
-  background-image: linear-gradient(
-    135deg,
-    rgba(30, 125, 91, 0.8),
-    rgba(45, 155, 109, 0.8)
-  );
+  background-image: linear-gradient(135deg,
+      rgba(30, 125, 91, 0.8),
+      rgba(45, 155, 109, 0.8));
   position: relative;
   overflow: hidden;
 }
@@ -1995,4 +2013,66 @@ textarea:focus {
   line-height: 1.6;
   opacity: 0.95;
   margin: 0;
+}
+
+/* ============================================ */
+/* VIEW TOGGLE BUTTONS                          */
+/* ============================================ */
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--ufp-light);
+  padding: 0.25rem;
+  border-radius: 6px;
+  border: 1px solid var(--ufp-light);
+}
+
+.view-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.view-btn:hover {
+  color: var(--ufp-dark);
+}
+
+.view-btn.active {
+  background: white;
+  color: var(--ufp-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.calendario-section {
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .view-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .view-btn {
+    flex: 1;
+  }
 }

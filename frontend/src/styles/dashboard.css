@@ -1,0 +1,275 @@
+/* ============================================ */
+/* DASHBOARDS - STYLES                         */
+/* ============================================ */
+
+.dashboard-header {
+    background: linear-gradient(135deg, var(--ufp-primary), var(--ufp-secondary));
+    color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.dashboard-header p {
+    margin: 0.5rem 0 0 0;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* Dashboard Tabs */
+.dashboard-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid var(--ufp-light);
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--ufp-dark);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    color: var(--ufp-primary);
+}
+
+.tab-btn.active {
+    color: var(--ufp-primary);
+    border-bottom-color: var(--ufp-primary);
+}
+
+/* Dashboard Content */
+.dashboard-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-content h2 {
+    color: var(--ufp-dark);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+/* Consultas Section */
+.consultas-section,
+.registos-section,
+.perfil-section,
+.admin-section {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.consultas-list,
+.registos-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.consulta-card,
+.registo-card {
+    background: var(--ufp-light);
+    padding: 1.5rem;
+    border-radius: 6px;
+    border-left: 4px solid var(--ufp-primary);
+    transition: all 0.3s ease;
+}
+
+.consulta-card:hover,
+.registo-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.consulta-info {
+    margin-bottom: 1rem;
+}
+
+.consulta-info h4,
+.registo-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--ufp-dark);
+}
+
+.consulta-info p,
+.registo-card p {
+    margin: 0.25rem 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.consulta-card small,
+.registo-card small {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+}
+
+.consulta-card .btn-editar {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: var(--ufp-primary);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.3s ease;
+}
+
+.consulta-card .btn-editar:hover {
+    background: var(--ufp-secondary);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+/* Perfil Section */
+.perfil-info {
+    background: var(--ufp-light);
+    padding: 2rem;
+    border-radius: 6px;
+    margin-bottom: 2rem;
+}
+
+.perfil-info p {
+    margin: 0.75rem 0;
+    font-size: 1rem;
+}
+
+.perfil-info strong {
+    color: var(--ufp-dark);
+}
+
+/* Admin Section */
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.admin-card {
+    background: linear-gradient(135deg, var(--ufp-light), white);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--ufp-light);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.admin-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--ufp-primary);
+}
+
+.admin-card h3 {
+    color: var(--ufp-dark);
+    margin-top: 0;
+}
+
+.admin-card p {
+    color: var(--text-secondary);
+    margin: 1rem 0 0 0;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: var(--ufp-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--ufp-secondary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary {
+    background: var(--ufp-light);
+    color: var(--ufp-dark);
+    border: 1px solid var(--ufp-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--ufp-primary);
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-header {
+        padding: 1.5rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .dashboard-tabs {
+        gap: 0.5rem;
+    }
+
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    .dashboard-content {
+        padding: 1.5rem;
+    }
+
+    .consultas-list,
+    .registos-list {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+}
