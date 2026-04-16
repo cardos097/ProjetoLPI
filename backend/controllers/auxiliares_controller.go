@@ -22,7 +22,11 @@ type TerapeutaListItem struct {
 func GetSalas(c *gin.Context) {
 	var salas []models.Sala
 
-	if err := config.DB.Where("ativa = ?", true).Order("nome ASC").Find(&salas).Error; err != nil {
+	if err := config.DB.
+		Preload("AreasClinicas").
+		Where("ativa = ?", true).
+		Order("nome ASC").
+		Find(&salas).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

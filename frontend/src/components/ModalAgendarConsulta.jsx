@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import '../styles/modal.css';
+import { getAreasClinicas, getSalas } from '../services/consultas';
 
 export function ModalAgendarConsulta({
     isOpen,
@@ -12,7 +13,30 @@ export function ModalAgendarConsulta({
         data: dataSelecionada || '',
         hora: '09:00',
         tipo: 'consulta_geral',
+        area_clinica_id: '',
+        sala_id: '',
     });
+
+    const [areasClinicas, setAreasClinicas] = useState([]);
+    const [salas, setSalas] = useState([]);
+    const [salasFilteradas, setSalasFilteradas] = useState([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            carregarDados();
+        }
+    }, [isOpen]);
+
+    const carregarDados = async () => {
+        try {
+            const areas = await getAreasClinicas();
+            const salasList = await getSalas();
+            setAreasClinicas(areas);
+            setSalas(salasList);
+        } catch (erro) {
+            console.error('Erro ao carregar dados:', erro);
+        }
+    };
 
     useEffect(() => {
         if (dataSelecionada) {
@@ -22,6 +46,28 @@ export function ModalAgendarConsulta({
             }));
         }
     }, [dataSelecionada]);
+
+    useEffect(() => {
+        if (formData.area_clinica_id) {
+            const salasDisponiveis = salas.filter((sala) => {
+                // Se a sala tem associações com áreas clínicas
+                if (sala.areas_clinicas && sala.areas_clinicas.length > 0) {
+                    return sala.areas_clinicas.some(
+                        (area) => area.id === parseInt(formData.area_clinica_id)
+                    );
+                }
+                // Fallback: mostrar todas as salas se não houver filtro
+                return true;
+            });
+            setSalasFilteradas(salasDisponiveis);
+            setFormData((prev) => ({
+                ...prev,
+                sala_id: '',
+            }));
+        } else {
+            setSalasFilteradas([]);
+        }
+    }, [formData.area_clinica_id, salas]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -34,8 +80,8 @@ export function ModalAgendarConsulta({
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        if (!formData.data || !formData.hora) {
-            alert('Preenche a data e a hora');
+        if (!formData.data || !formData.hora || !formData.area_clinica_id || !formData.sala_id) {
+            alert('Preenche todos os campos obrigatórios (Data, Hora, Área Clínica e Sala)');
             return;
         }
 
@@ -49,6 +95,8 @@ export function ModalAgendarConsulta({
             data: '',
             hora: '09:00',
             tipo: 'consulta_geral',
+            area_clinica_id: '',
+            sala_id: '',
         });
     };
 
@@ -105,8 +153,47 @@ export function ModalAgendarConsulta({
                         </select>
                     </div>
 
+                    <div className="form-group">
+                        <label htmlFor="area_clinica_id">Área Clínica *</label>
+                        <select
+                            id="area_clinica_id"
+                            name="area_clinica_id"
+                            value={formData.area_clinica_id}
+                            onChange={handleChange}
+                            required
+                        >
+                            <option value="">Seleciona uma área clínica</option>
+                            {areasClinicas.map((area) => (
+                                <option key={area.id} value={area.id}>
+                                    {area.nome}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="sala_id">Sala *</label>
+                        <select
+                            id="sala_id"
+                            name="sala_id"
+                            value={formData.sala_id}
+                            onChange={handleChange}
+                            required
+                            disabled={!formData.area_clinica_id}
+                        >
+                            <option value="">
+                                {formData.area_clinica_id ? 'Seleciona uma sala' : 'Seleciona primeiro uma área clínica'}
+                            </option>
+                            {salasFilteradas.map((sala) => (
+                                <option key={sala.id} value={sala.id}>
+                                    {sala.nome}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <p className="modal-info">
-                        ℹ️ Serás redirecionado para o formulário completo para selecionar terapeuta e sala.
+                        ℹ️ Serás redirecionado para o formulário completo para selecionar terapeuta.
                     </p>
 
                     <div className="modal-buttons">

@@ -16,7 +16,9 @@ export function AgendarConsulta() {
 
   const [utentes, setUtentes] = useState([]);
   const [terapeutas, setTerapeutas] = useState([]);
+  const [terapeutasFiltrados, setTerapeutasFiltrados] = useState([]);
   const [salas, setSalas] = useState([]);
+  const [salasFiltradas, setSalasFiltradas] = useState([]);
   const [areasClinicas, setAreasClinicas] = useState([]);
 
   const [form, setForm] = useState({
@@ -53,6 +55,45 @@ export function AgendarConsulta() {
 
     fetchData();
   }, []);
+
+  // Filtrar terapeutas conforme a área clínica selecionada
+  useEffect(() => {
+    if (form.area_clinica_id) {
+      const terapeutasArea = terapeutas.filter((t) => 
+        t.area_clinica_id === parseInt(form.area_clinica_id)
+      );
+      setTerapeutasFiltrados(terapeutasArea);
+      // Limpar seleção anterior se não for compatível
+      setForm((prev) => ({
+        ...prev,
+        terapeuta_id: '',
+      }));
+    } else {
+      setTerapeutasFiltrados([]);
+    }
+  }, [form.area_clinica_id, terapeutas]);
+
+  // Filtrar salas conforme a área clínica selecionada
+  useEffect(() => {
+    if (form.area_clinica_id) {
+      const salasArea = salas.filter((sala) => {
+        if (sala.areas_clinicas && sala.areas_clinicas.length > 0) {
+          return sala.areas_clinicas.some(
+            (area) => area.id === parseInt(form.area_clinica_id)
+          );
+        }
+        return false;
+      });
+      setSalasFiltradas(salasArea);
+      // Limpar seleção anterior se não for compatível
+      setForm((prev) => ({
+        ...prev,
+        sala_id: '',
+      }));
+    } else {
+      setSalasFiltradas([]);
+    }
+  }, [form.area_clinica_id, salas]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -145,10 +186,13 @@ export function AgendarConsulta() {
                 value={form.terapeuta_id}
                 onChange={handleChange}
                 required
+                disabled={!form.area_clinica_id}
               >
-                <option value="">Selecionar terapeuta...</option>
-                {terapeutas.map((t) => (
-                  <option key={t.id} value={t.id}>
+                <option value="">
+                  {form.area_clinica_id ? 'Selecionar terapeuta...' : 'Seleciona primeiro uma área clínica'}
+                </option>
+                {terapeutasFiltrados.map((t) => (
+                  <option key={t.user_id} value={t.user_id}>
                     {t.nome}
                   </option>
                 ))}
@@ -164,9 +208,12 @@ export function AgendarConsulta() {
                 value={form.sala_id}
                 onChange={handleChange}
                 required
+                disabled={!form.area_clinica_id}
               >
-                <option value="">Selecionar sala...</option>
-                {salas.map((s) => (
+                <option value="">
+                  {form.area_clinica_id ? 'Selecionar sala...' : 'Seleciona primeiro uma área clínica'}
+                </option>
+                {salasFiltradas.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.nome}
                   </option>

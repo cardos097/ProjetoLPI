@@ -47,9 +47,43 @@ INSERT INTO processos_clinicos (utente_id) VALUES
 -- SALAS
 ---------------------------------------------------------
 INSERT INTO salas (nome, descricao) VALUES
-('Sala 1', 'Consulta geral'),
-('Sala 2', 'Consulta especializada'),
-('Sala 3', 'Avaliações');
+('Psicologia', 'Sala de psicologia'),
+('Castanha', 'Sala castanha'),
+('Laranja', 'Sala laranja'),
+('Vermelha', 'Sala vermelha'),
+('Rosa', 'Sala rosa'),
+('Azul', 'Sala azul'),
+('Branca', 'Sala branca'),
+('Amarela', 'Sala amarela'),
+('TP Grupo', 'Sala de terapia em grupo'),
+('Reuniões', 'Sala de reuniões');
+
+---------------------------------------------------------
+-- SALA - ÁREA CLÍNICA (Associações)
+---------------------------------------------------------
+-- Todas as salas estão disponíveis para: Psicologia (1), Nutrição (2) e Terapia da Fala (4)
+-- NÃO para Fisioterapia (3)
+INSERT INTO sala_area_clinica (sala_id, area_clinica_id) VALUES
+-- Sala Psicologia (1)
+(1, 1), (1, 2), (1, 4),
+-- Sala Castanha (2)
+(2, 1), (2, 2), (2, 4),
+-- Sala Laranja (3)
+(3, 1), (3, 2), (3, 4),
+-- Sala Vermelha (4)
+(4, 1), (4, 2), (4, 4),
+-- Sala Rosa (5)
+(5, 1), (5, 2), (5, 4),
+-- Sala Azul (6)
+(6, 1), (6, 2), (6, 4),
+-- Sala Branca (7)
+(7, 1), (7, 2), (7, 4),
+-- Sala Amarela (8)
+(8, 1), (8, 2), (8, 4),
+-- Sala TP Grupo (9)
+(9, 1), (9, 2), (9, 4),
+-- Sala Reuniões (10)
+(10, 1), (10, 2), (10, 4);
 
 ---------------------------------------------------------
 -- CONSULTAS
