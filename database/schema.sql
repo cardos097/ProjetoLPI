@@ -68,6 +68,14 @@ CREATE TABLE salas (
   ativa BOOLEAN DEFAULT TRUE
 );
 
+CREATE TABLE sala_area_clinica (
+  sala_id INTEGER NOT NULL REFERENCES salas(id) ON DELETE CASCADE,
+  area_clinica_id INTEGER NOT NULL REFERENCES areas_clinicas(id) ON DELETE CASCADE,
+  PRIMARY KEY (sala_id, area_clinica_id)
+);
+
+CREATE INDEX idx_sala_area ON sala_area_clinica(area_clinica_id);
+
 CREATE TABLE processos_clinicos (
   id SERIAL PRIMARY KEY,
   utente_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,

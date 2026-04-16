@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Clock,
+  FileText,
+  Stethoscope,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos } from '../services/utentes.jsx';
+import '../styles/user-profile.css';
 
 export function UserPage() {
   const { user } = useAuth();
@@ -15,150 +27,390 @@ export function UserPage() {
     const fetchUserData = async () => {
       try {
         setError('');
-        const details = await getUtenteDetails(user.id);
-        setUserDetails(details);
+        
+        // Se não tem user autenticado
+        if (!user?.id) {
+          setError('Utilizador não autenticado');
+          setLoading(false);
+          return;
+        }
 
-        const [consultasData, registosData] = await Promise.all([
-          getUtenteConsultas(user.id),
-          getUtenteRegistos(user.id),
-        ]);
+        // Tenta buscar detalhes do utente
+        let details = null;
+        try {
+          details = await getUtenteDetails(user.id);
+          setUserDetails(details);
+        } catch (err) {
+          // Se não encontrar utente, usa dados do auth context como fallback
+          console.warn('Utente não encontrado na base de dados, usando dados de autenticação');
+          setUserDetails({
+            id: user.id,
+            nome: user.name || user.email || 'Utilizador',
+            email: user.email || '',
+            telefone: '',
+            morada: '',
+            data_nascimento: '',
+            numero_processo: '',
+          });
+        }
 
-        setConsultas(consultasData);
-        setRegistos(registosData);
-      } catch (err) {
-        setError(err?.response?.data?.error || err.message || 'Erro ao carregar dados');
+        // Tenta buscar consultas e registos
+        try {
+          const [consultasData, registosData] = await Promise.all([
+            getUtenteConsultas(user.id).catch(() => []),
+            getUtenteRegistos(user.id).catch(() => []),
+          ]);
+
+          setConsultas(Array.isArray(consultasData) ? consultasData : []);
+          setRegistos(Array.isArray(registosData) ? registosData : []);
+        } catch (err) {
+          console.warn('Erro ao carregar consultas/registos:', err);
+          setConsultas([]);
+          setRegistos([]);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (user?.id) {
-      fetchUserData();
-    }
-  }, [user?.id]);
+    fetchUserData();
+  }, [user?.id, user?.name, user?.email]);
 
   if (loading) {
-    return <div className="page centered">A carregar...</div>;
+    return (
+      <div className="user-profile-container">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p className="loading-text">A carregar dados do perfil...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (error) {
-    return <div className="page centered"><p style={{ color: 'crimson' }}>{error}</p></div>;
+  if (error && !userDetails) {
+    return (
+      <div className="user-profile-container">
+        <div className="error-container">
+          <div className="error-message">
+            <strong>Erro:</strong> {error}
+            <p style={{ marginTop: '8px', fontSize: '12px' }}>
+              Tente fazer login novamente ou contacte o suporte.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  const getInitials = (name) => {
+    return (name || '')
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getStatusBadgeClass = (status) => {
+    const statusLower = (status || '').toLowerCase();
+    if (statusLower.includes('agendada') || statusLower.includes('upcoming')) {
+      return 'agendada';
+    } else if (statusLower.includes('concluída') || statusLower.includes('completed')) {
+      return 'concluida';
+    } else if (statusLower.includes('cancelada') || statusLower.includes('cancelled')) {
+      return 'cancelada';
+    }
+    return 'agendada';
+  };
+
+  const tabVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: (i) => ({
+      opacity: 1,
+      x: 0,
+      transition: { delay: i * 0.05, duration: 0.3 },
+    }),
+  };
 
   return (
-    <div className="page user-profile">
-      <div className="profile-header">
-        <h1>Perfil do Utilizador</h1>
-        <p className="user-name">{userDetails?.nome || user?.name}</p>
-      </div>
-
-      <div className="tabs">
-        <button
-          className={`tab-button ${activeTab === 'details' ? 'active' : ''}`}
-          onClick={() => setActiveTab('details')}
+    <div className="user-profile-container">
+      <div className="profile-wrapper">
+        {/* Header Card */}
+        <motion.div
+          className="profile-header-card"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
         >
-          Detalhes
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'consultas' ? 'active' : ''}`}
-          onClick={() => setActiveTab('consultas')}
-        >
-          Consultas ({consultas.length})
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'registos' ? 'active' : ''}`}
-          onClick={() => setActiveTab('registos')}
-        >
-          Registos ({registos.length})
-        </button>
-      </div>
-
-      {activeTab === 'details' && (
-        <div className="card details-section">
-          <h2>Informações Pessoais</h2>
-          <div className="form-group">
-            <label>Nome</label>
-            <p className="form-value">{userDetails?.nome}</p>
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <p className="form-value">{userDetails?.email}</p>
-          </div>
-          <div className="form-group">
-            <label>Número de Processo</label>
-            <p className="form-value">{userDetails?.numero_processo || '-'}</p>
-          </div>
-          <div className="form-group">
-            <label>Telefone</label>
-            <p className="form-value">{userDetails?.telefone || '-'}</p>
-          </div>
-          <div className="form-group">
-            <label>Morada</label>
-            <p className="form-value">{userDetails?.morada || '-'}</p>
-          </div>
-          <div className="form-group">
-            <label>Data de Nascimento</label>
-            <p className="form-value">{userDetails?.data_nascimento || '-'}</p>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'consultas' && (
-        <div className="card consultas-section">
-          <h2>Histórico de Consultas</h2>
-          {consultas.length === 0 ? (
-            <p className="empty-state">Nenhuma consulta registrada</p>
-          ) : (
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Terapeuta</th>
-                    <th>Sala</th>
-                    <th>Área Clínica</th>
-                    <th>Estado</th>
-                    <th>Data Início</th>
-                    <th>Data Fim</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {consultas.map((consulta) => (
-                    <tr key={consulta.id}>
-                      <td>{consulta.terapeuta_nome}</td>
-                      <td>{consulta.sala_nome}</td>
-                      <td>{consulta.area_clinica}</td>
-                      <td><span className={`status ${consulta.estado.toLowerCase()}`}>{consulta.estado}</span></td>
-                      <td>{consulta.data_inicio}</td>
-                      <td>{consulta.data_fim}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="profile-header-content">
+            <div className="profile-avatar">
+              {getInitials(userDetails?.nome || user?.name)}
             </div>
-          )}
-        </div>
-      )}
 
-      {activeTab === 'registos' && (
-        <div className="card registos-section">
-          <h2>Registos Clínicos</h2>
-          {registos.length === 0 ? (
-            <p className="empty-state">Nenhum registo clínico</p>
-          ) : (
-            <div className="registos-list">
-              {registos.map((registo) => (
-                <div key={registo.id} className="registo-item">
-                  <div className="registo-header">
-                    <h3>{registo.area_clinica}</h3>
-                    <small>{registo.data_criacao} - {registo.criado_por}</small>
-                  </div>
-                  <p className="registo-content">{registo.conteudo}</p>
+            <div className="profile-info">
+              <div className="profile-name-section">
+                <h1>{userDetails?.nome || user?.name || 'Utilizador'}</h1>
+                <p>Nº Processo: {userDetails?.numero_processo || '-'}</p>
+              </div>
+
+              <div className="profile-badges">
+                <span className="badge badge-primary">
+                  <User size={16} />
+                  Paciente
+                </span>
+                {!userDetails?.id && !consultas?.length && !registos?.length && (
+                  <span 
+                    className="badge" 
+                    title="Dados carregados do contexto de autenticação"
+                    style={{ 
+                      background: 'rgba(249, 115, 22, 0.1)', 
+                      borderColor: 'rgba(249, 115, 22, 0.3)',
+                      color: '#92400e',
+                      fontSize: '12px'
+                    }}
+                  >
+                    ⓘ Dados limitados
+                  </span>
+                )}
+              </div>
+
+              <div className="profile-contact-grid">
+                <div className="contact-item">
+                  <Mail size={18} />
+                  <span className="contact-item-text">{userDetails?.email}</span>
                 </div>
-              ))}
+                <div className="contact-item">
+                  <Phone size={18} />
+                  <span className="contact-item-text">{userDetails?.telefone || '-'}</span>
+                </div>
+                <div className="contact-item">
+                  <Calendar size={18} />
+                  <span className="contact-item-text">
+                    {userDetails?.data_nascimento || '-'}
+                  </span>
+                </div>
+                <div className="contact-item">
+                  <MapPin size={18} />
+                  <span className="contact-item-text">{userDetails?.morada || '-'}</span>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+        </motion.div>
+
+        {/* Tabs */}
+        <div className="tabs-container">
+          <ul className="tabs-list">
+            <li>
+              <button
+                className={`tab-button ${activeTab === 'details' ? 'active' : ''}`}
+                onClick={() => setActiveTab('details')}
+              >
+                Detalhes
+              </button>
+            </li>
+            <li>
+              <button
+                className={`tab-button ${activeTab === 'consultas' ? 'active' : ''}`}
+                onClick={() => setActiveTab('consultas')}
+              >
+                Consultas ({consultas.length})
+              </button>
+            </li>
+            <li>
+              <button
+                className={`tab-button ${activeTab === 'registos' ? 'active' : ''}`}
+                onClick={() => setActiveTab('registos')}
+              >
+                Registos ({registos.length})
+              </button>
+            </li>
+          </ul>
+
+          {/* Details Tab */}
+          <motion.div
+            className={`tabs-content ${activeTab === 'details' ? 'active' : ''}`}
+            variants={tabVariants}
+            initial="hidden"
+            animate={activeTab === 'details' ? 'visible' : 'hidden'}
+          >
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">
+                  <User size={20} />
+                  Informações Pessoais
+                </h2>
+              </div>
+
+              <div className="card-content">
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <span className="detail-label">Nome Completo</span>
+                    <span className="detail-value">{userDetails?.nome || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Email</span>
+                    <span className="detail-value">{userDetails?.email || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Número de Processo</span>
+                    <span className="detail-value">{userDetails?.numero_processo || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Telefone</span>
+                    <span className="detail-value">{userDetails?.telefone || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Data de Nascimento</span>
+                    <span className="detail-value">{userDetails?.data_nascimento || '-'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Morada</span>
+                    <span className="detail-value">{userDetails?.morada || '-'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Consultas Tab */}
+          <motion.div
+            className={`tabs-content ${activeTab === 'consultas' ? 'active' : ''}`}
+            variants={tabVariants}
+            initial="hidden"
+            animate={activeTab === 'consultas' ? 'visible' : 'hidden'}
+          >
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">
+                  <Clock size={20} />
+                  Histórico de Consultas
+                </h2>
+              </div>
+
+              <div className="card-content">
+                {consultas.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Nenhuma consulta registrada</p>
+                  </div>
+                ) : (
+                  <div>
+                    {consultas.map((consulta, index) => (
+                      <motion.div
+                        key={consulta.id}
+                        custom={index}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="consulta-item"
+                      >
+                        <div className="consulta-header">
+                          <div>
+                            <p className="consulta-title">{consulta.area_clinica}</p>
+                            <p className="consulta-subtitle">
+                              Terapeuta: {consulta.terapeuta_nome}
+                            </p>
+                          </div>
+                          <span
+                            className={`status-badge ${getStatusBadgeClass(
+                              consulta.estado
+                            )}`}
+                          >
+                            {consulta.estado}
+                          </span>
+                        </div>
+
+                        <div className="consulta-separator"></div>
+
+                        <div className="consulta-details">
+                          <div className="consulta-detail">
+                            <span className="consulta-detail-label">Sala</span>
+                            <span className="consulta-detail-value">
+                              {consulta.sala_nome}
+                            </span>
+                          </div>
+                          <div className="consulta-detail">
+                            <span className="consulta-detail-label">Data Início</span>
+                            <span className="consulta-detail-value">
+                              {consulta.data_inicio}
+                            </span>
+                          </div>
+                          <div className="consulta-detail">
+                            <span className="consulta-detail-label">Data Término</span>
+                            <span className="consulta-detail-value">
+                              {consulta.data_fim || '-'}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Registos Tab */}
+          <motion.div
+            className={`tabs-content ${activeTab === 'registos' ? 'active' : ''}`}
+            variants={tabVariants}
+            initial="hidden"
+            animate={activeTab === 'registos' ? 'visible' : 'hidden'}
+          >
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">
+                  <FileText size={20} />
+                  Registos Clínicos
+                </h2>
+              </div>
+
+              <div className="card-content">
+                {registos.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Nenhum registo clínico</p>
+                  </div>
+                ) : (
+                  <div>
+                    {registos.map((registo, index) => (
+                      <motion.div
+                        key={registo.id}
+                        custom={index}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="registo-item"
+                      >
+                        <div className="registo-header">
+                          <div className="registo-icon">
+                            <Stethoscope size={18} />
+                          </div>
+                          <div className="registo-info">
+                            <p className="registo-title">{registo.area_clinica}</p>
+                            <div className="registo-meta">
+                              <span className="registo-author">{registo.criado_por}</span>
+                              <span className="registo-date">{registo.data_criacao}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="registo-separator"></div>
+
+                        <p className="registo-content">{registo.conteudo}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

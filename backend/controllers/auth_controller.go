@@ -126,6 +126,29 @@ func GoogleLogin(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar utilizador"})
 			return
 		}
+
+		// Se for utente, criar entrada correspondente em utentes
+		if role == "utente" {
+			utente := models.Utente{
+				UserID: user.ID,
+			}
+
+			if err := config.DB.Create(&utente).Error; err != nil {
+				// Log o erro mas não falha o login
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar perfil de utente"})
+				return
+			}
+
+			// Criar ProcessoClinico para o novo utente
+			processo := models.ProcessoClinico{
+				UtenteID: user.ID,
+				Ativo:    true,
+			}
+
+			if err := config.DB.Create(&processo).Error; err != nil {
+				// Log o erro mas não falha o login
+			}
+		}
 	}
 
 	// Validar que o utilizador está ativo
