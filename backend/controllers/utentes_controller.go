@@ -344,10 +344,21 @@ func UpdateUtente(c *gin.Context) {
 		return
 	}
 
-	// Atualizar Utente
+	// Verificar/Criar Utente se não existir
 	utente := models.Utente{}
-	if err := config.DB.Where("user_id = ?", id).First(&utente).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Utente não encontrado"})
+	err := config.DB.Where("user_id = ?", id).First(&utente).Error
+	
+	if err != nil && err.Error() == "record not found" {
+		// Se não existe, criar novo registo utente
+		utente = models.Utente{
+			UserID: user.ID,
+		}
+		if err := config.DB.Create(&utente).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar perfil de utente"})
+			return
+		}
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar utente"})
 		return
 	}
 
