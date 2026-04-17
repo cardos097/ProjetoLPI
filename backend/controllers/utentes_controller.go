@@ -1,7 +1,10 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"clinica-backend/config"
@@ -406,4 +409,73 @@ func DeleteUtente(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Utente eliminado com sucesso"})
+}
+
+func UploadAvatar(c *gin.Context) {
+	id := c.Param("id")
+
+	// Validar que o utente existe
+	utente := models.Utente{}
+	if err := config.DB.Where("user_id = ?", id).First(&utente).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Utente não encontrado"})
+		return
+	}
+
+	// Fazer upload do ficheiro
+	file, err := c.FormFile("avatar")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ficheiro não fornecido"})
+		return
+	}
+
+	// Validar tipo de ficheiro (apenas imagens)
+	allowedTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+	}
+
+	if !allowedTypes[file.Header.Get("Content-Type")] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Apenas imagens (JPEG, PNG, GIF, WebP) são permitidas"})
+		return
+	}
+
+	// Validar tamanho (máximo 5MB)
+	if file.Size > 5*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ficheiro muito grande (máximo 5MB)"})
+		return
+	}
+
+	// Criar diretório de uploads se não existir
+	uploadsDir := "uploads/avatars"
+	if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar diretório"})
+		return
+	}
+
+	// Gerar nome único para o ficheiro
+	ext := filepath.Ext(file.Filename)
+	filename := fmt.Sprintf("avatar_%d_%d%s", utente.UserID, time.Now().Unix(), ext)
+	filepath := filepath.Join(uploadsDir, filename)
+
+	// Salvar ficheiro
+	if err := c.SaveUploadedFile(file, filepath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar ficheiro"})
+		return
+	}
+
+	// Atualizar URL de foto no banco de dados
+	fotoURL := fmt.Sprintf("/uploads/avatars/%s", filename)
+	if err := config.DB.Model(&utente).Update("foto_url", fotoURL).Error; err != nil {
+		// Deletar ficheiro se falhar a atualizar BD
+		os.Remove(filepath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar dados"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Avatar enviado com sucesso",
+		"foto_url": fotoURL,
+	})
 }
