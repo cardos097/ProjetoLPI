@@ -9,9 +9,12 @@ import {
   Clock,
   FileText,
   Stethoscope,
+  Edit2,
+  Check,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos } from '../services/utentes.jsx';
+import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente } from '../services/utentes.jsx';
 import '../styles/user-profile.css';
 
 export function UserPage() {
@@ -22,6 +25,10 @@ export function UserPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('details');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -40,10 +47,11 @@ export function UserPage() {
         try {
           details = await getUtenteDetails(user.id);
           setUserDetails(details);
+          setEditData(details);
         } catch (err) {
           // Se não encontrar utente, usa dados do auth context como fallback
           console.warn('Utente não encontrado na base de dados, usando dados de autenticação');
-          setUserDetails({
+          const fallbackData = {
             id: user.id,
             nome: user.name || user.email || 'Utilizador',
             email: user.email || '',
@@ -51,7 +59,9 @@ export function UserPage() {
             morada: '',
             data_nascimento: '',
             numero_processo: '',
-          });
+          };
+          setUserDetails(fallbackData);
+          setEditData(fallbackData);
         }
 
         // Tenta buscar consultas e registos
@@ -75,6 +85,70 @@ export function UserPage() {
 
     fetchUserData();
   }, [user?.id, user?.name, user?.email]);
+
+  const handleEditClick = () => {
+    setIsEditMode(true);
+    setActiveTab('details');
+  };
+
+  const handleCancel = () => {
+    setIsEditMode(false);
+    setEditData(userDetails);
+    setSuccessMessage('');
+  };
+
+  const handleInputChange = (field, value) => {
+    setEditData({
+      ...editData,
+      [field]: value,
+    });
+  };
+
+  const handleSave = async () => {
+    if (!editData?.id) {
+      setError('Erro: ID do utente não encontrado');
+      return;
+    }
+
+    // Validação básica
+    if (!editData.nome?.trim()) {
+      setError('Nome é obrigatório');
+      return;
+    }
+
+    if (!editData.email?.trim()) {
+      setError('Email é obrigatório');
+      return;
+    }
+
+    setIsSaving(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      await updateUtente(editData.id, {
+        nome: editData.nome,
+        email: editData.email,
+        telefone: editData.telefone,
+        morada: editData.morada,
+        data_nascimento: editData.data_nascimento,
+      });
+
+      setUserDetails(editData);
+      setIsEditMode(false);
+      setSuccessMessage('✓ Dados atualizados com sucesso!');
+      
+      // Limpar mensagem de sucesso após 3 segundos
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(
+        err.response?.data?.error || 
+        'Erro ao atualizar dados. Tente novamente.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -245,35 +319,141 @@ export function UserPage() {
                   <User size={20} />
                   Informações Pessoais
                 </h2>
+                {!isEditMode && (
+                  <button 
+                    className="btn-edit"
+                    onClick={handleEditClick}
+                    title="Editar perfil"
+                  >
+                    <Edit2 size={18} />
+                    Editar
+                  </button>
+                )}
               </div>
 
-              <div className="card-content">
-                <div className="details-grid">
-                  <div className="detail-item">
-                    <span className="detail-label">Nome Completo</span>
-                    <span className="detail-value">{userDetails?.nome || '-'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Email</span>
-                    <span className="detail-value">{userDetails?.email || '-'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Número de Processo</span>
-                    <span className="detail-value">{userDetails?.numero_processo || '-'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Telefone</span>
-                    <span className="detail-value">{userDetails?.telefone || '-'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Data de Nascimento</span>
-                    <span className="detail-value">{userDetails?.data_nascimento || '-'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="detail-label">Morada</span>
-                    <span className="detail-value">{userDetails?.morada || '-'}</span>
-                  </div>
+              {error && (
+                <div className="error-banner">
+                  {error}
                 </div>
+              )}
+
+              {successMessage && (
+                <div className="success-banner">
+                  {successMessage}
+                </div>
+              )}
+
+              <div className="card-content">
+                {isEditMode ? (
+                  // Modo edição
+                  <div className="edit-form">
+                    <div className="form-group">
+                      <label htmlFor="nome">Nome Completo *</label>
+                      <input
+                        id="nome"
+                        type="text"
+                        value={editData?.nome || ''}
+                        onChange={(e) => handleInputChange('nome', e.target.value)}
+                        placeholder="Nome completo"
+                        className="form-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="email">Email *</label>
+                      <input
+                        id="email"
+                        type="email"
+                        value={editData?.email || ''}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="Email"
+                        className="form-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="telefone">Telefone</label>
+                      <input
+                        id="telefone"
+                        type="tel"
+                        value={editData?.telefone || ''}
+                        onChange={(e) => handleInputChange('telefone', e.target.value)}
+                        placeholder="Telefone"
+                        className="form-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="morada">Morada</label>
+                      <input
+                        id="morada"
+                        type="text"
+                        value={editData?.morada || ''}
+                        onChange={(e) => handleInputChange('morada', e.target.value)}
+                        placeholder="Morada completa"
+                        className="form-input"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="data_nascimento">Data de Nascimento</label>
+                      <input
+                        id="data_nascimento"
+                        type="date"
+                        value={editData?.data_nascimento || ''}
+                        onChange={(e) => handleInputChange('data_nascimento', e.target.value)}
+                        className="form-input"
+                      />
+                    </div>
+
+                    <div className="form-actions">
+                      <button 
+                        className="btn btn-primary"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                      >
+                        <Check size={18} />
+                        {isSaving ? 'A guardar...' : 'Guardar'}
+                      </button>
+                      <button 
+                        className="btn btn-secondary"
+                        onClick={handleCancel}
+                        disabled={isSaving}
+                      >
+                        <X size={18} />
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // Modo visualização
+                  <div className="details-grid">
+                    <div className="detail-item">
+                      <span className="detail-label">Nome Completo</span>
+                      <span className="detail-value">{userDetails?.nome || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Email</span>
+                      <span className="detail-value">{userDetails?.email || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Número de Processo</span>
+                      <span className="detail-value">{userDetails?.numero_processo || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Telefone</span>
+                      <span className="detail-value">{userDetails?.telefone || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Data de Nascimento</span>
+                      <span className="detail-value">{userDetails?.data_nascimento || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Morada</span>
+                      <span className="detail-value">{userDetails?.morada || '-'}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
