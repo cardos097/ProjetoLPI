@@ -9,6 +9,7 @@ type Utente struct {
 	Telefone       *string    `gorm:"column:telefone"`
 	Morada         *string    `gorm:"column:morada"`
 	NumeroProcesso *string    `gorm:"column:numero_processo"`
+	FotoURL        *string    `gorm:"column:foto_url"`
 
 	User User `gorm:"foreignKey:UserID;references:ID"`
 }

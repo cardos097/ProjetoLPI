@@ -60,3 +60,16 @@ export async function updateUtente(utenteId, utente) {
 export async function deleteUtente(utenteId) {
   await api.delete(`/utentes/${utenteId}`);
 }
+
+export async function uploadAvatar(utenteId, file) {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const { data } = await api.post(`/utentes/${utenteId}/avatar`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return data;
+}

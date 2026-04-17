@@ -56,7 +56,8 @@ CREATE TABLE utentes (
   nif BYTEA,
   telefone VARCHAR(20),
   morada TEXT,
-  numero_processo VARCHAR(50) UNIQUE
+  numero_processo VARCHAR(50) UNIQUE,
+  foto_url TEXT
 );
 
 CREATE INDEX idx_utentes_processo ON utentes(numero_processo);

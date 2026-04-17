@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -12,9 +12,10 @@ import {
   Edit2,
   Check,
   X,
+  Camera,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente } from '../services/utentes.jsx';
+import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar } from '../services/utentes.jsx';
 import '../styles/user-profile.css';
 
 export function UserPage() {
@@ -29,6 +30,9 @@ export function UserPage() {
   const [editData, setEditData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -150,6 +154,58 @@ export function UserPage() {
     }
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de ficheiro
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Imagem demasiado grande (máximo 5MB)');
+      return;
+    }
+
+    // Mostrar preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAvatarPreview(event.target?.result);
+    };
+    reader.readAsDataURL(file);
+
+    // Fazer upload
+    setIsUploadingAvatar(true);
+    setError('');
+
+    try {
+      const response = await uploadAvatar(userDetails.id, file);
+      setUserDetails({
+        ...userDetails,
+        foto_url: response.foto_url,
+      });
+      setAvatarPreview(null);
+      setSuccessMessage('✓ Avatar atualizado com sucesso!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(
+        err.response?.data?.error || 
+        'Erro ao fazer upload do avatar'
+      );
+      setAvatarPreview(null);
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = '';
+    }
+  };
+
   if (loading) {
     return (
       <div className="user-profile-container">
@@ -222,8 +278,28 @@ export function UserPage() {
           transition={{ duration: 0.4 }}
         >
           <div className="profile-header-content">
-            <div className="profile-avatar">
-              {getInitials(userDetails?.nome || user?.name)}
+            <div className="profile-avatar-container" onClick={handleAvatarClick} title="Clique para mudar a foto">
+              <div 
+                className="profile-avatar"
+                style={
+                  avatarPreview || userDetails?.foto_url
+                    ? { backgroundImage: `url('${avatarPreview || userDetails?.foto_url}')`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' }
+                    : {}
+                }
+              >
+                {!avatarPreview && !userDetails?.foto_url && getInitials(userDetails?.nome || user?.name)}
+              </div>
+              <div className="avatar-upload-badge">
+                <Camera size={16} />
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                style={{ display: 'none' }}
+                disabled={isUploadingAvatar}
+              />
             </div>
 
             <div className="profile-info">

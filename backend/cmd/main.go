@@ -76,6 +76,7 @@ func main() {
 		auth.GET("/utentes", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetUtentes)
 		auth.GET("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetUtenteByID)
 		auth.PATCH("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo", "utente"), controllers.UpdateUtente)
+		auth.POST("/utentes/:id/avatar", middleware.RoleMiddleware("admin", "administrativo", "utente"), controllers.UploadAvatar)
 		auth.DELETE("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo"), controllers.DeleteUtente)
 		auth.GET("/utentes/:id/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetConsultasByUtenteID)
 		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetRegistosClinicosByUtenteID)
@@ -101,6 +102,9 @@ func main() {
 		auth.GET("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetAssiduidade)
 		auth.POST("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateAssiduidade)
 	}
+
+	// Servir ficheiros estáticos do diretório de uploads
+	r.Static("/uploads", "./uploads")
 
 	port := config.GetEnv("PORT")
 	r.Run(":" + port)
