@@ -10,6 +10,7 @@ import (
 	"clinica-backend/utils"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginRequest struct {
@@ -45,8 +46,9 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Comparar password (temporariamente em texto plano para testes)
-	if user.PasswordHash != req.Password {
+	// Comparar password com bcrypt
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email ou password inválidos"})
 		return
 	}

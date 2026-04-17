@@ -218,8 +218,6 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-
-
 type CreateUtenteRequest struct {
 	Nome           string `json:"nome" binding:"required"`
 	Email          string `json:"email" binding:"required,email"`
@@ -347,7 +345,7 @@ func UpdateUtente(c *gin.Context) {
 	// Verificar/Criar Utente se não existir
 	utente := models.Utente{}
 	err := config.DB.Where("user_id = ?", id).First(&utente).Error
-	
+
 	if err != nil && err.Error() == "record not found" {
 		// Se não existe, criar novo registo utente
 		utente = models.Utente{
@@ -504,7 +502,7 @@ func UploadAvatar(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Avatar enviado com sucesso",
+		"message":  "Avatar enviado com sucesso",
 		"foto_url": fotoURL,
 	})
 }
