@@ -282,10 +282,12 @@ export function UserPage() {
           <div className="profile-header-content">
             <div className="profile-avatar-container" onClick={handleAvatarClick} title="Clique para mudar a foto">
               <div 
-                className="profile-avatar"
+                className={`profile-avatar ${avatarPreview || userDetails?.foto_url ? 'with-image' : ''}`}
                 style={
                   avatarPreview || userDetails?.foto_url
-                    ? { backgroundImage: `url('${avatarPreview || userDetails?.foto_url}')`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' }
+                    ? { 
+                        backgroundImage: `url('${avatarPreview || userDetails?.foto_url}')`
+                      }
                     : {}
                 }
               >
