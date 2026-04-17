@@ -31,6 +31,7 @@ type UtenteDetailResponse struct {
 	Telefone       string  `json:"telefone"`
 	Morada         string  `json:"morada"`
 	DataNascimento *string `json:"data_nascimento"`
+	FotoURL        *string `json:"foto_url"`
 }
 
 type UtenteConsultaResponse struct {
@@ -137,6 +138,7 @@ func GetUtenteByID(c *gin.Context) {
 		Telefone:       telefone,
 		Morada:         morada,
 		DataNascimento: dataNascimento,
+		FotoURL:        utente.FotoURL,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -398,6 +400,7 @@ func UpdateUtente(c *gin.Context) {
 	if utente.DataNascimento != nil {
 		response.DataNascimento = &[]string{utente.DataNascimento.Format("2006-01-02")}[0]
 	}
+	response.FotoURL = utente.FotoURL
 
 	c.JSON(http.StatusOK, response)
 }

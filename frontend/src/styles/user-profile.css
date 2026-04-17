@@ -90,9 +90,19 @@
 
 /* Quando tem imagem */
 .profile-avatar.with-image {
-  background: none !important;
+  background: transparent !important;
   color: transparent !important;
   font-size: 0 !important;
+  padding: 0;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
 }
 
 .profile-avatar-container:hover .profile-avatar {

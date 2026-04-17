@@ -283,14 +283,18 @@ export function UserPage() {
             <div className="profile-avatar-container" onClick={handleAvatarClick} title="Clique para mudar a foto">
               <div 
                 className={`profile-avatar ${avatarPreview || userDetails?.foto_url ? 'with-image' : ''}`}
-                style={
-                  avatarPreview || userDetails?.foto_url
-                    ? { 
-                        backgroundImage: `url('${avatarPreview || userDetails?.foto_url}')`
-                      }
-                    : {}
-                }
               >
+                {(avatarPreview || userDetails?.foto_url) && (
+                  <img 
+                    src={avatarPreview || userDetails?.foto_url}
+                    alt="Avatar"
+                    className="avatar-img"
+                    onError={(e) => {
+                      console.error('Erro ao carregar imagem:', avatarPreview || userDetails?.foto_url);
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                )}
                 {!avatarPreview && !userDetails?.foto_url && getInitials(userDetails?.nome || user?.name)}
               </div>
               <div className="avatar-upload-badge">
