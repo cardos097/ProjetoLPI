@@ -425,10 +425,27 @@ func DeleteUtente(c *gin.Context) {
 func UploadAvatar(c *gin.Context) {
 	id := c.Param("id")
 
-	// Validar que o utente existe
+	// Validar que o utilizador existe
+	user := models.User{}
+	if err := config.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Utilizador não encontrado"})
+		return
+	}
+
+	// Verificar/Criar Utente se não existir
 	utente := models.Utente{}
-	if err := config.DB.Where("user_id = ?", id).First(&utente).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Utente não encontrado"})
+	err := config.DB.Where("user_id = ?", id).First(&utente).Error
+	if err != nil && err.Error() == "record not found" {
+		// Se não existe, criar novo registo utente
+		utente = models.Utente{
+			UserID: user.ID,
+		}
+		if err := config.DB.Create(&utente).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar perfil de utente"})
+			return
+		}
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar utente"})
 		return
 	}
 
