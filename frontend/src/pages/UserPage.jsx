@@ -195,10 +195,12 @@ export function UserPage() {
       setSuccessMessage('✓ Avatar atualizado com sucesso!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError(
+      console.error('Erro no upload:', err);
+      const errorMsg = 
         err.response?.data?.error || 
-        'Erro ao fazer upload do avatar'
-      );
+        err.message ||
+        'Erro ao fazer upload do avatar';
+      setError(errorMsg);
       setAvatarPreview(null);
     } finally {
       setIsUploadingAvatar(false);

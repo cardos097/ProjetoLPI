@@ -436,7 +436,8 @@ func UploadAvatar(c *gin.Context) {
 		"image/webp": true,
 	}
 
-	if !allowedTypes[file.Header.Get("Content-Type")] {
+	contentType := file.Header.Get("Content-Type")
+	if contentType == "" || !allowedTypes[contentType] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Apenas imagens (JPEG, PNG, GIF, WebP) são permitidas"})
 		return
 	}
@@ -457,11 +458,11 @@ func UploadAvatar(c *gin.Context) {
 	// Gerar nome único para o ficheiro
 	ext := filepath.Ext(file.Filename)
 	filename := fmt.Sprintf("avatar_%d_%d%s", utente.UserID, time.Now().Unix(), ext)
-	filepath := filepath.Join(uploadsDir, filename)
+	filePath := filepath.Join(uploadsDir, filename)
 
 	// Salvar ficheiro
-	if err := c.SaveUploadedFile(file, filepath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar ficheiro"})
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar ficheiro: " + err.Error()})
 		return
 	}
 
@@ -469,8 +470,8 @@ func UploadAvatar(c *gin.Context) {
 	fotoURL := fmt.Sprintf("/uploads/avatars/%s", filename)
 	if err := config.DB.Model(&utente).Update("foto_url", fotoURL).Error; err != nil {
 		// Deletar ficheiro se falhar a atualizar BD
-		os.Remove(filepath)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar dados"})
+		os.Remove(filePath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar dados: " + err.Error()})
 		return
 	}
 

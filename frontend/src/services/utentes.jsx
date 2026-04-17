@@ -65,11 +65,8 @@ export async function uploadAvatar(utenteId, file) {
   const formData = new FormData();
   formData.append('avatar', file);
 
-  const { data } = await api.post(`/utentes/${utenteId}/avatar`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  // NÃO especificar Content-Type - deixar que o axios determine automaticamente
+  const { data } = await api.post(`/utentes/${utenteId}/avatar`, formData);
 
   return data;
 }
