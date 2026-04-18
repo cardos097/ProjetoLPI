@@ -50,6 +50,8 @@ export function UserPage() {
         let details = null;
         try {
           details = await getUtenteDetails(user.id);
+          console.log('📥 Detalhes carregados:', details);
+          console.log('📷 Foto URL:', details?.foto_url);
           setUserDetails(details);
           setEditData(details);
         } catch (err) {
@@ -187,15 +189,24 @@ export function UserPage() {
 
     try {
       const response = await uploadAvatar(userDetails.id, file);
-      setUserDetails({
+      console.log('✓ Upload response:', response);
+      console.log('✓ Novo foto_url:', response.foto_url);
+      
+      // Atualizar userDetails com o novo foto_url
+      const newUserDetails = {
         ...userDetails,
         foto_url: response.foto_url,
-      });
-      setAvatarPreview(null);
+      };
+      console.log('✓ Objeto atualizado:', newUserDetails);
+      setUserDetails(newUserDetails);
+      
+      // MANTER O PREVIEW INDEFINIDAMENTE - ele é o fallback
+      // Se foto_url falhar, o preview continua visível
+      
       setSuccessMessage('✓ Avatar atualizado com sucesso!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('Erro no upload:', err);
+      console.error('✗ Erro no upload:', err);
       const errorMsg = 
         err.response?.data?.error || 
         err.message ||
@@ -282,20 +293,23 @@ export function UserPage() {
           <div className="profile-header-content">
             <div className="profile-avatar-container" onClick={handleAvatarClick} title="Clique para mudar a foto">
               <div 
-                className={`profile-avatar ${avatarPreview || userDetails?.foto_url ? 'with-image' : ''}`}
+                className={`profile-avatar ${(avatarPreview || (userDetails && userDetails.foto_url)) ? 'has-avatar' : ''}`}
               >
-                {(avatarPreview || userDetails?.foto_url) && (
+                {(avatarPreview || (userDetails && userDetails.foto_url)) ? (
                   <img 
-                    src={avatarPreview || userDetails?.foto_url}
-                    alt="Avatar"
+                    key={`avatar-${avatarPreview || (userDetails && userDetails.foto_url)}`}
+                    src={avatarPreview || (userDetails && userDetails.foto_url)}
                     className="avatar-img"
+                    onLoad={() => {
+                      console.log('✓ Imagem carregou com sucesso:', avatarPreview || userDetails?.foto_url);
+                    }}
                     onError={(e) => {
-                      console.error('Erro ao carregar imagem:', avatarPreview || userDetails?.foto_url);
-                      e.target.style.display = 'none';
+                      console.error('✗ Erro ao carregar imagem:', e.target.src);
                     }}
                   />
+                ) : (
+                  <span className="avatar-initials">{getInitials(userDetails?.nome || user?.name)}</span>
                 )}
-                {!avatarPreview && !userDetails?.foto_url && getInitials(userDetails?.nome || user?.name)}
               </div>
               <div className="avatar-upload-badge">
                 <Camera size={16} />
