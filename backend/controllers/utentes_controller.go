@@ -484,9 +484,8 @@ func UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// Gerar nome único para o ficheiro
-	ext := filepath.Ext(file.Filename)
-	filename := fmt.Sprintf("avatar_%d_%d%s", utente.UserID, time.Now().Unix(), ext)
+	// Gerar nome único para o ficheiro (força JPEG sempre)
+	filename := fmt.Sprintf("avatar_%d_%d.jpeg", utente.UserID, time.Now().Unix())
 	filePath := filepath.Join(uploadsDir, filename)
 
 	// Salvar ficheiro

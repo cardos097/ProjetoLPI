@@ -72,10 +72,6 @@
   height: 120px;
   border-radius: 50%;
   background-color: var(--primary);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,23 +82,42 @@
   flex-shrink: 0;
   transition: all 0.2s ease;
   overflow: hidden;
+  position: relative;
 }
 
-/* Quando tem imagem */
-.profile-avatar.with-image {
-  background: transparent !important;
-  color: transparent !important;
-  font-size: 0 !important;
-  padding: 0;
+
+.profile-avatar.has-avatar {
+  background-color: transparent;
+  background: none;
+}
+
+.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Esconder iniciais quando tem imagem */
+.profile-avatar.has-avatar .avatar-initials {
+  display: none;
 }
 
 .avatar-img {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  display: block;
-}
+  object-position: center;
+  z-index: 10;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .profile-avatar-container:hover .profile-avatar {
