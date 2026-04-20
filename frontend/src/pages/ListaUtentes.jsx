@@ -120,7 +120,7 @@ export function ListaUtentes() {
                   <td className="actions">
                     <button
                       className="btn-icon btn-view"
-                      onClick={() => navigate(`/user`)}
+                      onClick={() => navigate(`/utentes/${utente.id}/perfil`)}
                       title="Ver"
                     >
                       👁️

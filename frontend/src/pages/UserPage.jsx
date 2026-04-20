@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -16,13 +17,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar } from '../services/utentes.jsx';
+import { getFichasAvaliacao } from '../services/fichas.jsx';
 import '../styles/user-profile.css';
 
 export function UserPage() {
   const { user } = useAuth();
+  const { id: routeUtenteId } = useParams();
   const [userDetails, setUserDetails] = useState(null);
   const [consultas, setConsultas] = useState([]);
   const [registos, setRegistos] = useState([]);
+  const [fichas, setFichas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('details');
@@ -34,13 +38,23 @@ export function UserPage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef(null);
 
+  const profileUtenteId = routeUtenteId ? parseInt(routeUtenteId, 10) : user?.id;
+  const isOwnProfile = !routeUtenteId || Number(routeUtenteId) === Number(user?.id);
+
+  const getFichaValue = (data, key) => {
+    if (!data || !key) return undefined;
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    const pascalKey = camelKey.charAt(0).toUpperCase() + camelKey.slice(1);
+    return data[key] ?? data[camelKey] ?? data[pascalKey];
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         setError('');
 
         // Se não tem user autenticado
-        if (!user?.id) {
+        if (!profileUtenteId) {
           setError('Utilizador não autenticado');
           setLoading(false);
           return;
@@ -49,40 +63,49 @@ export function UserPage() {
         // Tenta buscar detalhes do utente
         let details = null;
         try {
-          details = await getUtenteDetails(user.id);
+          details = await getUtenteDetails(profileUtenteId);
           console.log('📥 Detalhes carregados:', details);
           console.log('📷 Foto URL:', details?.foto_url);
           setUserDetails(details);
           setEditData(details);
         } catch (err) {
-          // Se não encontrar utente, usa dados do auth context como fallback
-          console.warn('Utente não encontrado na base de dados, usando dados de autenticação');
-          const fallbackData = {
-            id: user.id,
-            nome: user.name || user.email || 'Utilizador',
-            email: user.email || '',
-            telefone: '',
-            morada: '',
-            data_nascimento: '',
-            numero_processo: '',
-          };
-          setUserDetails(fallbackData);
-          setEditData(fallbackData);
+          if (isOwnProfile) {
+            // Se não encontrar utente, usa dados do auth context como fallback
+            console.warn('Utente não encontrado na base de dados, usando dados de autenticação');
+            const fallbackData = {
+              id: user.id,
+              nome: user.name || user.email || 'Utilizador',
+              email: user.email || '',
+              telefone: '',
+              morada: '',
+              data_nascimento: '',
+              numero_processo: '',
+            };
+            setUserDetails(fallbackData);
+            setEditData(fallbackData);
+          } else {
+            setError('Não foi possível carregar os dados do utente');
+            setUserDetails(null);
+            setEditData(null);
+          }
         }
 
-        // Tenta buscar consultas e registos
+        // Tenta buscar consultas, registos e fichas
         try {
-          const [consultasData, registosData] = await Promise.all([
-            getUtenteConsultas(user.id).catch(() => []),
-            getUtenteRegistos(user.id).catch(() => []),
+          const [consultasData, registosData, fichasData] = await Promise.all([
+            getUtenteConsultas(profileUtenteId).catch(() => []),
+            getUtenteRegistos(profileUtenteId).catch(() => []),
+            getFichasAvaliacao(profileUtenteId).catch(() => []),
           ]);
 
           setConsultas(Array.isArray(consultasData) ? consultasData : []);
           setRegistos(Array.isArray(registosData) ? registosData : []);
+          setFichas(Array.isArray(fichasData) ? fichasData : []);
         } catch (err) {
-          console.warn('Erro ao carregar consultas/registos:', err);
+          console.warn('Erro ao carregar consultas/registos/fichas:', err);
           setConsultas([]);
           setRegistos([]);
+          setFichas([]);
         }
       } finally {
         setLoading(false);
@@ -90,7 +113,7 @@ export function UserPage() {
     };
 
     fetchUserData();
-  }, [user?.id, user?.name, user?.email]);
+  }, [profileUtenteId, isOwnProfile, user?.id, user?.name, user?.email]);
 
   const handleEditClick = () => {
     setIsEditMode(true);
@@ -320,7 +343,7 @@ export function UserPage() {
                 accept="image/*"
                 onChange={handleAvatarChange}
                 style={{ display: 'none' }}
-                disabled={isUploadingAvatar}
+                disabled={isUploadingAvatar || !isOwnProfile}
               />
             </div>
 
@@ -333,7 +356,7 @@ export function UserPage() {
               <div className="profile-badges">
                 <span className="badge badge-primary">
                   <User size={16} />
-                  {user?.role === 'admin' ? 'Admin' : user?.role === 'terapeuta' ? 'Terapeuta' : 'Paciente'}
+                  {routeUtenteId ? 'Perfil de Utente' : user?.role === 'admin' ? 'Admin' : user?.role === 'terapeuta' ? 'Terapeuta' : 'Paciente'}
                 </span>
                 {!userDetails?.id && !consultas?.length && !registos?.length && (
                   <span
@@ -402,6 +425,14 @@ export function UserPage() {
                 Registos ({registos.length})
               </button>
             </li>
+            <li>
+              <button
+                className={`tab-button ${activeTab === 'fichas' ? 'active' : ''}`}
+                onClick={() => setActiveTab('fichas')}
+              >
+                Formulários ({fichas.length})
+              </button>
+            </li>
           </ul>
 
           {/* Details Tab */}
@@ -417,7 +448,7 @@ export function UserPage() {
                   <User size={20} />
                   Informações Pessoais
                 </h2>
-                {!isEditMode && (
+                {!isEditMode && isOwnProfile && (
                   <button
                     className="btn-edit"
                     onClick={handleEditClick}
@@ -680,6 +711,69 @@ export function UserPage() {
                         <div className="registo-separator"></div>
 
                         <p className="registo-content">{registo.conteudo}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Fichas de Avaliação Tab */}
+          <motion.div
+            className={`tabs-content ${activeTab === 'fichas' ? 'active' : ''}`}
+            variants={tabVariants}
+            initial="hidden"
+            animate={activeTab === 'fichas' ? 'visible' : 'hidden'}
+          >
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">
+                  <FileText size={20} />
+                  Formulários de Avaliação
+                </h2>
+              </div>
+
+              <div className="card-content">
+                {fichas.length === 0 ? (
+                  <div className="empty-state">
+                    <p>Nenhum formulário de avaliação</p>
+                  </div>
+                ) : (
+                  <div>
+                    {fichas.map((ficha, index) => (
+                      <motion.div
+                        key={getFichaValue(ficha, 'id') || `ficha-${index}`}
+                        custom={index}
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="registo-item"
+                      >
+                        <div className="registo-header">
+                          <div className="registo-icon">
+                            <FileText size={18} />
+                          </div>
+                          <div className="registo-info">
+                            <p className="registo-title">{getFichaValue(ficha, 'tipo_registo') || 'Formulário'}</p>
+                            <div className="registo-meta">
+                              <span className="registo-author">Criado por: {getFichaValue(ficha, 'created_by') || '-'}</span>
+                              <span className="registo-date">{getFichaValue(ficha, 'created_at') || '-'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="registo-separator"></div>
+
+                        <p className="registo-content">
+                          <strong>Diagnóstico:</strong> {getFichaValue(ficha, 'diagnostico_queixa_principal') || '-'}
+                        </p>
+                        <p className="registo-content">
+                          <strong>Objetivos/Prognóstico:</strong> {getFichaValue(ficha, 'objetivos_prognostico') || '-'}
+                        </p>
+                        <p className="registo-content">
+                          <strong>Plano terapêutico:</strong> {getFichaValue(ficha, 'plano_terapeutico') || '-'}
+                        </p>
                       </motion.div>
                     ))}
                   </div>

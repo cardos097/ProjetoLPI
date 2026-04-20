@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import {
   getConsultaById,
   updateConsulta,
@@ -11,14 +12,35 @@ import {
 
 export function EditarConsulta() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [consulta, setConsulta] = useState(null);
 
   const [terapeutas, setTerapeutas] = useState([]);
   const [salas, setSalas] = useState([]);
   const [areasClinicas, setAreasClinicas] = useState([]);
+
+  const dedupeSalasByNome = (listaSalas) => {
+    const seen = new Set();
+    return (listaSalas || []).filter((sala) => {
+      const nome = (sala?.nome || '').trim().toLowerCase();
+      if (!nome) return true;
+      if (seen.has(nome)) return false;
+      seen.add(nome);
+      return true;
+    });
+  };
+
+  const getConsultaValue = (consulta, key) => consulta?.[key] ?? consulta?.[key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())];
+
+  const parseDateValue = (value) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
 
   const [form, setForm] = useState({
     terapeuta_id: '',
@@ -43,13 +65,19 @@ export function EditarConsulta() {
         ]);
 
         // Formatar datas
-        const dataInicio = new Date(consulta.data_inicio);
-        const dataFim = new Date(consulta.data_fim);
+        const dataInicio = parseDateValue(getConsultaValue(consulta, 'data_inicio'));
+        const dataFim = parseDateValue(getConsultaValue(consulta, 'data_fim'));
+
+        if (!dataInicio || !dataFim) {
+          throw new Error('Consulta sem datas válidas');
+        }
+
+        setConsulta(consulta);
 
         setForm({
-          terapeuta_id: consulta.terapeuta_id || '',
-          sala_id: consulta.sala_id || '',
-          area_clinica_id: consulta.area_clinica_id || '',
+          terapeuta_id: getConsultaValue(consulta, 'terapeuta_id') || '',
+          sala_id: getConsultaValue(consulta, 'sala_id') || '',
+          area_clinica_id: getConsultaValue(consulta, 'area_clinica_id') || '',
           data_inicio: dataInicio.toISOString().split('T')[0],
           hora_inicio: dataInicio.toTimeString().slice(0, 5),
           data_fim: dataFim.toISOString().split('T')[0],
@@ -57,7 +85,7 @@ export function EditarConsulta() {
         });
 
         setTerapeutas(t || []);
-        setSalas(s || []);
+        setSalas(dedupeSalasByNome(s || []));
         setAreasClinicas(a || []);
       } catch (err) {
         setError('Erro ao carregar consulta');
@@ -122,13 +150,42 @@ export function EditarConsulta() {
     return <div className="page">A carregar...</div>;
   }
 
+  const canManageForms = ['admin', 'terapeuta'].includes(user?.role);
+
+  const handleAddForm = () => {
+    const utenteId = getConsultaValue(consulta, 'utente_id');
+
+    if (!utenteId) {
+      setError('Não foi possível identificar o utente desta consulta');
+      return;
+    }
+
+    navigate(
+      `/fichas-avaliacao/nova?utente_id=${utenteId}&consulta_id=${getConsultaValue(consulta, 'id')}`,
+      {
+        state: {
+          utenteId,
+          consultaId: getConsultaValue(consulta, 'id'),
+        },
+      }
+    );
+  };
+
   return (
     <div className="page editar-consulta">
       <div className="page-header">
-        <button className="btn-back" onClick={() => navigate('/consultas')}>
-          ← Voltar
-        </button>
-        <h1>Editar Consulta</h1>
+        <div>
+          <button className="btn-back" onClick={() => navigate('/consultas')}>
+            ← Voltar
+          </button>
+          <h1>Editar Consulta</h1>
+          {getConsultaValue(consulta, 'utente_nome') && <p>Utente: {getConsultaValue(consulta, 'utente_nome')}</p>}
+        </div>
+        {canManageForms && (
+          <button className="btn btn-primary" onClick={handleAddForm}>
+            + Adicionar formulário
+          </button>
+        )}
       </div>
 
       <div className="form-container">

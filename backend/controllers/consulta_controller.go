@@ -35,6 +35,22 @@ type UpdateConsultaRequest struct {
 	DataFim       *string `json:"data_fim"`
 }
 
+type ConsultaDetailResponse struct {
+	ID              uint   `json:"id"`
+	UtenteID        uint   `json:"utente_id"`
+	TerapeutaID     uint   `json:"terapeuta_id"`
+	SalaID          uint   `json:"sala_id"`
+	AreaClinicaID   uint   `json:"area_clinica_id"`
+	DataInicio      string `json:"data_inicio"`
+	DataFim         string `json:"data_fim"`
+	Estado          string `json:"estado"`
+	CreatedBy       uint   `json:"created_by"`
+	UtenteNome      string `json:"utente_nome"`
+	TerapeutaNome   string `json:"terapeuta_nome"`
+	SalaNome        string `json:"sala_nome"`
+	AreaClinicaNome string `json:"area_clinica_nome"`
+}
+
 func parseDateTime(value string) (time.Time, error) {
 	layouts := []string{"2006-01-02 15:04:05", "2006-01-02 15:04"}
 
@@ -93,7 +109,21 @@ func GetConsultaByID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, consulta)
+	c.JSON(http.StatusOK, ConsultaDetailResponse{
+		ID:              consulta.ID,
+		UtenteID:        consulta.UtenteID,
+		TerapeutaID:     consulta.TerapeutaID,
+		SalaID:          consulta.SalaID,
+		AreaClinicaID:   consulta.AreaClinicaID,
+		DataInicio:      consulta.DataInicio.Format("2006-01-02 15:04:05"),
+		DataFim:         consulta.DataFim.Format("2006-01-02 15:04:05"),
+		Estado:          consulta.Estado,
+		CreatedBy:       consulta.CreatedBy,
+		UtenteNome:      consulta.Utente.Nome,
+		TerapeutaNome:   consulta.Terapeuta.Nome,
+		SalaNome:        consulta.Sala.Nome,
+		AreaClinicaNome: consulta.AreaClinica.Nome,
+	})
 }
 
 func CreateConsulta(c *gin.Context) {
@@ -104,15 +134,9 @@ func CreateConsulta(c *gin.Context) {
 		return
 	}
 
-	userIDValue, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado não encontrado"})
-		return
-	}
-
-	createdBy, ok := userIDValue.(uint)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador autenticado inválido"})
+	createdBy, err := getAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
