@@ -24,7 +24,8 @@ INSERT INTO users (nome, email, password_hash, role) VALUES
 ('Professor Teste', 'professor@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
 ('Aluno Teste 1', '0001@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
 ('Aluno Teste 2', '0002@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
-('Aluno Teste 3', '0003@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta');
+('Aluno Teste 3', '0003@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
+('Professor 1', 'professor1@ufp.edu.pt', '$2b$10$U2j9fXeaUu3F303iXwLDMeHJewhI/SQnL/v1BRiXl.cUYqWHUnnoO', 'terapeuta');
 
 ---------------------------------------------------------
 -- TERAPEUTAS
@@ -35,7 +36,8 @@ INSERT INTO terapeutas (user_id, tipo, area_clinica_id, numero_mecanografico) VA
 (7, 'professor', 1, 'T003'),
 (8, 'aluno', 1, NULL),
 (9, 'aluno', 1, NULL),
-(10, 'aluno', 1, NULL);
+(10, 'aluno', 1, NULL),
+(11, 'professor', 1, 'T004');
 
 ---------------------------------------------------------
 -- UTENTES
@@ -107,7 +109,10 @@ INSERT INTO consultas (
   created_by
 ) VALUES
 (4, 2, 1, 1, '2026-03-25 10:00', '2026-03-25 11:00', 'realizada', 6),
-(5, 3, 2, 4, '2026-03-25 11:00', '2026-03-25 12:00', 'agendada', 6);
+(5, 3, 2, 4, '2026-03-25 11:00', '2026-03-25 12:00', 'agendada', 6),
+(4, 2, 3, 1, '2026-04-21 09:00', '2026-04-21 10:00', 'agendada', 6),
+(5, 3, 4, 4, '2026-04-22 14:00', '2026-04-22 15:00', 'agendada', 6),
+(4, 2, 5, 1, '2026-04-23 16:00', '2026-04-23 17:00', 'realizada', 6);
 
 ---------------------------------------------------------
 -- REGISTOS CLÍNICOS

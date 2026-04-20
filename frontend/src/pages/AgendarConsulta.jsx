@@ -31,6 +31,17 @@ export function AgendarConsulta() {
     duracao: '60',
   });
 
+  const dedupeSalasByNome = (listaSalas) => {
+    const seen = new Set();
+    return (listaSalas || []).filter((sala) => {
+      const nome = (sala?.nome || '').trim().toLowerCase();
+      if (!nome) return true;
+      if (seen.has(nome)) return false;
+      seen.add(nome);
+      return true;
+    });
+  };
+
   // Carregar dados iniciais
   useEffect(() => {
     const fetchData = async () => {
@@ -84,7 +95,7 @@ export function AgendarConsulta() {
         }
         return false;
       });
-      setSalasFiltradas(salasArea);
+      setSalasFiltradas(dedupeSalasByNome(salasArea));
       // Limpar seleção anterior se não for compatível
       setForm((prev) => ({
         ...prev,

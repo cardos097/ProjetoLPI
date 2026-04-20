@@ -43,7 +43,7 @@ export async function getUtenteConsultas(utenteId) {
 }
 
 export async function getUtenteRegistos(utenteId) {
-  const { data } = await api.get(`/utentes/${utenteId}/registos`);
+  const { data } = await api.get(`/utentes/${utenteId}/registos-clinicos`);
   return data;
 }
 

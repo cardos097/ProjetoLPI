@@ -12,6 +12,7 @@ import { ListaConsultas } from '../pages/ListaConsultas.jsx';
 import { AgendarConsulta } from '../pages/AgendarConsulta.jsx';
 import { EditarConsulta } from '../pages/EditarConsulta.jsx';
 import { PaginaCalendario } from '../pages/PaginaCalendario.jsx';
+import { CriarFichaAvaliacao } from '../pages/CriarFichaAvaliacao.jsx';
 import { Layout } from '../components/Layout.jsx';
 import { Navbar } from '../components/Navbar.jsx';
 
@@ -117,6 +118,14 @@ export function AppRoutes() {
         }
       />
       <Route
+        path="/utentes/:id/perfil"
+        element={
+          <ProtectedRoute>
+            <UserPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/consultas"
         element={
           <ProtectedRoute>
@@ -138,6 +147,16 @@ export function AppRoutes() {
           <ProtectedRoute>
             <EditarConsulta />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fichas-avaliacao/nova"
+        element={
+          isAuthenticated && ['admin', 'terapeuta'].includes(user?.role) ? (
+            <Layout><CriarFichaAvaliacao /></Layout>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />

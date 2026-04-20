@@ -21,6 +21,17 @@ export function ModalAgendarConsulta({
     const [salas, setSalas] = useState([]);
     const [salasFilteradas, setSalasFilteradas] = useState([]);
 
+    const dedupeSalasByNome = (listaSalas) => {
+        const seen = new Set();
+        return (listaSalas || []).filter((sala) => {
+            const nome = (sala?.nome || '').trim().toLowerCase();
+            if (!nome) return true;
+            if (seen.has(nome)) return false;
+            seen.add(nome);
+            return true;
+        });
+    };
+
     useEffect(() => {
         if (isOpen) {
             carregarDados();
@@ -59,7 +70,7 @@ export function ModalAgendarConsulta({
                 // Fallback: mostrar todas as salas se não houver filtro
                 return true;
             });
-            setSalasFilteradas(salasDisponiveis);
+            setSalasFilteradas(dedupeSalasByNome(salasDisponiveis));
             setFormData((prev) => ({
                 ...prev,
                 sala_id: '',
