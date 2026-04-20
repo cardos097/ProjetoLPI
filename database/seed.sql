@@ -15,12 +15,12 @@ INSERT INTO areas_clinicas (nome) VALUES
 -- USERS
 ---------------------------------------------------------
 INSERT INTO users (nome, email, password_hash, role) VALUES
-('Admin Sistema', 'admin@clinica.pt', '123', 'admin'),
-('Dr João Silva', 'joao@clinica.pt', '123', 'terapeuta'),
-('Dra Ana Pereira', 'ana@clinica.pt', '123', 'terapeuta'),
-('Maria Costa', 'maria@clinica.pt', '123', 'utente'),
-('Carlos Santos', 'carlos@clinica.pt', '123', 'utente'),
-('Receção', 'rececao@clinica.pt', '123', 'administrativo'),
+('Admin Sistema', 'admin@clinica.pt', '$2a$10$nUhJszIJcT/86cu5seIaO.CIKL5JSnwBwbehyQxPost2vU51YOfjW', 'admin'),
+('Dr João Silva', 'joao@clinica.pt', '$2a$10$nUhJszIJcT/86cu5seIaO.CIKL5JSnwBwbehyQxPost2vU51YOfjW', 'terapeuta'),
+('Dra Ana Pereira', 'ana@clinica.pt', '$2a$10$nUhJszIJcT/86cu5seIaO.CIKL5JSnwBwbehyQxPost2vU51YOfjW', 'terapeuta'),
+('Maria Costa', 'maria@clinica.pt', '$2a$10$nUhJszIJcT/86cu5seIaO.CIKL5JSnwBwbehyQxPost2vU51YOfjW', 'utente'),
+('Carlos Santos', 'carlos@clinica.pt', '$2a$10$nUhJszIJcT/86cu5seIaO.CIKL5JSnwBwbehyQxPost2vU51YOfjW', 'utente'),
+('Receção', 'rececao@clinica.pt', '$2a$10$nUhJszIJcT/86cu5seIaO.CIKL5JSnwBwbehyQxPost2vU51YOfjW', 'administrativo'),
 ('Professor Teste', 'professor@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
 ('Aluno Teste 1', '0001@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
 ('Aluno Teste 2', '0002@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
