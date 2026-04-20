@@ -20,14 +20,22 @@ INSERT INTO users (nome, email, password_hash, role) VALUES
 ('Dra Ana Pereira', 'ana@clinica.pt', '123', 'terapeuta'),
 ('Maria Costa', 'maria@clinica.pt', '123', 'utente'),
 ('Carlos Santos', 'carlos@clinica.pt', '123', 'utente'),
-('Receção', 'rececao@clinica.pt', '123', 'administrativo');
+('Receção', 'rececao@clinica.pt', '123', 'administrativo'),
+('Professor Teste', 'professor@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
+('Aluno Teste 1', '0001@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
+('Aluno Teste 2', '0002@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
+('Aluno Teste 3', '0003@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta');
 
 ---------------------------------------------------------
 -- TERAPEUTAS
 ---------------------------------------------------------
 INSERT INTO terapeutas (user_id, tipo, area_clinica_id, numero_mecanografico) VALUES
 (2, 'professor', 1, 'T001'),
-(3, 'professor', 4, 'T002');
+(3, 'professor', 4, 'T002'),
+(7, 'professor', 1, 'T003'),
+(8, 'aluno', 1, NULL),
+(9, 'aluno', 1, NULL),
+(10, 'aluno', 1, NULL);
 
 ---------------------------------------------------------
 -- UTENTES
