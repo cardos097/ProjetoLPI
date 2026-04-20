@@ -11,6 +11,7 @@ export async function loginRequest({ email, password }) {
   const userId = data.userId || data.user_id || data.id;
   const role = data.role || data.user?.role;
   const name = data.name || data.user?.name || email;
+  const tipo = data.tipo || data.user?.tipo;
 
   if (!token || !userId || !role) {
     throw new Error('Resposta de login inválida (faltam token/userId/role)');
@@ -23,6 +24,7 @@ export async function loginRequest({ email, password }) {
       role,
       name,
       email: data.email,
+      tipo,
     },
   };
 }
@@ -40,6 +42,7 @@ export async function loginWithGoogle(idToken) {
   const userId = data.userId || data.user_id || data.id;
   const role = data.role || data.user?.role;
   const name = data.name || data.user?.name;
+  const tipo = data.tipo || data.user?.tipo;
 
   if (!token || !userId || !role) {
     throw new Error('Resposta de login Google inválida (faltam token/userId/role)');
@@ -52,6 +55,7 @@ export async function loginWithGoogle(idToken) {
       role,
       name,
       email: data.email,
+      tipo,
     },
   };
 }

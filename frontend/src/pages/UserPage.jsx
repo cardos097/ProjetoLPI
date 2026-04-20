@@ -38,7 +38,7 @@ export function UserPage() {
     const fetchUserData = async () => {
       try {
         setError('');
-        
+
         // Se não tem user autenticado
         if (!user?.id) {
           setError('Utilizador não autenticado');
@@ -143,12 +143,12 @@ export function UserPage() {
       setUserDetails(editData);
       setIsEditMode(false);
       setSuccessMessage('✓ Dados atualizados com sucesso!');
-      
+
       // Limpar mensagem de sucesso após 3 segundos
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(
-        err.response?.data?.error || 
+        err.response?.data?.error ||
         'Erro ao atualizar dados. Tente novamente.'
       );
     } finally {
@@ -191,7 +191,7 @@ export function UserPage() {
       const response = await uploadAvatar(userDetails.id, file);
       console.log('✓ Upload response:', response);
       console.log('✓ Novo foto_url:', response.foto_url);
-      
+
       // Atualizar userDetails com o novo foto_url
       const newUserDetails = {
         ...userDetails,
@@ -199,16 +199,16 @@ export function UserPage() {
       };
       console.log('✓ Objeto atualizado:', newUserDetails);
       setUserDetails(newUserDetails);
-      
+
       // MANTER O PREVIEW INDEFINIDAMENTE - ele é o fallback
       // Se foto_url falhar, o preview continua visível
-      
+
       setSuccessMessage('✓ Avatar atualizado com sucesso!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('✗ Erro no upload:', err);
-      const errorMsg = 
-        err.response?.data?.error || 
+      const errorMsg =
+        err.response?.data?.error ||
         err.message ||
         'Erro ao fazer upload do avatar';
       setError(errorMsg);
@@ -292,13 +292,13 @@ export function UserPage() {
         >
           <div className="profile-header-content">
             <div className="profile-avatar-container" onClick={handleAvatarClick} title="Clique para mudar a foto">
-              <div 
+              <div
                 className={`profile-avatar ${(avatarPreview || (userDetails && userDetails.foto_url)) ? 'has-avatar' : ''}`}
               >
                 {(avatarPreview || (userDetails && userDetails.foto_url)) ? (
-                  <img 
+                  <img
                     key={`avatar-${avatarPreview || (userDetails && userDetails.foto_url)}`}
-                    src={avatarPreview || (userDetails && userDetails.foto_url)}
+                    src={avatarPreview || (userDetails?.foto_url ? `http://localhost:8080${userDetails.foto_url}` : null)}
                     className="avatar-img"
                     onLoad={() => {
                       console.log('✓ Imagem carregou com sucesso:', avatarPreview || userDetails?.foto_url);
@@ -333,14 +333,14 @@ export function UserPage() {
               <div className="profile-badges">
                 <span className="badge badge-primary">
                   <User size={16} />
-                  Paciente
+                  {user?.role === 'admin' ? 'Admin' : user?.role === 'terapeuta' ? 'Terapeuta' : 'Paciente'}
                 </span>
                 {!userDetails?.id && !consultas?.length && !registos?.length && (
-                  <span 
-                    className="badge" 
+                  <span
+                    className="badge"
                     title="Dados carregados do contexto de autenticação"
-                    style={{ 
-                      background: 'rgba(249, 115, 22, 0.1)', 
+                    style={{
+                      background: 'rgba(249, 115, 22, 0.1)',
                       borderColor: 'rgba(249, 115, 22, 0.3)',
                       color: '#92400e',
                       fontSize: '12px'
@@ -418,7 +418,7 @@ export function UserPage() {
                   Informações Pessoais
                 </h2>
                 {!isEditMode && (
-                  <button 
+                  <button
                     className="btn-edit"
                     onClick={handleEditClick}
                     title="Editar perfil"
@@ -505,7 +505,7 @@ export function UserPage() {
                     </div>
 
                     <div className="form-actions">
-                      <button 
+                      <button
                         className="btn btn-primary"
                         onClick={handleSave}
                         disabled={isSaving}
@@ -513,7 +513,7 @@ export function UserPage() {
                         <Check size={18} />
                         {isSaving ? 'A guardar...' : 'Guardar'}
                       </button>
-                      <button 
+                      <button
                         className="btn btn-secondary"
                         onClick={handleCancel}
                         disabled={isSaving}

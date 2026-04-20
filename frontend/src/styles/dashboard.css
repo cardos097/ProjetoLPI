@@ -71,6 +71,7 @@
 .consultas-section,
 .registos-section,
 .perfil-section,
+.alunos-section,
 .admin-section {
     animation: fadeIn 0.3s ease;
 }
@@ -205,6 +206,97 @@
 .admin-card p {
     color: var(--text-secondary);
     margin: 1rem 0 0 0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.section-header h2 {
+    margin: 0;
+    color: var(--ufp-dark);
+}
+
+.alunos-section p {
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+}
+
+.alunos-container {
+    margin-top: 2rem;
+}
+
+.alunos-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.alunos-card h3 {
+    margin-top: 0;
+    color: var(--ufp-dark);
+    font-size: 1.1rem;
+}
+
+.alunos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.aluno-card {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    border: 2px solid #bbf7d0;
+    transition: all 0.3s ease;
+}
+
+.aluno-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-color: #6ee7b7;
+}
+
+.aluno-avatar {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.aluno-card h4 {
+    margin: 0.5rem 0;
+    color: var(--ufp-dark);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.aluno-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.empty-state {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem 1rem;
+    background: #f9fafb;
+    border-radius: 6px;
+}
+
+.loading {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem 1rem;
 }
 
 /* Buttons */
