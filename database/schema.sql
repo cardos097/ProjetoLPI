@@ -45,10 +45,12 @@ CREATE TABLE terapeutas (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   tipo terapeuta_tipo NOT NULL,
   area_clinica_id INTEGER NOT NULL REFERENCES areas_clinicas(id),
-  numero_mecanografico VARCHAR(50) UNIQUE
+  numero_mecanografico VARCHAR(50) UNIQUE,
+  supervisor_id INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_terapeutas_area ON terapeutas(area_clinica_id);
+CREATE INDEX idx_terapeutas_supervisor ON terapeutas(supervisor_id);
 
 CREATE TABLE utentes (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
