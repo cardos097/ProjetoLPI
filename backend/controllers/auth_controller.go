@@ -18,6 +18,13 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required,min=3"`
 }
 
+type RegisterRequest struct {
+	Email           string `json:"email" binding:"required,email"`
+	Password        string `json:"password" binding:"required,min=6"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	NomeCompleto    string `json:"nome_completo" binding:"required"`
+}
+
 type GoogleLoginRequest struct {
 	IDToken string `json:"id_token" binding:"required"`
 }
@@ -29,6 +36,13 @@ type LoginResponse struct {
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Tipo   string `json:"tipo,omitempty"`
+}
+
+type RegisterResponse struct {
+	Message string `json:"message"`
+	UserID  uint   `json:"user_id"`
+	Token   string `json:"token"`
+	Role    string `json:"role"`
 }
 
 func Login(c *gin.Context) {
@@ -198,4 +212,86 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// Register cria uma nova conta de utilizador
+func Register(c *gin.Context) {
+	var req RegisterRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados obrigatórios: email, password, confirm_password, nome_completo"})
+		return
+	}
+
+	// Validar se as passwords coincidem
+	if req.Password != req.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "As palavras-passe não coincidem"})
+		return
+	}
+
+	// Validar se o email já existe
+	var existingUser models.User
+	result := config.DB.Where("email = ?", req.Email).First(&existingUser)
+	if result.Error == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Email já registado"})
+		return
+	}
+
+	// Hash da password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao processar password"})
+		return
+	}
+
+	// Criar novo utilizador com role "utente"
+	newUser := models.User{
+		Email:        req.Email,
+		Nome:         req.NomeCompleto,
+		PasswordHash: string(hashedPassword),
+		Role:         "utente",
+		Active:       true,
+	}
+
+	if err := config.DB.Create(&newUser).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar utilizador"})
+		return
+	}
+
+	// Criar entrada de utente
+	utente := models.Utente{
+		UserID: newUser.ID,
+	}
+
+	if err := config.DB.Create(&utente).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar perfil de utente"})
+		return
+	}
+
+	// Criar ProcessoClinico para o novo utente
+	processo := models.ProcessoClinico{
+		UtenteID: newUser.ID,
+		Ativo:    true,
+	}
+
+	if err := config.DB.Create(&processo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar processo clínico"})
+		return
+	}
+
+	// Gerar token JWT
+	token, err := utils.GenerateAppJWT(newUser.ID, newUser.Email, newUser.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao gerar token"})
+		return
+	}
+
+	response := RegisterResponse{
+		Message: "Conta criada com sucesso",
+		UserID:  newUser.ID,
+		Token:   token,
+		Role:    newUser.Role,
+	}
+
+	c.JSON(http.StatusCreated, response)
 }

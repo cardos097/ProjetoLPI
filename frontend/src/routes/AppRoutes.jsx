@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { HomePage } from '../pages/HomePage.jsx';
 import { LoginPage } from '../pages/LoginPage.jsx';
+import { CriarContaPage } from '../pages/CriarContaPage.jsx';
 import { UserPage } from '../pages/UserPage.jsx';
 import { DashboardUtente } from '../pages/DashboardUtente.jsx';
 import { DashboardStaff } from '../pages/DashboardStaff.jsx';
@@ -38,6 +39,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/criar-conta" element={<CriarContaPage />} />
       <Route
         path="/"
         element={
