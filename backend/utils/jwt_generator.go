@@ -47,3 +47,28 @@ func GenerateAppJWT(userID uint, email, role string) (string, error) {
 
 	return tokenString, nil
 }
+
+// ValidateAppJWT valida e extrai os claims de um JWT da aplicação
+func ValidateAppJWT(tokenString string) (*AppJWTClaims, error) {
+	if jwtSecret == "" {
+		return nil, fmt.Errorf("JWT secret não foi configurado")
+	}
+
+	claims := &AppJWTClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("método de assinatura inesperado: %v", token.Header["alg"])
+		}
+		return []byte(jwtSecret), nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("falha ao validar JWT: %w", err)
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("JWT inválido")
+	}
+
+	return claims, nil
+}

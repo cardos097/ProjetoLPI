@@ -87,6 +87,10 @@ func main() {
 		auth.GET("/salas", controllers.GetSalas)
 		auth.GET("/areas-clinicas", controllers.GetAreasClinicas)
 		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetTerapeutas)
+		auth.GET("/alunos-disponiveis", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDisponiveis)
+		auth.GET("/meus-alunos", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDoProfessor)
+		auth.POST("/adicionar-aluno", middleware.RoleMiddleware("terapeuta"), controllers.AdicionarAluno)
+		auth.DELETE("/remover-aluno/:aluno_id", middleware.RoleMiddleware("terapeuta"), controllers.RemoverAluno)
 
 		// ========================
 		// FICHAS DE AVALIAÇÃO

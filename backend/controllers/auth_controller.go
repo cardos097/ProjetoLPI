@@ -28,6 +28,7 @@ type LoginResponse struct {
 	Role   string `json:"role"`
 	Name   string `json:"name"`
 	Email  string `json:"email"`
+	Tipo   string `json:"tipo,omitempty"`
 }
 
 func Login(c *gin.Context) {
@@ -62,6 +63,14 @@ func Login(c *gin.Context) {
 	now := time.Now()
 	config.DB.Model(&user).Update("last_login_at", now)
 
+	// Se for terapeuta, carregar tipo
+	var tipo string
+	if user.Role == "terapeuta" {
+		var terapeuta models.Terapeuta
+		config.DB.Where("user_id = ?", user.ID).First(&terapeuta)
+		tipo = terapeuta.Tipo
+	}
+
 	// Gerar token JWT próprio da aplicação
 	token, err := utils.GenerateAppJWT(user.ID, user.Email, user.Role)
 	if err != nil {
@@ -75,6 +84,7 @@ func Login(c *gin.Context) {
 		Role:   user.Role,
 		Name:   user.Nome,
 		Email:  user.Email,
+		Tipo:   tipo,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -163,6 +173,14 @@ func GoogleLogin(c *gin.Context) {
 	now := time.Now()
 	config.DB.Model(&user).Update("last_login_at", now)
 
+	// Se for terapeuta, carregar tipo
+	var tipo string
+	if user.Role == "terapeuta" {
+		var terapeuta models.Terapeuta
+		config.DB.Where("user_id = ?", user.ID).First(&terapeuta)
+		tipo = terapeuta.Tipo
+	}
+
 	// Gerar token JWT próprio da aplicação
 	token, err := utils.GenerateAppJWT(user.ID, user.Email, user.Role)
 	if err != nil {
@@ -176,6 +194,7 @@ func GoogleLogin(c *gin.Context) {
 		Role:   user.Role,
 		Name:   user.Nome,
 		Email:  user.Email,
+		Tipo:   tipo,
 	}
 
 	c.JSON(http.StatusOK, response)

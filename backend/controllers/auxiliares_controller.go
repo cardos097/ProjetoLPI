@@ -76,3 +76,131 @@ func GetTerapeutas(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+func GetAlunosDisponiveis(c *gin.Context) {
+	search := c.Query("search")
+
+	var alunos []models.Terapeuta
+
+	query := config.DB.
+		Joins("JOIN users ON terapeutas.user_id = users.id").
+		Where("terapeutas.tipo = ?", "aluno").
+		Where("terapeutas.supervisor_id IS NULL")
+
+	if search != "" {
+		query = query.Where("users.nome ILIKE ? OR users.email ILIKE ?", "%"+search+"%", "%"+search+"%")
+	}
+
+	if err := query.
+		Preload("User").
+		Order("users.nome ASC").
+		Find(&alunos).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := make([]gin.H, 0, len(alunos))
+	for _, aluno := range alunos {
+		response = append(response, gin.H{
+			"user_id": aluno.UserID,
+			"nome":    aluno.User.Nome,
+			"email":   aluno.User.Email,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+type AdicionarAlunoRequest struct {
+	AlunoID uint `json:"aluno_id" binding:"required"`
+}
+
+func AdicionarAluno(c *gin.Context) {
+	professorID := c.GetUint("user_id")
+	var req AdicionarAlunoRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "aluno_id obrigatório"})
+		return
+	}
+
+	professor := models.Terapeuta{}
+	if err := config.DB.Where("user_id = ? AND tipo = ?", professorID, "professor").First(&professor).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Só professores podem adicionar alunos"})
+		return
+	}
+
+	aluno := models.Terapeuta{}
+	if err := config.DB.Where("user_id = ? AND tipo = ?", req.AlunoID, "aluno").First(&aluno).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aluno não encontrado"})
+		return
+	}
+
+	if aluno.SupervisorID != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Este aluno já tem um supervisor"})
+		return
+	}
+
+	if err := config.DB.Model(&aluno).Update("supervisor_id", professorID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao adicionar aluno"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Aluno adicionado com sucesso",
+		"aluno":   aluno.UserID,
+	})
+}
+
+func RemoverAluno(c *gin.Context) {
+	professorID := c.GetUint("user_id")
+	alunoID := c.Param("aluno_id")
+
+	professor := models.Terapeuta{}
+	if err := config.DB.Where("user_id = ? AND tipo = ?", professorID, "professor").First(&professor).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Só professores podem remover alunos"})
+		return
+	}
+
+	aluno := models.Terapeuta{}
+	if err := config.DB.Where("user_id = ? AND supervisor_id = ?", alunoID, professorID).First(&aluno).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Aluno não encontrado ou não pertence a este professor"})
+		return
+	}
+
+	if err := config.DB.Model(&aluno).Update("supervisor_id", nil).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao remover aluno"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Aluno removido com sucesso",
+	})
+}
+
+func GetAlunosDoProfessor(c *gin.Context) {
+	professorID := c.GetUint("user_id")
+
+	var alunos []models.Terapeuta
+
+	if err := config.DB.
+		Joins("JOIN users ON terapeutas.user_id = users.id").
+		Where("supervisor_id = ?", professorID).
+		Preload("User").
+		Order("users.nome ASC").
+		Find(&alunos).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := make([]gin.H, 0, len(alunos))
+	for _, aluno := range alunos {
+		response = append(response, gin.H{
+			"user_id": aluno.UserID,
+			"nome":    aluno.User.Nome,
+			"email":   aluno.User.Email,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}

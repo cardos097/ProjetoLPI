@@ -457,47 +457,42 @@ func UploadAvatar(c *gin.Context) {
 		return
 	}
 
-	// Validar tipo de ficheiro (apenas imagens)
 	allowedTypes := map[string]bool{
 		"image/jpeg": true,
 		"image/png":  true,
-		"image/gif":  true,
-		"image/webp": true,
 	}
 
 	contentType := file.Header.Get("Content-Type")
 	if contentType == "" || !allowedTypes[contentType] {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Apenas imagens (JPEG, PNG, GIF, WebP) são permitidas"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Apenas imagens (JPEG, PNG) são permitidas"})
 		return
 	}
 
-	// Validar tamanho (máximo 5MB)
 	if file.Size > 5*1024*1024 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Ficheiro muito grande (máximo 5MB)"})
 		return
 	}
 
-	// Criar diretório de uploads se não existir
 	uploadsDir := "uploads/avatars"
 	if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar diretório"})
 		return
 	}
 
-	// Gerar nome único para o ficheiro (força JPEG sempre)
-	filename := fmt.Sprintf("avatar_%d_%d.jpeg", utente.UserID, time.Now().Unix())
+	ext := ".jpeg"
+	if contentType == "image/png" {
+		ext = ".png"
+	}
+	filename := fmt.Sprintf("avatar_%d_%d%s", utente.UserID, time.Now().Unix(), ext)
 	filePath := filepath.Join(uploadsDir, filename)
 
-	// Salvar ficheiro
 	if err := c.SaveUploadedFile(file, filePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar ficheiro: " + err.Error()})
 		return
 	}
 
-	// Atualizar URL de foto no banco de dados
 	fotoURL := fmt.Sprintf("/uploads/avatars/%s", filename)
 	if err := config.DB.Model(&utente).Update("foto_url", fotoURL).Error; err != nil {
-		// Deletar ficheiro se falhar a atualizar BD
 		os.Remove(filePath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar dados: " + err.Error()})
 		return
