@@ -59,3 +59,30 @@ export async function loginWithGoogle(idToken) {
     },
   };
 }
+
+export async function registerRequest({ email, password, confirm_password, nome_completo }) {
+  const { data } = await api.post('/auth/register', {
+    email,
+    password,
+    confirm_password,
+    nome_completo,
+  });
+
+  const token = data.token || data.access_token;
+  const userId = data.user_id || data.userId || data.id;
+  const role = data.role || 'utente';
+
+  if (!token || !userId) {
+    throw new Error('Resposta de registo inválida (faltam token/userId)');
+  }
+
+  return {
+    token,
+    user: {
+      id: Number(userId),
+      role,
+      name: nome_completo,
+      email,
+    },
+  };
+}

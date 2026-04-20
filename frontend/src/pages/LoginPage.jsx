@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { loginRequest, loginWithGoogle } from '../services/auth.jsx';
 import { GoogleLogin } from '@react-oauth/google';
@@ -93,6 +93,22 @@ export function LoginPage() {
               <button type="submit" className="login-button" disabled={loading}>
                 {loading ? 'A entrar...' : 'Entrar'}
               </button>
+
+              <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
+                Não tem conta? 
+                <Link 
+                  to="/criar-conta" 
+                  style={{ 
+                    marginLeft: '5px',
+                    color: '#059669', 
+                    textDecoration: 'none', 
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Criar conta aqui
+                </Link>
+              </div>
             </form>
 
             <div className="login-divider">
