@@ -14,7 +14,7 @@ type TerapeutaListItem struct {
 	Nome                string  `json:"nome"`
 	Email               string  `json:"email"`
 	Tipo                string  `json:"tipo"`
-	AreaClinicaID       uint    `json:"area_clinica_id"`
+	AreaClinicaID       *uint   `json:"area_clinica_id"`
 	AreaClinicaNome     string  `json:"area_clinica_nome"`
 	NumeroMecanografico *string `json:"numero_mecanografico"`
 }
@@ -42,6 +42,11 @@ func GetAreasClinicas(c *gin.Context) {
 		return
 	}
 
+	// Garantir que retorna array vazio em vez de null
+	if areas == nil {
+		areas = []models.AreaClinica{}
+	}
+
 	c.JSON(http.StatusOK, areas)
 }
 
@@ -53,6 +58,43 @@ func GetTerapeutas(c *gin.Context) {
 		Preload("AreaClinica").
 		Joins("JOIN users ON users.id = terapeutas.user_id").
 		Where("users.active = ?", true).
+		Where("terapeutas.tipo = ?", "professor").
+		Order("users.nome ASC").
+		Find(&terapeutas).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := make([]TerapeutaListItem, 0, len(terapeutas))
+	for _, t := range terapeutas {
+		response = append(response, TerapeutaListItem{
+			UserID:              t.UserID,
+			Nome:                t.User.Nome,
+			Email:               t.User.Email,
+			Tipo:                t.Tipo,
+			AreaClinicaID:       t.AreaClinicaID,
+			AreaClinicaNome:     t.AreaClinica.Nome,
+			NumeroMecanografico: t.NumeroMecanografico,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func GetTerapeutasByArea(c *gin.Context) {
+	areaID := c.Param("area_id")
+
+	var terapeutas []models.Terapeuta
+
+	err := config.DB.
+		Preload("User").
+		Preload("AreaClinica").
+		Joins("JOIN users ON users.id = terapeutas.user_id").
+		Where("users.active = ?", true).
+		Where("terapeutas.tipo = ?", "professor").
+		Where("terapeutas.area_clinica_id = ?", areaID).
 		Order("users.nome ASC").
 		Find(&terapeutas).Error
 
@@ -109,6 +151,61 @@ func GetAlunosDisponiveis(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+type UpdateAreaClinicaRequest struct {
+	AreaClinicaID uint `json:"area_clinica_id" binding:"required"`
+}
+
+// UpdateAreaClinica atualiza a área clínica do terapeuta
+// Apenas o próprio terapeuta pode atualizar
+// Professores podem alterar à vontade
+// Alunos só podem alterar uma vez (na primeira vez que faz login)
+func UpdateAreaClinica(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	var req UpdateAreaClinicaRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "area_clinica_id obrigatório"})
+		return
+	}
+
+	// Buscar terapeuta
+	var terapeuta models.Terapeuta
+	if err := config.DB.Where("user_id = ?", userID).First(&terapeuta).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Terapeuta não encontrado"})
+		return
+	}
+
+	// Validar se área clínica existe
+	var areaClinica models.AreaClinica
+	if err := config.DB.Where("id = ?", req.AreaClinicaID).First(&areaClinica).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Área clínica não encontrada"})
+		return
+	}
+
+	// Se for aluno e já tem área clínica, não pode alterar
+	if terapeuta.Tipo == "aluno" && terapeuta.AreaClinicaID != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Alunos não podem alterar a área clínica após a primeira configuração"})
+		return
+	}
+
+	// Atualizar área clínica
+	terapeuta.AreaClinicaID = &req.AreaClinicaID
+	if err := config.DB.Model(&terapeuta).Update("area_clinica_id", terapeuta.AreaClinicaID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar área clínica"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Área clínica atualizada com sucesso",
+		"terapeuta": gin.H{
+			"user_id":           terapeuta.UserID,
+			"tipo":              terapeuta.Tipo,
+			"area_clinica_id":   terapeuta.AreaClinicaID,
+			"area_clinica_nome": areaClinica.Nome,
+		},
+	})
 }
 
 type AdicionarAlunoRequest struct {

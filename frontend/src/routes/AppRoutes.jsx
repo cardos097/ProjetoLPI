@@ -14,6 +14,7 @@ import { AgendarConsulta } from '../pages/AgendarConsulta.jsx';
 import { EditarConsulta } from '../pages/EditarConsulta.jsx';
 import { PaginaCalendario } from '../pages/PaginaCalendario.jsx';
 import { CriarFichaAvaliacao } from '../pages/CriarFichaAvaliacao.jsx';
+import { CompletarPerfilPage } from '../pages/CompletarPerfilPage.jsx';
 import { Layout } from '../components/Layout.jsx';
 import { Navbar } from '../components/Navbar.jsx';
 
@@ -54,7 +55,9 @@ export function AppRoutes() {
         path="/dashboard"
         element={
           isAuthenticated ? (
-            user?.role === 'utente' ? (
+            user?.role === 'terapeuta' && !user?.area_clinica_id ? (
+              <Navigate to="/completar-perfil" replace />
+            ) : user?.role === 'utente' ? (
               <Layout><DashboardUtente /></Layout>
             ) : (
               <Layout><DashboardStaff /></Layout>
@@ -70,6 +73,17 @@ export function AppRoutes() {
         element={
           isAuthenticated && user?.role !== 'utente' ? (
             <Layout><DashboardStaff /></Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      <Route
+        path="/completar-perfil"
+        element={
+          isAuthenticated ? (
+            <CompletarPerfilPage />
           ) : (
             <Navigate to="/login" replace />
           )

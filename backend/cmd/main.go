@@ -64,6 +64,7 @@ func main() {
 		// CONSULTAS
 		// ========================
 		auth.GET("/consultas", controllers.GetConsultas)
+		auth.GET("/consultas/disponibilidade/check", controllers.CheckDisponibilidade)
 		auth.GET("/consultas/:id", controllers.GetConsultaByID)
 		auth.POST("/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateConsulta)
 		auth.PATCH("/consultas/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UpdateConsulta)
@@ -87,10 +88,12 @@ func main() {
 		auth.GET("/salas", controllers.GetSalas)
 		auth.GET("/areas-clinicas", controllers.GetAreasClinicas)
 		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetTerapeutas)
+		auth.GET("/terapeutas/area/:area_id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetTerapeutasByArea)
 		auth.GET("/alunos-disponiveis", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDisponiveis)
 		auth.GET("/meus-alunos", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDoProfessor)
 		auth.POST("/adicionar-aluno", middleware.RoleMiddleware("terapeuta"), controllers.AdicionarAluno)
 		auth.DELETE("/remover-aluno/:aluno_id", middleware.RoleMiddleware("terapeuta"), controllers.RemoverAluno)
+		auth.PUT("/terapeutas/area-clinica", middleware.RoleMiddleware("terapeuta"), controllers.UpdateAreaClinica)
 
 		// ========================
 		// FICHAS DE AVALIAÇÃO
