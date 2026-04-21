@@ -3,7 +3,7 @@ package models
 type Terapeuta struct {
 	UserID              uint    `gorm:"column:user_id;primaryKey"`
 	Tipo                string  `gorm:"column:tipo"`
-	AreaClinicaID       uint    `gorm:"column:area_clinica_id"`
+	AreaClinicaID       *uint   `gorm:"column:area_clinica_id"`
 	NumeroMecanografico *string `gorm:"column:numero_mecanografico"`
 	SupervisorID        *uint   `gorm:"column:supervisor_id"`
 

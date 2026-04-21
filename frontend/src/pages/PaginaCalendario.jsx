@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { getConsultas } from '../services/consultas.jsx';
+import { getConsultas, createConsulta } from '../services/consultas.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
-import { ModalAgendarConsulta } from '../components/ModalAgendarConsulta.jsx';
+import { ModalAgendarConsultaV2 } from '../components/ModalAgendarConsultaV2.jsx';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import '../styles/calendario.css';
 
 export function PaginaCalendario() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -32,20 +34,36 @@ export function PaginaCalendario() {
     }, []);
 
     const handleDateClick = (dateStr) => {
-        console.log('Modal should open for date:', dateStr);
+        console.log('🎯 handleDateClick chamado com:', dateStr);
+        console.log('🎯 Antes de setState - modalOpen:', modalOpen);
         setDataSelecionada(dateStr);
         setModalOpen(true);
-        console.log('Modal state updated. modalOpen should be true now');
+        console.log('🎯 Depois de setState - modalOpen deve ser true agora');
     };
 
-    const handleModalSubmit = (formData) => {
-        navigate('/consultas/nova', {
-            state: {
-                dataInicio: formData.data_inicio,
-                tipo: formData.tipo,
-            },
-        });
-        setModalOpen(false);
+    const handleModalSubmit = async (formData) => {
+        try {
+            // Converter string IDs para números
+            const consultaData = {
+                utente_id: parseInt(formData.utente_id),
+                terapeuta_id: parseInt(formData.terapeuta_id),
+                sala_id: parseInt(formData.sala_id),
+                area_clinica_id: parseInt(formData.area_clinica_id),
+                data_inicio: formData.data_inicio,
+                data_fim: formData.data_fim,
+            };
+
+            console.log('🎯 Dados sendo enviados para backend:', consultaData);
+
+            await createConsulta(consultaData);
+            setModalOpen(false);
+            // Recarregar as consultas
+            const data = await getConsultas();
+            setConsultas(data || []);
+        } catch (err) {
+            console.error('Erro ao criar consulta:', err);
+            alert('Erro ao agendar consulta: ' + err.message);
+        }
     };
 
     const handleEventClick = (consultaId, consultaData) => {
@@ -61,14 +79,8 @@ export function PaginaCalendario() {
             <div className="page-header">
                 <div>
                     <h1>📅 Calendário de Consultas</h1>
-                    <p>Visualiza e agenda as tuas consultas</p>
+                    <p>Clica num dia para marcar uma consulta</p>
                 </div>
-                <button
-                    className="btn btn-primary"
-                    onClick={() => navigate('/consultas/nova')}
-                >
-                    + Nova Consulta
-                </button>
             </div>
 
             {error && (
@@ -87,7 +99,7 @@ export function PaginaCalendario() {
                 />
             </div>
 
-            <ModalAgendarConsulta
+            <ModalAgendarConsultaV2
                 isOpen={modalOpen}
                 onClose={() => {
                     setModalOpen(false);

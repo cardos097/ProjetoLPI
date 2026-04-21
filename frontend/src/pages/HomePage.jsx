@@ -13,6 +13,14 @@ export function HomePage() {
   const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Redirecionar terapeuta sem area_clinica para completar perfil
+  useEffect(() => {
+    if (user?.role === 'terapeuta' && !user?.area_clinica_id) {
+      console.log('Redirecionando para completar perfil...');
+      navigate('/completar-perfil', { replace: true });
+    }
+  }, [user?.role, user?.area_clinica_id, navigate]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -150,7 +158,7 @@ export function HomePage() {
           <div className="contactos-grid">
             <div className="contacto-card">
               <h3>Localização</h3>
-              <p>Clínica Universitária<br/>Porto, Portugal</p>
+              <p>Clínica Universitária<br />Porto, Portugal</p>
             </div>
             <div className="contacto-card">
               <h3>Telefone</h3>

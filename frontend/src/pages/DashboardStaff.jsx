@@ -39,7 +39,7 @@ export function DashboardStaff() {
     return (
         <div className="page dashboard-staff">
             <div className="dashboard-header">
-                <h1>Dashboard - {user.role.charAt(0).toUpperCase() + user.role.slice(1)}</h1>
+                <h1>Dashboard - {user.role === 'administrativo' ? 'Administrativo' : (user.role.charAt(0).toUpperCase() + user.role.slice(1))}</h1>
                 <p>Bem-vindo, {user.name}!</p>
             </div>
 
