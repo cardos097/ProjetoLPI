@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 export function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [consultasDropdownOpen, setConsultasDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
@@ -24,14 +25,24 @@ export function Navbar() {
           </a>
         </div>
 
-        {/* Menu Center */}
+        {/* Hamburger Button */}
+        <button
+          className="navbar-hamburger"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Abrir menu"
+        >
+          <span className={`hamburger-line ${mobileMenuOpen ? 'active' : ''}`}></span>
+          <span className={`hamburger-line ${mobileMenuOpen ? 'active' : ''}`}></span>
+          <span className={`hamburger-line ${mobileMenuOpen ? 'active' : ''}`}></span>
+        </button>
+
+        {/* Menu + User (Desktop) */}
         {user && (
           <div className="navbar-menu">
             <button onClick={() => navigate('/')} className="navbar-link">
               Início
             </button>
 
-            {/* Dropdown Consultas */}
             <div className="navbar-dropdown">
               <button
                 className="navbar-link dropdown-toggle"
@@ -46,37 +57,25 @@ export function Navbar() {
 
               {consultasDropdownOpen && (
                 <div className="dropdown-menu">
-                  <a
-                    href="/consultas"
-                    className="dropdown-item"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate('/consultas');
-                      setConsultasDropdownOpen(false);
-                    }}
-                  >
+                  <a href="/consultas" className="dropdown-item" onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/consultas');
+                    setConsultasDropdownOpen(false);
+                  }}>
                     Ver Consultas
                   </a>
-                  <a
-                    href="/calendario"
-                    className="dropdown-item"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate('/calendario');
-                      setConsultasDropdownOpen(false);
-                    }}
-                  >
+                  <a href="/calendario" className="dropdown-item" onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/calendario');
+                    setConsultasDropdownOpen(false);
+                  }}>
                     📅 Calendário
                   </a>
-                  <a
-                    href="/consultas/nova"
-                    className="dropdown-item"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate('/consultas/nova');
-                      setConsultasDropdownOpen(false);
-                    }}
-                  >
+                  <a href="/consultas/nova" className="dropdown-item" onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/consultas/nova');
+                    setConsultasDropdownOpen(false);
+                  }}>
                     ➕ Marcar Consulta
                   </a>
                 </div>
@@ -85,7 +84,7 @@ export function Navbar() {
           </div>
         )}
 
-        {/* User Area */}
+        {/* User Area Desktop */}
         <div className="navbar-user">
           {user ? (
             <div className="navbar-dropdown user-dropdown">
@@ -103,24 +102,17 @@ export function Navbar() {
 
               {userDropdownOpen && (
                 <div className="dropdown-menu user-menu">
-                  <a
-                    href="/perfil"
-                    className="dropdown-item"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate('/user');
-                      setUserDropdownOpen(false);
-                    }}
-                  >
+                  <a href="/perfil" className="dropdown-item" onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/user');
+                    setUserDropdownOpen(false);
+                  }}>
                     Perfil
                   </a>
-                  <button
-                    className="dropdown-item logout-item"
-                    onClick={() => {
-                      handleLogout();
-                      setUserDropdownOpen(false);
-                    }}
-                  >
+                  <button className="dropdown-item logout-item" onClick={() => {
+                    handleLogout();
+                    setUserDropdownOpen(false);
+                  }}>
                     Sair
                   </button>
                 </div>
@@ -133,6 +125,85 @@ export function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="navbar-mobile-menu">
+          {user && (
+            <>
+              <button onClick={() => { navigate('/'); setMobileMenuOpen(false); }} className="mobile-menu-link">
+                Início
+              </button>
+
+              <div className="mobile-menu-section">
+                <button
+                  onClick={() => setConsultasDropdownOpen(!consultasDropdownOpen)}
+                  className="mobile-menu-link"
+                >
+                  Consultas
+                </button>
+                {consultasDropdownOpen && (
+                  <div className="mobile-submenu">
+                    <a href="/consultas" className="mobile-submenu-item" onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/consultas');
+                      setMobileMenuOpen(false);
+                    }}>
+                      Ver Consultas
+                    </a>
+                    <a href="/calendario" className="mobile-submenu-item" onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/calendario');
+                      setMobileMenuOpen(false);
+                    }}>
+                      📅 Calendário
+                    </a>
+                    <a href="/consultas/nova" className="mobile-submenu-item" onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/consultas/nova');
+                      setMobileMenuOpen(false);
+                    }}>
+                      ➕ Marcar Consulta
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="mobile-menu-divider"></div>
+
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="mobile-menu-link"
+              >
+                <span className="user-avatar">{user.name?.charAt(0).toUpperCase() || 'U'}</span>
+                <span>{user?.name || 'Utilizador'}</span>
+              </button>
+              {userDropdownOpen && (
+                <div className="mobile-submenu">
+                  <a href="/perfil" className="mobile-submenu-item" onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/user');
+                    setMobileMenuOpen(false);
+                  }}>
+                    Perfil
+                  </a>
+                  <button className="mobile-submenu-item logout" onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}>
+                    Sair
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          {!user && (
+            <button onClick={() => { navigate('/login'); setMobileMenuOpen(false); }} className="mobile-menu-link">
+              Iniciar sessão
+            </button>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

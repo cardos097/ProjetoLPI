@@ -234,6 +234,7 @@ table tr:hover {
   justify-content: space-between;
   align-items: center;
   height: 64px;
+  position: relative;
 }
 
 .navbar-brand {
@@ -407,6 +408,122 @@ table tr:hover {
 
 .navbar-login-btn:hover {
   background: var(--ufp-primary-light);
+}
+
+/* Hamburger Button */
+.navbar-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 101;
+  gap: 5px;
+}
+
+.hamburger-line {
+  width: 24px;
+  height: 2px;
+  background-color: #111827;
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-line.active:nth-of-type(1) {
+  transform: rotate(45deg) translateY(10px);
+}
+
+.hamburger-line.active:nth-of-type(2) {
+  opacity: 0;
+}
+
+.hamburger-line.active:nth-of-type(3) {
+  transform: rotate(-45deg) translateY(-10px);
+}
+
+/* Mobile Menu Styles */
+.navbar-mobile-menu {
+  display: none;
+  flex-direction: column;
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+}
+
+.mobile-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-link:hover {
+  background: #f9fafb;
+  color: var(--ufp-primary);
+}
+
+.mobile-menu-section {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.mobile-submenu {
+  background: #f9fafb;
+  padding: 0;
+  border-left: 3px solid var(--ufp-primary);
+}
+
+.mobile-submenu-item {
+  display: block;
+  padding: 12px 24px 12px 36px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: left;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.mobile-submenu-item:hover {
+  color: var(--ufp-primary);
+  background: white;
+}
+
+.mobile-submenu-item.logout {
+  color: #ef4444;
+}
+
+.mobile-submenu-item.logout:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.mobile-menu-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
 }
 
 .app-layout {
@@ -813,6 +930,33 @@ table tr:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
+
+  /* Hamburguer Menu */
+  .navbar-hamburger {
+    display: flex;
+  }
+
+  .navbar-menu {
+    display: none;
+  }
+
+  .navbar-user {
+    display: none;
+  }
+
+  .navbar-mobile-menu {
+    display: flex;
+  }
+
+  .navbar-logo-text {
+    font-size: 16px;
+  }
+
+  .navbar-logo-img {
+    height: 32px;
+  }
+
+  /* Page Styles */
   .page-header {
     flex-direction: column;
     gap: 16px;
