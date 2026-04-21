@@ -65,7 +65,8 @@ func main() {
 		// ========================
 		auth.GET("/consultas", controllers.GetConsultas)
 		auth.GET("/consultas/:id", controllers.GetConsultaByID)
-		auth.POST("/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateConsulta)
+		auth.GET("/terapeutas/:terapeuta_id/horarios-disponiveis", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetHorariosDisponiveis)
+		auth.POST("/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.CreateConsulta)
 		auth.PATCH("/consultas/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UpdateConsulta)
 		auth.PUT("/consultas/:id/cancelar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CancelConsulta)
 		auth.PUT("/consultas/:id/remarcar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.RemarcarConsulta)
@@ -86,7 +87,7 @@ func main() {
 		// ========================
 		auth.GET("/salas", controllers.GetSalas)
 		auth.GET("/areas-clinicas", controllers.GetAreasClinicas)
-		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetTerapeutas)
+		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetTerapeutas)
 		auth.GET("/alunos-disponiveis", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDisponiveis)
 		auth.GET("/meus-alunos", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDoProfessor)
 		auth.POST("/adicionar-aluno", middleware.RoleMiddleware("terapeuta"), controllers.AdicionarAluno)

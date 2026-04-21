@@ -74,6 +74,20 @@ export async function getTerapeutas() {
   return data;
 }
 
+export async function getHorariosDisponiveis(terapeutaId, data, duracao, options = {}) {
+  const { areaClinicaId, salaId } = options;
+
+  const { data: response } = await api.get(`/terapeutas/${terapeutaId}/horarios-disponiveis`, {
+    params: {
+      data,
+      duracao,
+      area_clinica_id: areaClinicaId,
+      sala_id: salaId,
+    },
+  });
+  return response;
+}
+
 export async function getUtentes() {
   const { data } = await api.get('/utentes');
   return data;

@@ -147,6 +147,21 @@ func GetUtenteByID(c *gin.Context) {
 func GetConsultasByUtenteID(c *gin.Context) {
 	id := c.Param("id")
 
+	if roleValue, exists := c.Get("userRole"); exists {
+		if userRole, ok := roleValue.(string); ok && userRole == "utente" {
+			authenticatedID, err := getAuthenticatedUserID(c)
+			if err != nil {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+				return
+			}
+
+			if fmt.Sprintf("%d", authenticatedID) != id {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder às consultas deste utente"})
+				return
+			}
+		}
+	}
+
 	var consultas []models.Consulta
 
 	err := config.DB.

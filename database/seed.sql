@@ -25,7 +25,8 @@ INSERT INTO users (nome, email, password_hash, role) VALUES
 ('Aluno Teste 1', '0001@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
 ('Aluno Teste 2', '0002@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
 ('Aluno Teste 3', '0003@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta'),
-('Professor 1', 'professor1@ufp.edu.pt', '$2b$10$U2j9fXeaUu3F303iXwLDMeHJewhI/SQnL/v1BRiXl.cUYqWHUnnoO', 'terapeuta');
+('Professor 1', 'professor1@ufp.edu.pt', '$2b$10$U2j9fXeaUu3F303iXwLDMeHJewhI/SQnL/v1BRiXl.cUYqWHUnnoO', 'terapeuta'),
+('Professor Fisioterapia', 'professorfisio@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta');
 
 ---------------------------------------------------------
 -- TERAPEUTAS
@@ -37,7 +38,8 @@ INSERT INTO terapeutas (user_id, tipo, area_clinica_id, numero_mecanografico) VA
 (8, 'aluno', 1, NULL),
 (9, 'aluno', 1, NULL),
 (10, 'aluno', 1, NULL),
-(11, 'professor', 1, 'T004');
+(11, 'professor', 1, 'T004'),
+(12, 'professor', 3, 'T-FISIO-001');
 
 ---------------------------------------------------------
 -- UTENTES
@@ -66,7 +68,25 @@ INSERT INTO salas (nome, descricao) VALUES
 ('Branca', 'Sala branca'),
 ('Amarela', 'Sala amarela'),
 ('TP Grupo', 'Sala de terapia em grupo'),
-('Reuniões', 'Sala de reuniões');
+('Reuniões', 'Sala de reuniões'),
+('Fisio 1', 'Sala exclusiva de fisioterapia 1'),
+('Fisio 2', 'Sala exclusiva de fisioterapia 2'),
+('Fisio 3', 'Sala exclusiva de fisioterapia 3'),
+('Fisio 4', 'Sala exclusiva de fisioterapia 4'),
+('Fisio 5', 'Sala exclusiva de fisioterapia 5'),
+('Fisio 6', 'Sala exclusiva de fisioterapia 6'),
+('Fisio 7', 'Sala exclusiva de fisioterapia 7'),
+('Fisio 8', 'Sala exclusiva de fisioterapia 8'),
+('Fisio 9', 'Sala exclusiva de fisioterapia 9'),
+('Fisio 10', 'Sala exclusiva de fisioterapia 10'),
+('Fisio 11', 'Sala exclusiva de fisioterapia 11'),
+('Fisio 12', 'Sala exclusiva de fisioterapia 12'),
+('Fisio 13', 'Sala exclusiva de fisioterapia 13'),
+('Fisio 14', 'Sala exclusiva de fisioterapia 14'),
+('Fisio 15', 'Sala exclusiva de fisioterapia 15'),
+('Fisio 16', 'Sala exclusiva de fisioterapia 16'),
+('Fisio 17', 'Sala exclusiva de fisioterapia 17'),
+('Fisio 18', 'Sala exclusiva de fisioterapia 18');
 
 ---------------------------------------------------------
 -- SALA - ÁREA CLÍNICA (Associações)
@@ -93,7 +113,26 @@ INSERT INTO sala_area_clinica (sala_id, area_clinica_id) VALUES
 -- Sala TP Grupo (9)
 (9, 1), (9, 2), (9, 4),
 -- Sala Reuniões (10)
-(10, 1), (10, 2), (10, 4);
+(10, 1), (10, 2), (10, 4),
+-- Salas exclusivas Fisioterapia (11-28)
+(11, 3),
+(12, 3),
+(13, 3),
+(14, 3),
+(15, 3),
+(16, 3),
+(17, 3),
+(18, 3),
+(19, 3),
+(20, 3),
+(21, 3),
+(22, 3),
+(23, 3),
+(24, 3),
+(25, 3),
+(26, 3),
+(27, 3),
+(28, 3);
 
 ---------------------------------------------------------
 -- CONSULTAS
@@ -112,7 +151,11 @@ INSERT INTO consultas (
 (5, 3, 2, 4, '2026-03-25 11:00', '2026-03-25 12:00', 'agendada', 6),
 (4, 2, 3, 1, '2026-04-21 09:00', '2026-04-21 10:00', 'agendada', 6),
 (5, 3, 4, 4, '2026-04-22 14:00', '2026-04-22 15:00', 'agendada', 6),
-(4, 2, 5, 1, '2026-04-23 16:00', '2026-04-23 17:00', 'realizada', 6);
+(4, 2, 5, 1, '2026-04-23 16:00', '2026-04-23 17:00', 'realizada', 6),
+-- Consultas de Fisioterapia (Professor Fisioterapia)
+(4, 12, 11, 3, '2026-04-24 10:00', '2026-04-24 11:00', 'agendada', 6),
+(4, 12, 12, 3, '2026-04-25 10:00', '2026-04-25 11:00', 'agendada', 6),
+(4, 12, 13, 3, '2026-04-26 10:00', '2026-04-26 11:00', 'agendada', 6);
 
 ---------------------------------------------------------
 -- REGISTOS CLÍNICOS
