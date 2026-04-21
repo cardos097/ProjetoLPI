@@ -43,6 +43,10 @@ export function Navbar() {
               Início
             </button>
 
+            <button onClick={() => navigate('/dashboard')} className="navbar-link">
+              Dashboard
+            </button>
+
             <div className="navbar-dropdown">
               <button
                 className="navbar-link dropdown-toggle"
@@ -71,13 +75,15 @@ export function Navbar() {
                   }}>
                     📅 Calendário
                   </a>
-                  <a href="/consultas/nova" className="dropdown-item" onClick={(e) => {
-                    e.preventDefault();
-                    navigate('/consultas/nova');
-                    setConsultasDropdownOpen(false);
-                  }}>
-                    ➕ Marcar Consulta
-                  </a>
+                  {(user?.role === 'utente' || user?.role === 'administrativo') && (
+                    <a href="/consultas/nova" className="dropdown-item" onClick={(e) => {
+                      e.preventDefault();
+                      navigate('/consultas/nova');
+                      setConsultasDropdownOpen(false);
+                    }}>
+                      ➕ Marcar Consulta
+                    </a>
+                  )}
                 </div>
               )}
             </div>
@@ -135,6 +141,10 @@ export function Navbar() {
                 Início
               </button>
 
+              <button onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }} className="mobile-menu-link">
+                Dashboard
+              </button>
+
               <div className="mobile-menu-section">
                 <button
                   onClick={() => setConsultasDropdownOpen(!consultasDropdownOpen)}
@@ -158,13 +168,15 @@ export function Navbar() {
                     }}>
                       📅 Calendário
                     </a>
-                    <a href="/consultas/nova" className="mobile-submenu-item" onClick={(e) => {
-                      e.preventDefault();
-                      navigate('/consultas/nova');
-                      setMobileMenuOpen(false);
-                    }}>
-                      ➕ Marcar Consulta
-                    </a>
+                    {(user?.role === 'utente' || user?.role === 'administrativo') && (
+                      <a href="/consultas/nova" className="mobile-submenu-item" onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/consultas/nova');
+                        setMobileMenuOpen(false);
+                      }}>
+                        ➕ Marcar Consulta
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

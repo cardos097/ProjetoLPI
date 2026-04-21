@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import '../styles/calendario.css';
 
 export function CalendarioVisualizacao({
@@ -129,7 +130,7 @@ export function CalendarioVisualizacao({
 
             <div className="fc-wrapper" style={{ position: 'relative', width: '100%', minHeight: '600px' }}>
                 <FullCalendar
-                    plugins={[dayGridPlugin, timeGridPlugin]}
+                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                     initialView={getInitialView()}
                     headerToolbar={{
                         left: 'prev,next today',
@@ -138,13 +139,11 @@ export function CalendarioVisualizacao({
                     }}
                     events={events}
                     dateClick={handleDateClick}
-                    select={handleDateSelect}
                     eventClick={handleEventClick}
                     height="100%"
                     contentHeight="auto"
                     locale="en"
                     editable={false}
-                    selectable={true}
                 />
             </div>
         </div>

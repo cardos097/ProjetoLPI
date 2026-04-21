@@ -2,7 +2,10 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"clinica-backend/config"
@@ -30,12 +33,13 @@ type GoogleLoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token  string `json:"token"`
-	UserID uint   `json:"user_id"`
-	Role   string `json:"role"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
-	Tipo   string `json:"tipo,omitempty"`
+	Token         string `json:"token"`
+	UserID        uint   `json:"user_id"`
+	Role          string `json:"role"`
+	Name          string `json:"name"`
+	Email         string `json:"email"`
+	Tipo          string `json:"tipo,omitempty"`
+	AreaClinicaID *uint  `json:"area_clinica_id,omitempty"`
 }
 
 type RegisterResponse struct {
@@ -174,6 +178,43 @@ func GoogleLogin(c *gin.Context) {
 			if err := config.DB.Create(&processo).Error; err != nil {
 				// Log o erro mas não falha o login
 			}
+		} else if role == "terapeuta" {
+			// Se for terapeuta, criar entrada em terapeutas
+			// Determinar tipo baseado no email
+			tipoTerapeuta := "professor" // Padrão
+			numeroMecanografico := ""
+
+			// Se o email contém números (ex: 0001@ufp.edu.pt) é aluno
+			// O número é o próprio número mecanográfico
+			email := strings.ToLower(claims.Email)
+			if !strings.Contains(email, "professor") {
+				// Extrair número do email (parte antes do @)
+				emailParts := strings.Split(email, "@")
+				if len(emailParts) > 0 {
+					numStr := emailParts[0]
+					// Se é só números, é aluno com número mecanográfico
+					if _, err := strconv.Atoi(numStr); err == nil {
+						tipoTerapeuta = "aluno"
+						numeroMecanografico = numStr
+					}
+				}
+			}
+
+			terapeuta := models.Terapeuta{
+				UserID:        user.ID,
+				Tipo:          tipoTerapeuta,
+				AreaClinicaID: nil, // Será preenchido na página de perfil
+			}
+
+			if numeroMecanografico != "" {
+				terapeuta.NumeroMecanografico = &numeroMecanografico
+			}
+
+			if err := config.DB.Create(&terapeuta).Error; err != nil {
+				// Log o erro mas não falha o login
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar perfil de terapeuta"})
+				return
+			}
 		}
 	}
 
@@ -187,12 +228,18 @@ func GoogleLogin(c *gin.Context) {
 	now := time.Now()
 	config.DB.Model(&user).Update("last_login_at", now)
 
-	// Se for terapeuta, carregar tipo
+	// Se for terapeuta, carregar tipo e area_clinica_id
 	var tipo string
+	var areaClinicaID *uint
 	if user.Role == "terapeuta" {
 		var terapeuta models.Terapeuta
-		config.DB.Where("user_id = ?", user.ID).First(&terapeuta)
+		if err := config.DB.Where("user_id = ?", user.ID).First(&terapeuta).Error; err != nil {
+			log.Printf("Erro ao buscar terapeuta: %v", err)
+		} else {
+			log.Printf("Terapeuta encontrado: user_id=%d, tipo=%s, area_clinica_id=%v", terapeuta.UserID, terapeuta.Tipo, terapeuta.AreaClinicaID)
+		}
 		tipo = terapeuta.Tipo
+		areaClinicaID = terapeuta.AreaClinicaID
 	}
 
 	// Gerar token JWT próprio da aplicação
@@ -203,12 +250,13 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	response := LoginResponse{
-		Token:  token,
-		UserID: user.ID,
-		Role:   user.Role,
-		Name:   user.Nome,
-		Email:  user.Email,
-		Tipo:   tipo,
+		Token:         token,
+		UserID:        user.ID,
+		Role:          user.Role,
+		Name:          user.Nome,
+		Email:         user.Email,
+		Tipo:          tipo,
+		AreaClinicaID: areaClinicaID,
 	}
 
 	c.JSON(http.StatusOK, response)

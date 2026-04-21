@@ -1,7 +1,10 @@
 package controllers
 
 import (
+	"bytes"
 	"errors"
+	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -126,13 +129,82 @@ func GetConsultaByID(c *gin.Context) {
 	})
 }
 
+type DisponibilidadeResponse struct {
+	SalasIndisponiveis      []uint `json:"salas_indisponiveis"`
+	TerapeutasIndisponiveis []uint `json:"terapeutas_indisponiveis"`
+}
+
+func CheckDisponibilidade(c *gin.Context) {
+	dataInicio := c.Query("data_inicio")
+	dataFim := c.Query("data_fim")
+
+	if dataInicio == "" || dataFim == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "data_inicio e data_fim são obrigatórios"})
+		return
+	}
+
+	// Parse das datas
+	inicio, err := parseDateTime(dataInicio)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "data_inicio inválida"})
+		return
+	}
+
+	fim, err := parseDateTime(dataFim)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "data_fim inválida"})
+		return
+	}
+
+	// Buscar consultas que sobrepõem o horário (não canceladas)
+	var consultas []models.Consulta
+	config.DB.Where(
+		"(data_inicio < ? AND data_fim > ?) AND estado != ?",
+		fim, inicio, "cancelada",
+	).Find(&consultas)
+
+	// Extrair IDs de salas e terapeutas indisponíveis
+	salasMap := make(map[uint]bool)
+	terapeutasMap := make(map[uint]bool)
+
+	for _, consulta := range consultas {
+		salasMap[consulta.SalaID] = true
+		terapeutasMap[consulta.TerapeutaID] = true
+	}
+
+	// Converter para slices
+	var salasIndisponiveis []uint
+	var terapeutasIndisponiveis []uint
+
+	for salaID := range salasMap {
+		salasIndisponiveis = append(salasIndisponiveis, salaID)
+	}
+
+	for terapeutaID := range terapeutasMap {
+		terapeutasIndisponiveis = append(terapeutasIndisponiveis, terapeutaID)
+	}
+
+	c.JSON(http.StatusOK, DisponibilidadeResponse{
+		SalasIndisponiveis:      salasIndisponiveis,
+		TerapeutasIndisponiveis: terapeutasIndisponiveis,
+	})
+}
+
 func CreateConsulta(c *gin.Context) {
 	var req CreateConsultaRequest
 
+	// Ler o body e fazer log
+	bodyBytes, _ := io.ReadAll(c.Request.Body)
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		log.Printf("❌ Erro ao fazer bind JSON: %v", err)
+		log.Printf("📋 Body recebido: %s", string(bodyBytes))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
 		return
 	}
+
+	log.Printf("✅ Consulta recebida: %+v", req)
 
 	createdBy, err := getAuthenticatedUserID(c)
 	if err != nil {
