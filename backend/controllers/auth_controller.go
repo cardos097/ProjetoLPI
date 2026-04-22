@@ -49,6 +49,27 @@ type RegisterResponse struct {
 	Role    string `json:"role"`
 }
 
+func getTipoTerapeutaFromEmail(email string) (string, string) {
+	email = strings.ToLower(strings.TrimSpace(email))
+
+	if !strings.HasSuffix(email, "@ufp.edu.pt") {
+		return "professor", ""
+	}
+
+	parts := strings.Split(email, "@")
+	if len(parts) == 0 {
+		return "professor", ""
+	}
+
+	username := parts[0]
+
+	if _, err := strconv.Atoi(username); err == nil {
+		return "aluno", username
+	}
+
+	return "professor", ""
+}
+
 func Login(c *gin.Context) {
 	var req LoginRequest
 
@@ -65,7 +86,6 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Comparar password com bcrypt
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email ou password inválidos"})
@@ -77,19 +97,21 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Atualizar last_login_at
 	now := time.Now()
 	config.DB.Model(&user).Update("last_login_at", now)
 
-	// Se for terapeuta, carregar tipo
 	var tipo string
+	var areaClinicaID *uint
 	if user.Role == "terapeuta" {
 		var terapeuta models.Terapeuta
-		config.DB.Where("user_id = ?", user.ID).First(&terapeuta)
-		tipo = terapeuta.Tipo
+		if err := config.DB.Where("user_id = ?", user.ID).First(&terapeuta).Error; err != nil {
+			log.Printf("Erro ao buscar terapeuta no login normal: %v", err)
+		} else {
+			tipo = terapeuta.Tipo
+			areaClinicaID = terapeuta.AreaClinicaID
+		}
 	}
 
-	// Gerar token JWT próprio da aplicação
 	token, err := utils.GenerateAppJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao gerar token"})
@@ -97,12 +119,13 @@ func Login(c *gin.Context) {
 	}
 
 	response := LoginResponse{
-		Token:  token,
-		UserID: user.ID,
-		Role:   user.Role,
-		Name:   user.Nome,
-		Email:  user.Email,
-		Tipo:   tipo,
+		Token:         token,
+		UserID:        user.ID,
+		Role:          user.Role,
+		Name:          user.Nome,
+		Email:         user.Email,
+		Tipo:          tipo,
+		AreaClinicaID: areaClinicaID,
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -119,36 +142,31 @@ func GoogleLogin(c *gin.Context) {
 		return
 	}
 
-	// Validar token contra Google's JWKS (go-oidc faz isso automaticamente)
 	claims, err := utils.VerifyGoogleToken(context.Background(), req.IDToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token Google inválido"})
 		return
 	}
 
-	// Validar que o email é verificado
 	if !claims.EmailVerified {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email não verificado no Google"})
 		return
 	}
 
-	// Determinar role baseado no domínio do email
-	role := "utente" // Role padrão para emails externos
+	role := "utente"
 	if utils.ValidateUFPEmail(claims.Email) {
-		role = "terapeuta" // Role padrão para @ufp.edu.pt
+		role = "terapeuta"
 	}
 
-	// Procurar ou criar utilizador
 	var user models.User
 
 	result := config.DB.Where("google_sub = ?", claims.Sub).First(&user)
 	if result.Error != nil {
-		// Utilizador não existe, criar novo
 		user = models.User{
 			Email:     claims.Email,
 			Nome:      claims.Name,
 			GoogleSub: &claims.Sub,
-			Role:      role, // Role baseado no domínio
+			Role:      role,
 			Active:    true,
 		}
 
@@ -157,53 +175,30 @@ func GoogleLogin(c *gin.Context) {
 			return
 		}
 
-		// Se for utente, criar entrada correspondente em utentes
 		if role == "utente" {
 			utente := models.Utente{
 				UserID: user.ID,
 			}
 
 			if err := config.DB.Create(&utente).Error; err != nil {
-				// Log o erro mas não falha o login
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar perfil de utente"})
 				return
 			}
 
-			// Criar ProcessoClinico para o novo utente
 			processo := models.ProcessoClinico{
 				UtenteID: user.ID,
 				Ativo:    true,
 			}
 
 			if err := config.DB.Create(&processo).Error; err != nil {
-				// Log o erro mas não falha o login
 			}
 		} else if role == "terapeuta" {
-			// Se for terapeuta, criar entrada em terapeutas
-			// Determinar tipo baseado no email
-			tipoTerapeuta := "professor" // Padrão
-			numeroMecanografico := ""
-
-			// Se o email contém números (ex: 0001@ufp.edu.pt) é aluno
-			// O número é o próprio número mecanográfico
-			email := strings.ToLower(claims.Email)
-			if !strings.Contains(email, "professor") {
-				// Extrair número do email (parte antes do @)
-				emailParts := strings.Split(email, "@")
-				if len(emailParts) > 0 {
-					numStr := emailParts[0]
-					// Se é só números, é aluno com número mecanográfico
-					if _, err := strconv.Atoi(numStr); err == nil {
-						tipoTerapeuta = "aluno"
-						numeroMecanografico = numStr
-					}
-				}
-			}
+			tipoTerapeuta, numeroMecanografico := getTipoTerapeutaFromEmail(claims.Email)
 
 			terapeuta := models.Terapeuta{
 				UserID:        user.ID,
 				Tipo:          tipoTerapeuta,
-				AreaClinicaID: nil, // Será preenchido na página de perfil
+				AreaClinicaID: nil,
 			}
 
 			if numeroMecanografico != "" {
@@ -211,24 +206,20 @@ func GoogleLogin(c *gin.Context) {
 			}
 
 			if err := config.DB.Create(&terapeuta).Error; err != nil {
-				// Log o erro mas não falha o login
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar perfil de terapeuta"})
 				return
 			}
 		}
 	}
 
-	// Validar que o utilizador está ativo
 	if !user.Active {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Utilizador inativo"})
 		return
 	}
 
-	// Atualizar last_login_at
 	now := time.Now()
 	config.DB.Model(&user).Update("last_login_at", now)
 
-	// Se for terapeuta, carregar tipo e area_clinica_id
 	var tipo string
 	var areaClinicaID *uint
 	if user.Role == "terapeuta" {
@@ -237,12 +228,11 @@ func GoogleLogin(c *gin.Context) {
 			log.Printf("Erro ao buscar terapeuta: %v", err)
 		} else {
 			log.Printf("Terapeuta encontrado: user_id=%d, tipo=%s, area_clinica_id=%v", terapeuta.UserID, terapeuta.Tipo, terapeuta.AreaClinicaID)
+			tipo = terapeuta.Tipo
+			areaClinicaID = terapeuta.AreaClinicaID
 		}
-		tipo = terapeuta.Tipo
-		areaClinicaID = terapeuta.AreaClinicaID
 	}
 
-	// Gerar token JWT próprio da aplicação
 	token, err := utils.GenerateAppJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao gerar token"})
@@ -271,13 +261,11 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Validar se as passwords coincidem
 	if req.Password != req.ConfirmPassword {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "As palavras-passe não coincidem"})
 		return
 	}
 
-	// Validar se o email já existe
 	var existingUser models.User
 	result := config.DB.Where("email = ?", req.Email).First(&existingUser)
 	if result.Error == nil {
@@ -285,14 +273,12 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Hash da password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao processar password"})
 		return
 	}
 
-	// Criar novo utilizador com role "utente"
 	newUser := models.User{
 		Email:        req.Email,
 		Nome:         req.NomeCompleto,
@@ -306,7 +292,6 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Criar entrada de utente
 	utente := models.Utente{
 		UserID: newUser.ID,
 	}
@@ -316,7 +301,6 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Criar ProcessoClinico para o novo utente
 	processo := models.ProcessoClinico{
 		UtenteID: newUser.ID,
 		Ativo:    true,
@@ -327,7 +311,6 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Gerar token JWT
 	token, err := utils.GenerateAppJWT(newUser.ID, newUser.Email, newUser.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao gerar token"})

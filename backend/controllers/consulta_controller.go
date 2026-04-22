@@ -5,7 +5,9 @@ import (
 	"errors"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,15 +69,84 @@ func parseDateTime(value string) (time.Time, error) {
 	return time.Time{}, errors.New("formato de data inválido")
 }
 
+func parseHourMinuteOnDate(baseDate time.Time, hhmm string) (time.Time, error) {
+	parsed, err := time.Parse("15:04", hhmm)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Date(
+		baseDate.Year(),
+		baseDate.Month(),
+		baseDate.Day(),
+		parsed.Hour(),
+		parsed.Minute(),
+		0,
+		0,
+		time.UTC,
+	), nil
+}
+
+func getRandomAvailableSalaID(areaClinicaID uint, dataInicio time.Time, dataFim time.Time) (uint, error) {
+	var salas []models.Sala
+
+	err := config.DB.
+		Table("salas").
+		Joins("JOIN sala_area_clinica sac ON sac.sala_id = salas.id").
+		Where("salas.ativa = ?", true).
+		Where("sac.area_clinica_id = ?", areaClinicaID).
+		Where("NOT EXISTS (SELECT 1 FROM consultas c WHERE c.sala_id = salas.id AND c.estado = 'agendada' AND c.data_inicio < ? AND c.data_fim > ?)", dataFim, dataInicio).
+		Find(&salas).Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	if len(salas) == 0 {
+		return 0, errors.New("não existem salas disponíveis para este horário")
+	}
+
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	selected := salas[rng.Intn(len(salas))]
+
+	return selected.ID, nil
+}
+
 func GetConsultas(c *gin.Context) {
 	var consultas []models.Consulta
 
-	err := config.DB.
+	userID, err := getAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	roleValue, exists := c.Get("userRole")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role não encontrada no contexto"})
+		return
+	}
+
+	userRole, ok := roleValue.(string)
+	if !ok || userRole == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role inválida no contexto"})
+		return
+	}
+
+	query := config.DB.
 		Preload("Utente").
 		Preload("Terapeuta").
 		Preload("Sala").
-		Preload("AreaClinica").
-		Find(&consultas).Error
+		Preload("AreaClinica")
+
+	switch userRole {
+	case "terapeuta":
+		query = query.Where("terapeuta_id = ?", userID)
+	case "utente":
+		query = query.Where("utente_id = ?", userID)
+	}
+
+	err = query.Find(&consultas).Error
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -96,7 +167,25 @@ func GetConsultaByID(c *gin.Context) {
 
 	var consulta models.Consulta
 
-	err := config.DB.
+	userID, err := getAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	roleValue, exists := c.Get("userRole")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role não encontrada no contexto"})
+		return
+	}
+
+	userRole, ok := roleValue.(string)
+	if !ok || userRole == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role inválida no contexto"})
+		return
+	}
+
+	err = config.DB.
 		Preload("Utente").
 		Preload("Terapeuta").
 		Preload("Sala").
@@ -109,6 +198,16 @@ func GetConsultaByID(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if userRole == "terapeuta" && consulta.TerapeutaID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder a esta consulta"})
+		return
+	}
+
+	if userRole == "utente" && consulta.UtenteID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder a esta consulta"})
 		return
 	}
 
@@ -212,6 +311,28 @@ func CreateConsulta(c *gin.Context) {
 		return
 	}
 
+	roleValue, exists := c.Get("userRole")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role não encontrada no contexto"})
+		return
+	}
+
+	userRole, ok := roleValue.(string)
+	if !ok || userRole == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role inválida no contexto"})
+		return
+	}
+
+	// Utentes só podem criar consultas para si próprios.
+	if userRole == "utente" {
+		req.UtenteID = createdBy
+	}
+
+	if req.UtenteID == 0 || req.TerapeutaID == 0 || req.AreaClinicaID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados obrigatórios em falta"})
+		return
+	}
+
 	dataInicio, err := parseDateTime(req.DataInicio)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Data de início inválida. Use YYYY-MM-DD HH:MM[:SS]"})
@@ -226,6 +347,20 @@ func CreateConsulta(c *gin.Context) {
 
 	if !dataFim.After(dataInicio) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "A data de fim deve ser posterior à data de início"})
+		return
+	}
+
+	if userRole == "utente" {
+		randomSalaID, err := getRandomAvailableSalaID(req.AreaClinicaID, dataInicio, dataFim)
+		if err != nil {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		req.SalaID = randomSalaID
+	}
+
+	if req.SalaID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Sala obrigatória"})
 		return
 	}
 
@@ -422,4 +557,141 @@ func UpdateConsulta(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, consulta)
+}
+
+func GetHorariosDisponiveis(c *gin.Context) {
+	terapeutaIDParam := c.Param("terapeuta_id")
+	terapeutaID, err := strconv.Atoi(terapeutaIDParam)
+	if err != nil || terapeutaID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Terapeuta inválido"})
+		return
+	}
+
+	data := c.Query("data")
+	if data == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data é obrigatória (YYYY-MM-DD)"})
+		return
+	}
+
+	selectedDate, err := time.Parse("2006-01-02", data)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data inválida. Use YYYY-MM-DD"})
+		return
+	}
+
+	duracao := 60
+	if duracaoParam := c.Query("duracao"); duracaoParam != "" {
+		parsedDuracao, convErr := strconv.Atoi(duracaoParam)
+		if convErr != nil || parsedDuracao <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Duração inválida"})
+			return
+		}
+		duracao = parsedDuracao
+	}
+
+	areaClinicaID := 0
+	if areaParam := c.Query("area_clinica_id"); areaParam != "" {
+		parsedArea, convErr := strconv.Atoi(areaParam)
+		if convErr != nil || parsedArea <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Área clínica inválida"})
+			return
+		}
+		areaClinicaID = parsedArea
+	}
+
+	salaID := 0
+	if salaParam := c.Query("sala_id"); salaParam != "" {
+		parsedSala, convErr := strconv.Atoi(salaParam)
+		if convErr != nil || parsedSala <= 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Sala inválida"})
+			return
+		}
+		salaID = parsedSala
+	}
+
+	dayStart := time.Date(selectedDate.Year(), selectedDate.Month(), selectedDate.Day(), 0, 0, 0, 0, time.UTC)
+	dayEnd := dayStart.Add(24 * time.Hour)
+
+	var consultas []models.Consulta
+	err = config.DB.
+		Where("terapeuta_id = ?", terapeutaID).
+		Where("estado <> ?", "cancelada").
+		Where("data_inicio < ? AND data_fim > ?", dayEnd, dayStart).
+		Find(&consultas).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	workStart, _ := parseHourMinuteOnDate(selectedDate, "09:00")
+	workEnd, _ := parseHourMinuteOnDate(selectedDate, "18:00")
+
+	hasAvailableSala := func(slotStart time.Time, slotEnd time.Time) (bool, error) {
+		if salaID > 0 {
+			var count int64
+			err := config.DB.
+				Table("consultas").
+				Where("sala_id = ?", salaID).
+				Where("estado = ?", "agendada").
+				Where("data_inicio < ? AND data_fim > ?", slotEnd, slotStart).
+				Count(&count).Error
+			if err != nil {
+				return false, err
+			}
+			return count == 0, nil
+		}
+
+		if areaClinicaID <= 0 {
+			return true, nil
+		}
+
+		var count int64
+		err := config.DB.
+			Table("salas").
+			Joins("JOIN sala_area_clinica sac ON sac.sala_id = salas.id").
+			Where("salas.ativa = ?", true).
+			Where("sac.area_clinica_id = ?", areaClinicaID).
+			Where("NOT EXISTS (SELECT 1 FROM consultas c WHERE c.sala_id = salas.id AND c.estado = 'agendada' AND c.data_inicio < ? AND c.data_fim > ?)", slotEnd, slotStart).
+			Count(&count).Error
+		if err != nil {
+			return false, err
+		}
+
+		return count > 0, nil
+	}
+
+	var available []string
+	for slotStart := workStart; slotStart.Before(workEnd); slotStart = slotStart.Add(1 * time.Hour) {
+		slotEnd := slotStart.Add(time.Duration(duracao) * time.Minute)
+		if slotEnd.After(workEnd) {
+			continue
+		}
+
+		overlapped := false
+		for _, consulta := range consultas {
+			if slotStart.Before(consulta.DataFim) && slotEnd.After(consulta.DataInicio) {
+				overlapped = true
+				break
+			}
+		}
+
+		if !overlapped {
+			roomAvailable, roomErr := hasAvailableSala(slotStart, slotEnd)
+			if roomErr != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": roomErr.Error()})
+				return
+			}
+			if roomAvailable {
+				available = append(available, slotStart.Format("15:04"))
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"terapeuta_id":         terapeutaID,
+		"data":                 data,
+		"duracao":              duracao,
+		"horarios_disponiveis": available,
+	})
 }

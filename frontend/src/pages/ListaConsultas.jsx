@@ -111,6 +111,7 @@ export function ListaConsultas() {
   };
 
   const canManageConsultas = ['admin', 'administrativo', 'terapeuta'].includes(user?.role);
+  const canCreateConsulta = ['admin', 'administrativo', 'terapeuta', 'utente'].includes(user?.role);
 
   if (loading) {
     return <div className="page">A carregar consultas...</div>;
@@ -140,7 +141,7 @@ export function ListaConsultas() {
               📅 Calendário
             </button>
           </div>
-          {canManageConsultas && (
+          {canCreateConsulta && (
             <button
               className="btn btn-primary"
               onClick={() => navigate('/consultas/nova')}

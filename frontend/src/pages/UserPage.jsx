@@ -653,7 +653,7 @@ export function UserPage() {
                           <div className="consulta-detail">
                             <span className="consulta-detail-label">Sala</span>
                             <span className="consulta-detail-value">
-                              {consulta.sala_nome}
+                              {consulta.sala_nome || '-'}
                             </span>
                           </div>
                           <div className="consulta-detail">

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails } from '../services/utentes.jsx';
 import { createFichaAvaliacao, getFichasAvaliacao } from '../services/fichas.jsx';
+import { getConsultaById } from '../services/consultas.jsx';
 
 const emptyForm = {
   nome_completo: '',
@@ -35,6 +36,13 @@ export function CriarFichaAvaliacao() {
   const [selectedFicha, setSelectedFicha] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [lockedFields, setLockedFields] = useState({});
+  const [isFisioterapiaConsulta, setIsFisioterapiaConsulta] = useState(false);
+
+  const normalizeText = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 
   const getValueByKey = (data, key) => {
     if (!data || !key) return undefined;
@@ -50,18 +58,24 @@ export function CriarFichaAvaliacao() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!utenteId) {
-        setError('Utente não identificado para este formulário');
+      if (!utenteId || !consultaId) {
+        setError('Este formulário só pode ser aberto a partir de uma consulta de fisioterapia');
         setLoading(false);
         return;
       }
 
       try {
         setError('');
-        const [utenteData, fichasData] = await Promise.all([
+        const [utenteData, fichasData, consultaData] = await Promise.all([
           getUtenteDetails(utenteId),
           getFichasAvaliacao(utenteId).catch(() => []),
+          getConsultaById(consultaId),
         ]);
+
+        const consultaAreaClinica = getValueByKey(consultaData, 'area_clinica_nome');
+        const fisioterapiaConsulta = normalizeText(consultaAreaClinica).includes('fisioterapia');
+
+        setIsFisioterapiaConsulta(fisioterapiaConsulta);
 
         setUtente(utenteData);
         setFichas(Array.isArray(fichasData) ? fichasData : []);
@@ -87,9 +101,11 @@ export function CriarFichaAvaliacao() {
     };
 
     fetchData();
-  }, [utenteId]);
+  }, [consultaId, utenteId]);
 
-  const canManageForms = ['admin', 'terapeuta'].includes(user?.role);
+  const isProfessor = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('professor');
+  const canManageForms = user?.role === 'admin' || isProfessor;
+  const canAccessForm = canManageForms && isFisioterapiaConsulta;
 
   const isFieldLocked = (fieldName) => Boolean(lockedFields[fieldName]);
 
@@ -114,7 +130,7 @@ export function CriarFichaAvaliacao() {
     setError('');
     setSuccess('');
 
-    if (!canManageForms) {
+    if (!canAccessForm) {
       setError('Não tens permissões para criar formulários');
       return;
     }
@@ -167,12 +183,12 @@ export function CriarFichaAvaliacao() {
     return <div className="page">A carregar formulário...</div>;
   }
 
-  if (!canManageForms) {
+  if (!canAccessForm) {
     return (
       <div className="page centered">
         <div className="card">
           <h1>Acesso restrito</h1>
-          <p>Este formulário só pode ser visto e criado por admin ou terapeuta.</p>
+          <p>Este formulário só pode ser visto e criado por admin ou professor, em consultas de fisioterapia.</p>
         </div>
       </div>
     );
