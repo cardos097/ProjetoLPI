@@ -44,7 +44,7 @@ CREATE TABLE areas_clinicas (
 CREATE TABLE terapeutas (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   tipo terapeuta_tipo NOT NULL,
-  area_clinica_id INTEGER NOT NULL REFERENCES areas_clinicas(id),
+  area_clinica_id INTEGER REFERENCES areas_clinicas(id),
   numero_mecanografico VARCHAR(50) UNIQUE,
   supervisor_id INTEGER REFERENCES users(id) ON DELETE SET NULL
 );

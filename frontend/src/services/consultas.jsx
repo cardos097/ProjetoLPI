@@ -88,7 +88,19 @@ export async function getHorariosDisponiveis(terapeutaId, data, duracao, options
   return response;
 }
 
+export async function getTerapeutasByArea(areaId) {
+  const { data } = await api.get(`/terapeutas/area/${areaId}`);
+  return data;
+}
+
 export async function getUtentes() {
   const { data } = await api.get('/utentes');
+  return data;
+}
+
+export async function checkDisponibilidade(dataInicio, dataFim) {
+  const { data } = await api.get('/consultas/disponibilidade/check', {
+    params: { data_inicio: dataInicio, data_fim: dataFim }
+  });
   return data;
 }

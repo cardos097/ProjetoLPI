@@ -20,6 +20,17 @@ import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, 
 import { getFichasAvaliacao } from '../services/fichas.jsx';
 import '../styles/user-profile.css';
 
+// Função para mapear role para nome em português
+function getRoleDisplayName(role) {
+  const roleMap = {
+    'admin': 'Admin',
+    'administrativo': 'Administrativo',
+    'terapeuta': 'Terapeuta',
+    'utente': 'Paciente',
+  };
+  return roleMap[role] || role || 'Paciente';
+}
+
 export function UserPage() {
   const { user } = useAuth();
   const { id: routeUtenteId } = useParams();
@@ -350,13 +361,15 @@ export function UserPage() {
             <div className="profile-info">
               <div className="profile-name-section">
                 <h1>{userDetails?.nome || user?.name || 'Utilizador'}</h1>
-                <p>Nº Processo: {userDetails?.numero_processo || '-'}</p>
+                {(user?.role === 'utente' || routeUtenteId) && (
+                  <p>Nº Processo: {userDetails?.numero_processo || '-'}</p>
+                )}
               </div>
 
               <div className="profile-badges">
                 <span className="badge badge-primary">
                   <User size={16} />
-                  {routeUtenteId ? 'Perfil de Utente' : user?.role === 'admin' ? 'Admin' : user?.role === 'terapeuta' ? 'Terapeuta' : 'Paciente'}
+                  {routeUtenteId ? 'Perfil de Utente' : getRoleDisplayName(user?.role)}
                 </span>
                 {!userDetails?.id && !consultas?.length && !registos?.length && (
                   <span

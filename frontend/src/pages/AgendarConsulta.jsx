@@ -58,6 +58,14 @@ export function AgendarConsulta() {
     return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
   };
 
+  // Verificar permissões - apenas utentes e administrativos podem marcar consultas
+  useEffect(() => {
+    if (user && user.role === 'terapeuta') {
+      // Terapeutas não podem marcar consultas, redirecionar para calendário
+      navigate('/calendario', { replace: true });
+    }
+  }, [user, navigate]);
+
   // Carregar dados iniciais
   useEffect(() => {
     const fetchData = async () => {
@@ -92,7 +100,7 @@ export function AgendarConsulta() {
   // Filtrar terapeutas e salas quando área clínica muda
   useEffect(() => {
     if (form.area_clinica_id) {
-      const terapeutasArea = terapeutas.filter((t) => 
+      const terapeutasArea = terapeutas.filter((t) =>
         t.area_clinica_id === parseInt(form.area_clinica_id)
       );
       setTerapeutasFiltrados(terapeutasArea);
