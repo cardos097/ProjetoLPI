@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "https://projetolpbackend.onrender.com/$1"
+            "destination": "https://projetolpibackend.onrender.com/$1"
         },
         {
             "source": "/(.*)",
