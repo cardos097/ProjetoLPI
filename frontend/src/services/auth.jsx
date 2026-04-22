@@ -8,12 +8,23 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function wakeBackend() {
-  try {
-    await api.get('/health');
-  } catch {
-    // serve apenas para acordar o backend no Render Free
+async function waitForBackendReady(timeoutMs = 70000, intervalMs = 5000) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const response = await api.get('/health');
+      if (response?.status === 200) {
+        return true;
+      }
+    } catch {
+      // ignorar e voltar a tentar
+    }
+
+    await sleep(intervalMs);
   }
+
+  return false;
 }
 
 function buildSession(data, fallbackEmail) {
@@ -48,8 +59,11 @@ function shouldRetry(err) {
 }
 
 export async function loginRequest({ email, password }) {
-  await wakeBackend();
-  await sleep(5000);
+  const ready = await waitForBackendReady();
+
+  if (!ready) {
+    throw new Error('O servidor está a demorar a acordar. Tenta novamente em alguns segundos.');
+  }
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -60,9 +74,10 @@ export async function loginRequest({ email, password }) {
         throw err;
       }
 
-      await sleep(6000);
-      await wakeBackend();
-      await sleep(4000);
+      const wokeUp = await waitForBackendReady(40000, 4000);
+      if (!wokeUp) {
+        throw new Error('O servidor continua indisponível. Tenta novamente daqui a pouco.');
+      }
     }
   }
 }
@@ -72,8 +87,11 @@ export async function loginWithGoogle(idToken) {
     throw new Error('ID Token do Google obrigatório');
   }
 
-  await wakeBackend();
-  await sleep(3000);
+  const ready = await waitForBackendReady();
+
+  if (!ready) {
+    throw new Error('O servidor está a demorar a acordar. Tenta novamente em alguns segundos.');
+  }
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -86,16 +104,20 @@ export async function loginWithGoogle(idToken) {
         throw err;
       }
 
-      await sleep(6000);
-      await wakeBackend();
-      await sleep(4000);
+      const wokeUp = await waitForBackendReady(40000, 4000);
+      if (!wokeUp) {
+        throw new Error('O servidor continua indisponível. Tenta novamente daqui a pouco.');
+      }
     }
   }
 }
 
 export async function registerRequest({ email, password, confirm_password, nome_completo }) {
-  await wakeBackend();
-  await sleep(3000);
+  const ready = await waitForBackendReady();
+
+  if (!ready) {
+    throw new Error('O servidor está a demorar a acordar. Tenta novamente em alguns segundos.');
+  }
 
   const { data } = await api.post('/auth/register', {
     email,
