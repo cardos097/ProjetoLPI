@@ -8,8 +8,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('admin@clinica.pt');
-  const [password, setPassword] = useState('123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -72,7 +72,7 @@ export function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu.email@ufp.edu.pt"
+                  placeholder="example@email.pt"
                   required
                 />
               </label>
@@ -95,13 +95,13 @@ export function LoginPage() {
               </button>
 
               <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
-                Não tem conta? 
-                <Link 
-                  to="/criar-conta" 
-                  style={{ 
+                Não tem conta?
+                <Link
+                  to="/criar-conta"
+                  style={{
                     marginLeft: '5px',
-                    color: '#059669', 
-                    textDecoration: 'none', 
+                    color: '#059669',
+                    textDecoration: 'none',
                     fontWeight: '600',
                     cursor: 'pointer'
                   }}
