@@ -1057,6 +1057,78 @@ table tr:hover {
   max-width: 800px;
 }
 
+.agendar-step-card h2 {
+  margin-top: 0;
+}
+
+.area-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.area-card {
+  border: 1px solid #dbe6f3;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
+  color: #1e293b;
+  padding: 16px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+}
+
+.area-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
+}
+
+.area-card.selected {
+  border-color: #0f766e;
+  background: linear-gradient(180deg, #e6fffa 0%, #d6fff3 100%);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.18);
+}
+
+.area-card-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.helper-text {
+  margin: 0 0 12px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 10px;
+}
+
+.slot-btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.slot-btn:hover {
+  border-color: #0284c7;
+  color: #075985;
+}
+
+.slot-btn.selected {
+  border-color: #0f766e;
+  background: #ccfbf1;
+  color: #134e4a;
+}
+
 select {
   width: 100%;
   padding: 10px;

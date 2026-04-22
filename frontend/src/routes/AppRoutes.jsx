@@ -36,6 +36,8 @@ function ProtectedRoute({ children }) {
 
 export function AppRoutes() {
   const { isAuthenticated, user } = useAuth();
+  const canAccessFichaAvaliacao = user?.role === 'admin'
+    || (user?.role === 'terapeuta' && String(user?.tipo || '').toLowerCase().includes('professor'));
 
   return (
     <Routes>
@@ -168,7 +170,7 @@ export function AppRoutes() {
       <Route
         path="/fichas-avaliacao/nova"
         element={
-          isAuthenticated && ['admin', 'terapeuta'].includes(user?.role) ? (
+          isAuthenticated && canAccessFichaAvaliacao ? (
             <Layout><CriarFichaAvaliacao /></Layout>
           ) : (
             <Navigate to="/dashboard" replace />

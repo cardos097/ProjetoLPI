@@ -34,12 +34,28 @@ export function EditarConsulta() {
     });
   };
 
+  const normalizeText = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
   const getConsultaValue = (consulta, key) => consulta?.[key] ?? consulta?.[key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())];
 
   const parseDateValue = (value) => {
     if (!value) return null;
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const formatLocalDateTime = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const second = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
   };
 
   const [form, setForm] = useState({
@@ -133,8 +149,8 @@ export function EditarConsulta() {
       // Se data foi alterada, remarcar
       if (form.data_inicio || form.hora_inicio || form.data_fim || form.hora_fim) {
         await remarcarConsulta(id, {
-          data_inicio: dataInicio.toISOString().replace('T', ' ').split('.')[0],
-          data_fim: dataFim.toISOString().replace('T', ' ').split('.')[0],
+          data_inicio: formatLocalDateTime(dataInicio),
+          data_fim: formatLocalDateTime(dataFim),
         });
       }
 
@@ -150,9 +166,19 @@ export function EditarConsulta() {
     return <div className="page">A carregar...</div>;
   }
 
-  const canManageForms = ['admin', 'terapeuta'].includes(user?.role);
+  const isProfessor = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('professor');
+  const canManageForms = user?.role === 'admin' || isProfessor;
+  const selectedAreaClinica = areasClinicas.find((area) => area.id === Number(form.area_clinica_id));
+  const areaClinicaNome = selectedAreaClinica?.nome || getConsultaValue(consulta, 'area_clinica_nome') || '';
+  const isFisioterapiaConsulta = normalizeText(areaClinicaNome).includes('fisioterapia');
+  const canAddForm = canManageForms && isFisioterapiaConsulta;
 
   const handleAddForm = () => {
+    if (!isFisioterapiaConsulta) {
+      setError('O formulário de avaliação atual só está disponível para consultas de fisioterapia');
+      return;
+    }
+
     const utenteId = getConsultaValue(consulta, 'utente_id');
 
     if (!utenteId) {
@@ -181,7 +207,7 @@ export function EditarConsulta() {
           <h1>Editar Consulta</h1>
           {getConsultaValue(consulta, 'utente_nome') && <p>Utente: {getConsultaValue(consulta, 'utente_nome')}</p>}
         </div>
-        {canManageForms && (
+        {canAddForm && (
           <button className="btn btn-primary" onClick={handleAddForm}>
             + Adicionar formulário
           </button>
