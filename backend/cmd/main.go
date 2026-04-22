@@ -59,6 +59,10 @@ func main() {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "root ok"})
+	})
+
 	routes.RegisterAuthRoutes(r)
 
 	r.POST("/utentes", controllers.CreateUtente)
