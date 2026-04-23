@@ -36,3 +36,30 @@ export async function createFichaAvaliacao(ficha) {
   const { data } = await api.post('/fichas-avaliacao', ficha);
   return data;
 }
+
+export async function getFichasPsicologia(utenteId) {
+  const { data } = await api.get('/fichas-psicologia', {
+    params: utenteId ? { utente_id: utenteId } : undefined,
+  });
+  return data;
+}
+
+export async function getFichaPsicologiaByID(fichaId) {
+  const { data } = await api.get(`/fichas-psicologia/${fichaId}`);
+  return data;
+}
+
+export async function createFichaPsicologia(ficha) {
+  const { data } = await api.post('/fichas-psicologia', ficha);
+  return data;
+}
+
+export async function updateFichaPsicologia(fichaId, ficha) {
+  const { data } = await api.patch(`/fichas-psicologia/${fichaId}`, ficha);
+  return data;
+}
+
+export async function deleteFichaPsicologia(fichaId) {
+  const { data } = await api.delete(`/fichas-psicologia/${fichaId}`);
+  return data;
+}
