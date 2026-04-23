@@ -102,6 +102,12 @@ func main() {
 		auth.POST("/fichas-avaliacao", middleware.RoleMiddleware("admin", "terapeuta"), controllers.CreateFichaAvaliacao)
 		auth.PATCH("/fichas-avaliacao/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaAvaliacao)
 
+		auth.GET("/fichas-psicologia", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetFichasPsicologia)
+		auth.GET("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetFichaPsicologiaByID)
+		auth.POST("/fichas-psicologia", middleware.RoleMiddleware("admin", "terapeuta"), controllers.CreateFichaPsicologia)
+		auth.PATCH("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaPsicologia)
+		auth.DELETE("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaPsicologia)
+
 		auth.GET("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetAssiduidade)
 		auth.POST("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateAssiduidade)
 	}

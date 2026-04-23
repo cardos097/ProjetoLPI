@@ -111,7 +111,7 @@ export function ListaConsultas() {
   };
 
   const canManageConsultas = ['admin', 'administrativo', 'terapeuta'].includes(user?.role);
-  const canCreateConsulta = ['admin', 'administrativo', 'terapeuta', 'utente'].includes(user?.role);
+  const canCreateConsulta = ['admin', 'administrativo', 'utente'].includes(user?.role);
 
   if (loading) {
     return <div className="page">A carregar consultas...</div>;

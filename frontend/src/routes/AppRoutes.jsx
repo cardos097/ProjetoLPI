@@ -16,6 +16,7 @@ import { PaginaCalendario } from '../pages/PaginaCalendario.jsx';
 import { ListaSalas } from '../pages/ListaSalas.jsx';
 import { VerConsultasSala } from '../pages/VerConsultasSala.jsx';
 import { CriarFichaAvaliacao } from '../pages/CriarFichaAvaliacao.jsx';
+import { CriarFichaPsicologia } from '../pages/CriarFichaPsicologia.jsx';
 import { CompletarPerfilPage } from '../pages/CompletarPerfilPage.jsx';
 import { Layout } from '../components/Layout.jsx';
 import { Navbar } from '../components/Navbar.jsx';
@@ -190,6 +191,16 @@ export function AppRoutes() {
         element={
           isAuthenticated && canAccessFichaAvaliacao ? (
             <Layout><CriarFichaAvaliacao /></Layout>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
+      />
+      <Route
+        path="/fichas-psicologia/nova"
+        element={
+          isAuthenticated && canAccessFichaAvaliacao ? (
+            <Layout><CriarFichaPsicologia /></Layout>
           ) : (
             <Navigate to="/dashboard" replace />
           )

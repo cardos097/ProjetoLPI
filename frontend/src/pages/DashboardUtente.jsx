@@ -90,9 +90,11 @@ export function DashboardUtente() {
                                 ))}
                             </div>
                         )}
-                        <button className="btn-primary" onClick={() => navigate('/consultas/novo')}>
-                            ➕ Agendar Nova Consulta
-                        </button>
+                        {(user?.role === 'utente' || user?.role === 'administrativo') && (
+                            <button className="btn-primary" onClick={() => navigate('/consultas/novo')}>
+                                ➕ Agendar Nova Consulta
+                            </button>
+                        )}
                     </div>
                 )}
 

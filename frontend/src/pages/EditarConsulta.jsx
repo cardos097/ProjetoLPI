@@ -171,7 +171,9 @@ export function EditarConsulta() {
   const selectedAreaClinica = areasClinicas.find((area) => area.id === Number(form.area_clinica_id));
   const areaClinicaNome = selectedAreaClinica?.nome || getConsultaValue(consulta, 'area_clinica_nome') || '';
   const isFisioterapiaConsulta = normalizeText(areaClinicaNome).includes('fisioterapia');
-  const canAddForm = canManageForms && isFisioterapiaConsulta;
+  const isPsicologiaConsulta = normalizeText(areaClinicaNome).includes('psicologia');
+  const canAddFisioterapiaForm = canManageForms && isFisioterapiaConsulta;
+  const canAddPsicologiaForm = canManageForms && isPsicologiaConsulta;
 
   const handleAddForm = () => {
     if (!isFisioterapiaConsulta) {
@@ -197,6 +199,30 @@ export function EditarConsulta() {
     );
   };
 
+  const handleAddPsicologiaForm = () => {
+    if (!isPsicologiaConsulta) {
+      setError('O formulário de psicologia só está disponível para consultas de psicologia');
+      return;
+    }
+
+    const utenteId = getConsultaValue(consulta, 'utente_id');
+
+    if (!utenteId) {
+      setError('Não foi possível identificar o utente desta consulta');
+      return;
+    }
+
+    navigate(
+      `/fichas-psicologia/nova?utente_id=${utenteId}&consulta_id=${getConsultaValue(consulta, 'id')}`,
+      {
+        state: {
+          utenteId,
+          consultaId: getConsultaValue(consulta, 'id'),
+        },
+      }
+    );
+  };
+
   return (
     <div className="page editar-consulta">
       <div className="page-header">
@@ -207,11 +233,18 @@ export function EditarConsulta() {
           <h1>Editar Consulta</h1>
           {getConsultaValue(consulta, 'utente_nome') && <p>Utente: {getConsultaValue(consulta, 'utente_nome')}</p>}
         </div>
-        {canAddForm && (
-          <button className="btn btn-primary" onClick={handleAddForm}>
-            + Adicionar formulário
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          {canAddFisioterapiaForm && (
+            <button className="btn btn-primary" onClick={handleAddForm}>
+              + Ficha Fisioterapia
+            </button>
+          )}
+          {canAddPsicologiaForm && (
+            <button className="btn btn-primary" onClick={handleAddPsicologiaForm}>
+              + Ficha Psicologia
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="form-container">
