@@ -121,13 +121,30 @@ func GetTerapeutasByArea(c *gin.Context) {
 
 func GetAlunosDisponiveis(c *gin.Context) {
 	search := c.Query("search")
+	professorUserID := c.GetUint("user_id")
+
+	// Obter a área clínica do professor
+	var professor models.Terapeuta
+	if err := config.DB.
+		Where("user_id = ?", professorUserID).
+		First(&professor).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Professor não encontrado"})
+		return
+	}
+
+	// Se o professor não tem área clínica definida, retorna lista vazia
+	if professor.AreaClinicaID == nil {
+		c.JSON(http.StatusOK, []gin.H{})
+		return
+	}
 
 	var alunos []models.Terapeuta
 
 	query := config.DB.
 		Joins("JOIN users ON terapeutas.user_id = users.id").
 		Where("terapeutas.tipo = ?", "aluno").
-		Where("terapeutas.supervisor_id IS NULL")
+		Where("terapeutas.supervisor_id IS NULL").
+		Where("terapeutas.area_clinica_id = ?", *professor.AreaClinicaID)
 
 	if search != "" {
 		query = query.Where("users.nome ILIKE ? OR users.email ILIKE ?", "%"+search+"%", "%"+search+"%")

@@ -13,6 +13,8 @@ import { ListaConsultas } from '../pages/ListaConsultas.jsx';
 import { AgendarConsulta } from '../pages/AgendarConsulta.jsx';
 import { EditarConsulta } from '../pages/EditarConsulta.jsx';
 import { PaginaCalendario } from '../pages/PaginaCalendario.jsx';
+import { ListaSalas } from '../pages/ListaSalas.jsx';
+import { VerConsultasSala } from '../pages/VerConsultasSala.jsx';
 import { CriarFichaAvaliacao } from '../pages/CriarFichaAvaliacao.jsx';
 import { CompletarPerfilPage } from '../pages/CompletarPerfilPage.jsx';
 import { Layout } from '../components/Layout.jsx';
@@ -164,6 +166,22 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <EditarConsulta />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/salas"
+        element={
+          <ProtectedRoute>
+            <ListaSalas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/salas/:salaId"
+        element={
+          <ProtectedRoute>
+            <VerConsultasSala />
           </ProtectedRoute>
         }
       />

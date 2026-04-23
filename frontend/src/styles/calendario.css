@@ -216,3 +216,30 @@
         font-size: 0.7rem;
     }
 }
+
+/* Read-Only Mode (para Professores/Terapeutas) */
+.calendario-full.readonly .fc .fc-daygrid-day {
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.calendario-full.readonly .fc .fc-daygrid-day:hover {
+    background-color: white;
+}
+
+.calendario-full.readonly .fc .fc-event {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.alert-info {
+    background-color: #e3f2fd;
+    border: 1px solid #90caf9;
+    color: #1565c0;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

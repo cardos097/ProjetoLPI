@@ -39,9 +39,11 @@ export function Navbar() {
         {/* Menu + User (Desktop) */}
         {user && (
           <div className="navbar-menu">
-            <button onClick={() => navigate('/')} className="navbar-link">
-              Início
-            </button>
+            {user?.role !== 'terapeuta' && (
+              <button onClick={() => navigate('/')} className="navbar-link">
+                Início
+              </button>
+            )}
 
             <button onClick={() => navigate('/dashboard')} className="navbar-link">
               Dashboard
@@ -137,9 +139,11 @@ export function Navbar() {
         <div className="navbar-mobile-menu">
           {user && (
             <>
-              <button onClick={() => { navigate('/'); setMobileMenuOpen(false); }} className="mobile-menu-link">
-                Início
-              </button>
+              {user?.role !== 'terapeuta' && (
+                <button onClick={() => { navigate('/'); setMobileMenuOpen(false); }} className="mobile-menu-link">
+                  Início
+                </button>
+              )}
 
               <button onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }} className="mobile-menu-link">
                 Dashboard
