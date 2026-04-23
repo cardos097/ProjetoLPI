@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { ListaUtentes } from './ListaUtentes.jsx';
 import { ListaConsultas } from './ListaConsultas.jsx';
+import { ListaSalas } from './ListaSalas.jsx';
 import { GerirAlunosModal } from '../components/GerirAlunosModal.jsx';
 import { getAlunosDoProfessor } from '../services/terapeutas.jsx';
 import '../styles/dashboard.css';
@@ -56,6 +57,12 @@ export function DashboardStaff() {
                 >
                     👥 Clientes/Pacientes
                 </button>
+                <button
+                    className={`tab-btn ${activeTab === 'salas' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('salas')}
+                >
+                    🏥 Salas
+                </button>
                 {user.tipo === 'professor' && (
                     <button
                         className={`tab-btn ${activeTab === 'alunos' ? 'active' : ''}`}
@@ -77,6 +84,7 @@ export function DashboardStaff() {
             <div className="dashboard-content">
                 {activeTab === 'consultas' && <ListaConsultas />}
                 {activeTab === 'utentes' && <ListaUtentes />}
+                {activeTab === 'salas' && <ListaSalas />}
                 {activeTab === 'alunos' && user.tipo === 'professor' && (
                     <div className="alunos-section">
                         <div className="section-header">

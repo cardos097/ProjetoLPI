@@ -34,6 +34,11 @@ export function PaginaCalendario() {
     }, []);
 
     const handleDateClick = (dateStr) => {
+        // Professores (terapeutas) não podem agendar consultas
+        if (user?.role === 'terapeuta') {
+            return;
+        }
+
         console.log('🎯 handleDateClick chamado com:', dateStr);
         console.log('🎯 Antes de setState - modalOpen:', modalOpen);
         setDataSelecionada(dateStr);
@@ -79,7 +84,7 @@ export function PaginaCalendario() {
             <div className="page-header">
                 <div>
                     <h1>📅 Calendário de Consultas</h1>
-                    <p>Clica num dia para marcar uma consulta</p>
+                    <p>Clica numa consulta para ver detalhes</p>
                 </div>
             </div>
 
@@ -90,12 +95,13 @@ export function PaginaCalendario() {
                 </div>
             )}
 
-            <div className="calendario-full">
+            <div className={`calendario-full ${user?.role === 'terapeuta' ? 'readonly' : ''}`}>
                 <CalendarioVisualizacao
                     consultas={consultas}
                     onDateClick={handleDateClick}
                     onEventClick={handleEventClick}
                     mode="month"
+                    isReadOnly={user?.role === 'terapeuta'}
                 />
             </div>
 

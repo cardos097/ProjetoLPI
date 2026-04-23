@@ -365,3 +365,301 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================ */
+/* SALAS - STYLES                              */
+/* ============================================ */
+
+.salas-section,
+.sala-consultas-page {
+    animation: fadeIn 0.3s ease;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.btn-back {
+    padding: 0.5rem 1rem;
+    background: var(--ufp-light);
+    border: 1px solid var(--ufp-primary);
+    border-radius: 4px;
+    color: var(--ufp-primary);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+    background: var(--ufp-primary);
+    color: white;
+}
+
+.page-header > div h1 {
+    margin: 0 0 0.5rem 0;
+    color: var(--ufp-dark);
+}
+
+.page-header > div p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.filtro-salas {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.filtro-btn {
+    padding: 0.65rem 1.2rem;
+    background: var(--ufp-light);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    color: var(--ufp-dark);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filtro-btn:hover {
+    background: #e8f1f9;
+    transform: translateY(-2px);
+}
+
+.filtro-btn.active {
+    background: var(--ufp-primary);
+    color: white;
+    border-color: var(--ufp-primary);
+}
+
+.salas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.sala-card {
+    background: white;
+    border: 2px solid var(--ufp-light);
+    border-radius: 8px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sala-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+    border-color: var(--ufp-primary);
+}
+
+.sala-icon {
+    font-size: 2.5rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.sala-info {
+    flex: 1;
+}
+
+.sala-info h3 {
+    margin: 0;
+    color: var(--ufp-dark);
+    font-size: 1.1rem;
+}
+
+.sala-descricao {
+    margin: 0.5rem 0 0 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.sala-arrow {
+    font-size: 1.5rem;
+    color: var(--ufp-primary);
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.sala-card:hover .sala-arrow {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+/* Consultas da Sala */
+.sala-consultas-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.sala-consultas-container h2 {
+    color: var(--ufp-dark);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.consultas-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.consulta-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--ufp-light);
+    border-radius: 6px;
+    border-left: 4px solid var(--ufp-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.consulta-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.consulta-status {
+    width: 4px;
+    height: 60px;
+    border-radius: 2px;
+}
+
+.consulta-info {
+    flex: 1;
+}
+
+.consulta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    gap: 1rem;
+}
+
+.consulta-header h4 {
+    margin: 0;
+    color: var(--ufp-dark);
+    font-weight: 600;
+}
+
+.consulta-estado {
+    padding: 0.25rem 0.75rem;
+    border-radius: 16px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.consulta-detalhes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.consulta-detalhes p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.consulta-arrow {
+    color: var(--ufp-primary);
+    font-size: 1.5rem;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.consulta-item:hover .consulta-arrow {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+.error-state {
+    text-align: center;
+    padding: 3rem;
+}
+
+.error-state p {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .salas-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sala-card {
+        gap: 1rem;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .sala-icon {
+        min-width: unset;
+    }
+
+    .consulta-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .consulta-detalhes {
+        grid-template-columns: 1fr;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ============================================ */
+/* SALAS CALENDAR - STYLES                     */
+/* ============================================ */
+
+.salas-calendario-page {
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.salas-calendario-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.salas-calendario-container .fc {
+    flex: 1;
+}
+
+.fc-resource-timeline {
+    max-height: calc(100vh - 300px);
+}
