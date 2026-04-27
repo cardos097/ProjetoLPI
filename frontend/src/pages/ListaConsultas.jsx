@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getConsultas, cancelConsulta } from '../services/consultas.jsx';
+import { getConsultas, cancelConsulta, createConsulta } from '../services/consultas.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
-import { ModalAgendarConsulta } from '../components/ModalAgendarConsulta.jsx';
+import { ModalAgendarConsultaV2 } from '../components/ModalAgendarConsultaV2.jsx';
 
 export function ListaConsultas() {
   const navigate = useNavigate();
@@ -79,23 +79,33 @@ export function ListaConsultas() {
   };
 
   const handleDateClick = (dateStr) => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    if (new Date(dateStr) < hoje) return;
     setDataSelecionada(dateStr);
     setModalOpen(true);
   };
 
-  const handleModalSubmit = (formData) => {
-    // Redireciona para o formulário completo com os dados pré-preenchidos
-    navigate('/consultas/nova', {
-      state: {
-        dataInicio: formData.data_inicio,
-        tipo: formData.tipo
-      }
-    });
-    setModalOpen(false);
+  const handleModalSubmit = async (formData) => {
+    try {
+      await createConsulta({
+        utente_id: parseInt(formData.utente_id),
+        terapeuta_id: parseInt(formData.terapeuta_id),
+        sala_id: parseInt(formData.sala_id),
+        area_clinica_id: parseInt(formData.area_clinica_id),
+        data_inicio: formData.data_inicio,
+        data_fim: formData.data_fim,
+      });
+      setModalOpen(false);
+      setDataSelecionada(null);
+      await fetchConsultas();
+    } catch (err) {
+      console.error('Erro ao criar consulta:', err);
+      alert('Erro ao agendar consulta: ' + err.message);
+    }
   };
 
-  const handleEventClick = (consultaId, consultaData) => {
-    // Abre modal para ver/editar a consulta
+  const handleEventClick = (consultaId) => {
     navigate(`/consultas/${consultaId}/editar`);
   };
 
@@ -111,7 +121,7 @@ export function ListaConsultas() {
   };
 
   const canManageConsultas = ['admin', 'administrativo', 'terapeuta'].includes(user?.role);
-  const canCreateConsulta = ['admin', 'administrativo', 'utente'].includes(user?.role);
+  const canCreateConsulta = ['admin', 'administrativo', 'terapeuta', 'utente'].includes(user?.role);
 
   if (loading) {
     return <div className="page">A carregar consultas...</div>;
@@ -301,7 +311,7 @@ export function ListaConsultas() {
       )}
 
       {/* Modal para Agendar */}
-      <ModalAgendarConsulta
+      <ModalAgendarConsultaV2
         isOpen={modalOpen}
         onClose={() => {
           setModalOpen(false);

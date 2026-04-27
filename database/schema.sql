@@ -82,6 +82,7 @@ CREATE INDEX idx_sala_area ON sala_area_clinica(area_clinica_id);
 CREATE TABLE processos_clinicos (
   id SERIAL PRIMARY KEY,
   utente_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  terapeuta_responsavel_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ativo BOOLEAN DEFAULT TRUE
 );

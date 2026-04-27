@@ -6,22 +6,9 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  const userStr = localStorage.getItem('user');
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      config.headers['X-User-ID'] = user.id;
-      config.headers['X-User-Role'] = user.role;
-    } catch (error) {
-      console.error('Erro ao parsear user do localStorage', error);
-    }
-  }
-
   return config;
 });
 
