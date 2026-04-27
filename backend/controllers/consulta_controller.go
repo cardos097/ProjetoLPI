@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"clinica-backend/config"
@@ -17,6 +18,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// consultaMu protege o bloco verificar-disponibilidade + criar/remarcar consulta
+// contra race conditions entre pedidos concorrentes.
+var consultaMu sync.Mutex
 
 type CreateConsultaRequest struct {
 	UtenteID      uint   `json:"utente_id"`
@@ -350,6 +355,14 @@ func CreateConsulta(c *gin.Context) {
 		return
 	}
 
+	if !dataInicio.After(time.Now()) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Não é possível marcar consultas no passado"})
+		return
+	}
+
+	consultaMu.Lock()
+	defer consultaMu.Unlock()
+
 	if userRole == "utente" {
 		randomSalaID, err := getRandomAvailableSalaID(req.AreaClinicaID, dataInicio, dataFim)
 		if err != nil {
@@ -388,7 +401,34 @@ func CreateConsulta(c *gin.Context) {
 		return
 	}
 
+	ligarTerapeutaResponsavel(req.UtenteID, req.TerapeutaID)
+
 	c.JSON(http.StatusCreated, consulta)
+}
+
+// ligarTerapeutaResponsavel define o terapeuta responsável no processo clínico
+// do utente na sua primeira consulta. Se o terapeuta for um aluno, liga ao
+// professor supervisor. Não substitui uma ligação já existente.
+func ligarTerapeutaResponsavel(utenteID, terapeutaID uint) {
+	var processo models.ProcessoClinico
+	if err := config.DB.Where("utente_id = ?", utenteID).First(&processo).Error; err != nil {
+		return
+	}
+
+	if processo.TerapeutaResponsavelID != nil {
+		return
+	}
+
+	responsavelID := terapeutaID
+
+	var terapeuta models.Terapeuta
+	if err := config.DB.Where("user_id = ?", terapeutaID).First(&terapeuta).Error; err == nil {
+		if terapeuta.Tipo == "aluno" && terapeuta.SupervisorID != nil {
+			responsavelID = *terapeuta.SupervisorID
+		}
+	}
+
+	config.DB.Model(&processo).Update("terapeuta_responsavel_id", responsavelID)
 }
 
 func CancelConsulta(c *gin.Context) {
@@ -459,9 +499,17 @@ func RemarcarConsulta(c *gin.Context) {
 		return
 	}
 
+	if !dataInicio.After(time.Now()) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Não é possível remarcar consultas para o passado"})
+		return
+	}
+
 	consulta.DataInicio = dataInicio
 	consulta.DataFim = dataFim
 	consulta.Estado = "agendada"
+
+	consultaMu.Lock()
+	defer consultaMu.Unlock()
 
 	if err := config.DB.Save(&consulta).Error; err != nil {
 		msg := strings.ToLower(err.Error())
@@ -540,9 +588,17 @@ func UpdateConsulta(c *gin.Context) {
 			return
 		}
 
+		if !dataInicio.After(time.Now()) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Não é possível atualizar consultas para o passado"})
+			return
+		}
+
 		consulta.DataInicio = dataInicio
 		consulta.DataFim = dataFim
 	}
+
+	consultaMu.Lock()
+	defer consultaMu.Unlock()
 
 	if err := config.DB.Save(&consulta).Error; err != nil {
 		msg := strings.ToLower(err.Error())

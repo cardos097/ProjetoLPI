@@ -11,6 +11,7 @@ import (
 	"clinica-backend/models"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -24,14 +25,16 @@ type UtenteResponse struct {
 }
 
 type UtenteDetailResponse struct {
-	ID             uint    `json:"id"`
-	Nome           string  `json:"nome"`
-	Email          string  `json:"email"`
-	NumeroProcesso string  `json:"numero_processo"`
-	Telefone       string  `json:"telefone"`
-	Morada         string  `json:"morada"`
-	DataNascimento *string `json:"data_nascimento"`
-	FotoURL        *string `json:"foto_url"`
+	ID                      uint    `json:"id"`
+	Nome                    string  `json:"nome"`
+	Email                   string  `json:"email"`
+	NumeroProcesso          string  `json:"numero_processo"`
+	Telefone                string  `json:"telefone"`
+	Morada                  string  `json:"morada"`
+	DataNascimento          *string `json:"data_nascimento"`
+	FotoURL                 *string `json:"foto_url"`
+	TerapeutaResponsavelID  *uint   `json:"terapeuta_responsavel_id"`
+	TerapeutaResponsavelNome string  `json:"terapeuta_responsavel_nome"`
 }
 
 type UtenteConsultaResponse struct {
@@ -139,6 +142,14 @@ func GetUtenteByID(c *gin.Context) {
 		Morada:         morada,
 		DataNascimento: dataNascimento,
 		FotoURL:        utente.FotoURL,
+	}
+
+	var processo models.ProcessoClinico
+	if err := config.DB.Preload("TerapeutaResponsavel").Where("utente_id = ?", id).First(&processo).Error; err == nil {
+		response.TerapeutaResponsavelID = processo.TerapeutaResponsavelID
+		if processo.TerapeutaResponsavel != nil {
+			response.TerapeutaResponsavelNome = processo.TerapeutaResponsavel.Nome
+		}
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -262,11 +273,17 @@ func CreateUtente(c *gin.Context) {
 		return
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao processar password"})
+		return
+	}
+
 	// Criar User
 	user := models.User{
 		Nome:         req.Nome,
 		Email:        req.Email,
-		PasswordHash: req.Password,
+		PasswordHash: string(hashedPassword),
 		Role:         "utente",
 		Active:       true,
 	}

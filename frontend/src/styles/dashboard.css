@@ -663,3 +663,162 @@
 .fc-resource-timeline {
     max-height: calc(100vh - 300px);
 }
+/* ============================================ */
+/* SALAS - OCUPAÇÃO TABLE                       */
+/* ============================================ */
+
+.salas-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.salas-nav-center {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    justify-content: center;
+}
+
+.salas-nav-data {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    text-transform: capitalize;
+}
+
+.btn-nav {
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 16px;
+    cursor: pointer;
+    color: #374151;
+    transition: background 0.15s;
+}
+
+.btn-nav:hover { background: #e5e7eb; }
+
+.btn-hoje {
+    background: var(--ufp-primary, #1E7D5B);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-hoje:hover { background: #1a6b50; }
+
+.salas-table-wrapper {
+    overflow-x: auto;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.salas-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.salas-th-sala {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    min-width: 130px;
+    white-space: nowrap;
+}
+
+.salas-th-hora {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    padding: 10px 6px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    min-width: 72px;
+    white-space: nowrap;
+}
+
+.salas-td-sala {
+    border: 1px solid #e5e7eb;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    background: #fafafa;
+    white-space: nowrap;
+}
+
+.salas-td-slot {
+    border: 1px solid #e5e7eb;
+    padding: 6px;
+    text-align: center;
+    font-size: 12px;
+    vertical-align: middle;
+    height: 48px;
+}
+
+.salas-td-slot.livre {
+    background: white;
+}
+
+.salas-td-slot.ocupado {
+    border-radius: 4px;
+}
+
+.salas-slot-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 500;
+    max-width: 68px;
+    margin: 0 auto;
+}
+
+.salas-empty {
+    text-align: center;
+    padding: 48px;
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+.salas-legenda {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.salas-legenda-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    font-size: 12px;
+    font-weight: 500;
+}

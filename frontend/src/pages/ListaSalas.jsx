@@ -2,9 +2,23 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getSalas, getConsultas } from '../services/consultas.jsx';
-import FullCalendar from '@fullcalendar/react';
-import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
 import '../styles/dashboard.css';
+
+const HORA_INICIO = 9;
+const HORA_FIM = 19;
+const HORAS = Array.from({ length: HORA_FIM - HORA_INICIO }, (_, i) => HORA_INICIO + i);
+
+function formatarData(date) {
+    return date.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function mesmoDia(date, refDate) {
+    return (
+        date.getUTCFullYear() === refDate.getUTCFullYear() &&
+        date.getUTCMonth() === refDate.getUTCMonth() &&
+        date.getUTCDate() === refDate.getUTCDate()
+    );
+}
 
 export function ListaSalas() {
     const navigate = useNavigate();
@@ -13,6 +27,11 @@ export function ListaSalas() {
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [diaAtual, setDiaAtual] = useState(() => {
+        const d = new Date();
+        d.setUTCHours(0, 0, 0, 0);
+        return d;
+    });
 
     useEffect(() => {
         carregarDados();
@@ -22,130 +41,168 @@ export function ListaSalas() {
         try {
             setLoading(true);
             setError('');
+            const [salasList, consultasList] = await Promise.all([getSalas(), getConsultas()]);
 
-            const salasList = await getSalas();
-            const consultasList = await getConsultas();
-
-            // Filtrar salas baseado em role e area_clinica
             let salasFiltradas = salasList;
-            
             if (user?.role === 'terapeuta') {
-                // Professor: ve só as salas da sua área clínica
-                const isFisio = user?.area_clinica_id === 3; // Fisioterapia
+                const isFisio = user?.area_clinica_id === 3;
                 salasFiltradas = salasList.filter(sala => {
                     const isSalaFisio = sala.descricao?.includes('fisioterapia') || sala.nome?.includes('Fisio');
                     return isFisio ? isSalaFisio : !isSalaFisio;
                 });
             } else if (user?.role !== 'admin' && user?.role !== 'administrativo') {
-                // Outros roles (utente): sem acesso
                 setError('Sem permissão para ver salas');
                 setLoading(false);
                 return;
             }
-            // Admin e administrativo veem tudo
 
             setSalas(salasFiltradas);
             setConsultas(consultasList || []);
         } catch (err) {
-            console.error('Erro ao carregar dados:', err);
             setError('Erro ao carregar salas');
         } finally {
             setLoading(false);
         }
     };
 
-    // Converter salas para recursos do FullCalendar
-    const resources = salas.map(sala => ({
-        id: `sala-${sala.id}`,
-        title: sala.nome
-    }));
+    const consultasDoDia = consultas.filter(c => {
+        const inicio = new Date(c.data_inicio);
+        return mesmoDia(inicio, diaAtual);
+    });
 
-    // Converter consultas para eventos do FullCalendar
-    const obterCor = (estado) => {
+    const getConsultaNaHora = (salaId, hora) => {
+        return consultasDoDia.find(c => {
+            const inicio = new Date(c.data_inicio);
+            const fim = new Date(c.data_fim);
+            const slotInicio = new Date(Date.UTC(
+                diaAtual.getUTCFullYear(), diaAtual.getUTCMonth(), diaAtual.getUTCDate(), hora, 0, 0
+            ));
+            const slotFim = new Date(Date.UTC(
+                diaAtual.getUTCFullYear(), diaAtual.getUTCMonth(), diaAtual.getUTCDate(), hora + 1, 0, 0
+            ));
+            return c.sala_id === salaId && inicio < slotFim && fim > slotInicio;
+        });
+    };
+
+    const corEstado = (estado) => {
         switch (estado) {
-            case 'agendada':
-                return '#3498db';
-            case 'realizada':
-                return '#2ecc71';
-            case 'cancelada':
-                return '#e74c3c';
-            case 'faltou':
-                return '#95a5a6';
-            default:
-                return '#34495e';
+            case 'agendada':   return { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' };
+            case 'realizada':  return { bg: '#dcfce7', text: '#166534', border: '#86efac' };
+            case 'cancelada':  return { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' };
+            case 'faltou':     return { bg: '#f3f4f6', text: '#374151', border: '#d1d5db' };
+            default:           return { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd' };
         }
     };
 
-    const events = consultas
-        .filter(c => salas.find(s => s.id === c.sala_id))
-        .map(consulta => ({
-            id: `consulta-${consulta.id}`,
-            title: `${consulta.utente?.nome || 'Paciente'} - ${consulta.terapeuta?.user?.nome || 'N/A'}`,
-            start: consulta.data_inicio,
-            end: consulta.data_fim,
-            resourceId: `sala-${consulta.sala_id}`,
-            extendedProps: {
-                consultaId: consulta.id
-            },
-            backgroundColor: obterCor(consulta.estado),
-            borderColor: obterCor(consulta.estado)
-        }));
-
-    const handleEventClick = (info) => {
-        const consultaId = info.event.extendedProps.consultaId;
-        if (consultaId) {
-            navigate(`/consultas/${consultaId}/editar`);
-        }
+    const diaAnterior = () => {
+        const d = new Date(diaAtual);
+        d.setUTCDate(d.getUTCDate() - 1);
+        setDiaAtual(d);
     };
 
-    if (loading) {
-        return <div className="page centered">A carregar salas...</div>;
-    }
+    const diaSeguinte = () => {
+        const d = new Date(diaAtual);
+        d.setUTCDate(d.getUTCDate() + 1);
+        setDiaAtual(d);
+    };
 
-    if (error) {
-        return (
-            <div className="page centered">
-                <div className="error-state">
-                    <p>{error}</p>
-                    <button onClick={() => navigate('/dashboard')} className="btn-primary">
-                        Voltar ao Dashboard
-                    </button>
-                </div>
+    const hoje = () => {
+        const d = new Date();
+        d.setUTCHours(0, 0, 0, 0);
+        setDiaAtual(d);
+    };
+
+    if (loading) return <div className="page centered">A carregar salas...</div>;
+
+    if (error) return (
+        <div className="page centered">
+            <div className="error-state">
+                <p>{error}</p>
+                <button onClick={() => navigate('/dashboard')} className="btn-primary">Voltar ao Dashboard</button>
             </div>
-        );
-    }
+        </div>
+    );
 
     return (
-        <div className="salas-calendario-page">
+        <div className="page">
             <div className="page-header">
                 <div>
-                    <h1>🏥 Salas - Calendário</h1>
-                    <p>Vista das consultas agendadas por sala</p>
+                    <h1>Ocupação das Salas</h1>
+                    <p>Vista diária das consultas por sala</p>
                 </div>
             </div>
 
-            <div className="salas-calendario-container">
-                {resources.length === 0 ? (
-                    <div className="empty-state">
-                        <p>Nenhuma sala disponível</p>
-                    </div>
-                ) : (
-                    <FullCalendar
-                        plugins={[resourceTimelinePlugin]}
-                        initialView="resourceTimelineWeek"
-                        headerToolbar={{
-                            left: 'prev,next today',
-                            center: 'title',
-                            right: 'resourceTimelineDay,resourceTimelineWeek,resourceTimelineMonth'
-                        }}
-                        resources={resources}
-                        events={events}
-                        eventClick={handleEventClick}
-                        height="auto"
-                        contentHeight="auto"
-                        slotLabelInterval={{ minutes: 60 }}
-                    />
-                )}
+            {/* Navegação de dia */}
+            <div className="salas-nav">
+                <button className="btn-nav" onClick={diaAnterior}>&#8592;</button>
+                <div className="salas-nav-center">
+                    <span className="salas-nav-data">{formatarData(diaAtual)}</span>
+                    <button className="btn-hoje" onClick={hoje}>Hoje</button>
+                </div>
+                <button className="btn-nav" onClick={diaSeguinte}>&#8594;</button>
+            </div>
+
+            {/* Tabela */}
+            <div className="salas-table-wrapper">
+                <table className="salas-table">
+                    <thead>
+                        <tr>
+                            <th className="salas-th-sala">Sala</th>
+                            {HORAS.map(h => (
+                                <th key={h} className="salas-th-hora">
+                                    {String(h).padStart(2, '0')}:00
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {salas.length === 0 ? (
+                            <tr>
+                                <td colSpan={HORAS.length + 1} className="salas-empty">
+                                    Nenhuma sala disponível
+                                </td>
+                            </tr>
+                        ) : (
+                            salas.map(sala => (
+                                <tr key={sala.id}>
+                                    <td className="salas-td-sala">{sala.nome}</td>
+                                    {HORAS.map(hora => {
+                                        const consulta = getConsultaNaHora(sala.id, hora);
+                                        const cor = consulta ? corEstado(consulta.estado) : null;
+                                        return (
+                                            <td
+                                                key={hora}
+                                                className={`salas-td-slot ${consulta ? 'ocupado' : 'livre'}`}
+                                                style={consulta ? {
+                                                    backgroundColor: cor.bg,
+                                                    borderColor: cor.border,
+                                                    color: cor.text,
+                                                    cursor: 'pointer',
+                                                } : {}}
+                                                onClick={() => consulta && navigate(`/consultas/${consulta.id}/editar`)}
+                                                title={consulta ? `${consulta.utente_nome || 'Utente'} — ${consulta.terapeuta_nome || 'Terapeuta'}` : ''}
+                                            >
+                                                {consulta && (
+                                                    <span className="salas-slot-label">
+                                                        {consulta.utente_nome || 'Consulta'}
+                                                    </span>
+                                                )}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Legenda */}
+            <div className="salas-legenda">
+                <span className="salas-legenda-item" style={{ background: '#dbeafe', borderColor: '#93c5fd', color: '#1e40af' }}>Agendada</span>
+                <span className="salas-legenda-item" style={{ background: '#dcfce7', borderColor: '#86efac', color: '#166534' }}>Realizada</span>
+                <span className="salas-legenda-item" style={{ background: '#fee2e2', borderColor: '#fca5a5', color: '#991b1b' }}>Cancelada</span>
+                <span className="salas-legenda-item" style={{ background: '#f3f4f6', borderColor: '#d1d5db', color: '#374151' }}>Faltou</span>
             </div>
         </div>
     );

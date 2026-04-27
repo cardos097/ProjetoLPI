@@ -3,12 +3,10 @@ import { getConsultas, createConsulta } from '../services/consultas.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
 import { ModalAgendarConsultaV2 } from '../components/ModalAgendarConsultaV2.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
 import '../styles/calendario.css';
 
 export function PaginaCalendario() {
     const navigate = useNavigate();
-    const { user } = useAuth();
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -34,16 +32,11 @@ export function PaginaCalendario() {
     }, []);
 
     const handleDateClick = (dateStr) => {
-        // Professores (terapeutas) não podem agendar consultas
-        if (user?.role === 'terapeuta') {
-            return;
-        }
-
-        console.log('🎯 handleDateClick chamado com:', dateStr);
-        console.log('🎯 Antes de setState - modalOpen:', modalOpen);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        if (new Date(dateStr) < hoje) return;
         setDataSelecionada(dateStr);
         setModalOpen(true);
-        console.log('🎯 Depois de setState - modalOpen deve ser true agora');
     };
 
     const handleModalSubmit = async (formData) => {
@@ -95,13 +88,12 @@ export function PaginaCalendario() {
                 </div>
             )}
 
-            <div className={`calendario-full ${user?.role === 'terapeuta' ? 'readonly' : ''}`}>
+            <div className="calendario-full">
                 <CalendarioVisualizacao
                     consultas={consultas}
                     onDateClick={handleDateClick}
                     onEventClick={handleEventClick}
                     mode="month"
-                    isReadOnly={user?.role === 'terapeuta'}
                 />
             </div>
 

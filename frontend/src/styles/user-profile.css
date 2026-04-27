@@ -299,6 +299,13 @@
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border-color);
   margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.user-profile-container .card {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .card-header {
@@ -358,13 +365,20 @@
   color: var(--text-primary);
 }
 
+/* Consultas Grid */
+.consultas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
 /* Consultas List */
 .consulta-item {
   padding: 16px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-light);
-  margin-bottom: 12px;
   transition: all 0.2s ease;
 }
 
@@ -638,6 +652,10 @@
   .details-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .consultas-grid {
+    grid-template-columns: 1fr;
   }
 
   .consulta-details {

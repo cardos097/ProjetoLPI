@@ -594,6 +594,10 @@ export function UserPage() {
                       <span className="detail-label">Morada</span>
                       <span className="detail-value">{userDetails?.morada || '-'}</span>
                     </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Terapeuta Responsável</span>
+                      <span className="detail-value">{userDetails?.terapeuta_responsavel_nome || '-'}</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -621,7 +625,7 @@ export function UserPage() {
                     <p>Nenhuma consulta registrada</p>
                   </div>
                 ) : (
-                  <div>
+                  <div className="consultas-grid">
                     {consultas.map((consulta, index) => (
                       <motion.div
                         key={consulta.id}

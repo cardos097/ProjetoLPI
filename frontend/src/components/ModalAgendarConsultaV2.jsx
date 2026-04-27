@@ -201,6 +201,11 @@ export function ModalAgendarConsultaV2({
             return;
         }
 
+        if (new Date(`${formData.data}T${formData.hora}:00`) <= new Date()) {
+            alert('Não é possível marcar consultas no passado. Escolhe uma data e hora futuras.');
+            return;
+        }
+
         // Converter formato de data e hora para o esperado pelo backend
         // Backend espera: "2024-12-01 09:00:00" (com espaço, não T)
         const dataInicio = `${formData.data} ${formData.hora}:00`;
