@@ -38,6 +38,11 @@ export async function cancelConsulta(id) {
   return data;
 }
 
+export async function updateEstadoConsulta(id, estado) {
+  const { data } = await api.patch(`/consultas/${id}/estado`, { estado });
+  return data;
+}
+
 export async function remarcarConsulta(id, { data_inicio, data_fim }) {
   const { data } = await api.put(`/consultas/${id}/remarcar`, {
     data_inicio,

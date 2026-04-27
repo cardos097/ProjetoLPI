@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getConsultas, cancelConsulta, createConsulta } from '../services/consultas.jsx';
+import { getConsultas, cancelConsulta, createConsulta, updateEstadoConsulta } from '../services/consultas.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
 import { ModalAgendarConsultaV2 } from '../components/ModalAgendarConsultaV2.jsx';
@@ -18,6 +18,8 @@ export function ListaConsultas() {
   const [viewMode, setViewMode] = useState('tabela'); // 'tabela' | 'calendario'
   const [modalOpen, setModalOpen] = useState(false);
   const [dataSelecionada, setDataSelecionada] = useState(null);
+  const [estadoModal, setEstadoModal] = useState(null);
+  const [consultaSelecionada, setConsultaSelecionada] = useState(null);
 
   // Carregar consultas
   useEffect(() => {
@@ -78,6 +80,20 @@ export function ListaConsultas() {
     }
   };
 
+  const handleMudarEstado = async (novoEstado) => {
+    try {
+      console.log('Atualizando estado para:', novoEstado, 'Consulta:', consultaSelecionada);
+      await updateEstadoConsulta(consultaSelecionada.id, novoEstado);
+      setConsultas(consultas.map((c) => (c.id === consultaSelecionada.id ? { ...c, estado: novoEstado } : c)));
+      setEstadoModal(null);
+      setConsultaSelecionada(null);
+      setError('');
+    } catch (err) {
+      console.error('Erro ao atualizar estado:', err);
+      setError(`Erro ao atualizar estado da consulta: ${err.response?.data?.error || err.message}`);
+    }
+  };
+
   const handleDateClick = (dateStr) => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
@@ -122,6 +138,14 @@ export function ListaConsultas() {
 
   const canManageConsultas = ['admin', 'administrativo', 'terapeuta'].includes(user?.role);
   const canCreateConsulta = ['admin', 'administrativo', 'terapeuta', 'utente'].includes(user?.role);
+
+  // Verificar se o utilizador pode alterar o estado de uma consulta específica
+  const canAlterEstado = (consulta) => {
+    if (!user) return false;
+    if (['admin', 'administrativo'].includes(user.role)) return true;
+    if (user.role === 'terapeuta' && consulta.terapeuta?.id === user.id) return true;
+    return false;
+  };
 
   if (loading) {
     return <div className="page">A carregar consultas...</div>;
@@ -250,6 +274,18 @@ export function ListaConsultas() {
                     </button>
                     {canManageConsultas && consulta.estado !== 'cancelada' && (
                       <>
+                        {canAlterEstado(consulta) && (
+                          <button
+                            className="btn-icon btn-edit"
+                            onClick={() => {
+                              setConsultaSelecionada(consulta);
+                              setEstadoModal(true);
+                            }}
+                            title="Alterar Estado"
+                          >
+                            🔄
+                          </button>
+                        )}
                         <button
                           className="btn-icon btn-edit"
                           onClick={() => navigate(`/consultas/${consulta.id}/editar`)}
@@ -292,6 +328,64 @@ export function ListaConsultas() {
                 onClick={() => handleCancel(cancelConfirm)}
               >
                 Sim, Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Alterar Estado */}
+      {estadoModal && consultaSelecionada && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h2>Alterar Estado da Consulta</h2>
+            <p>Selecione o novo estado para a consulta:</p>
+            <div className="modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+              {consultaSelecionada.estado !== 'realizada' && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handleMudarEstado('realizada')}
+                  style={{ width: '100%' }}
+                >
+                  ✓ Marcar como Realizada
+                </button>
+              )}
+              {consultaSelecionada.estado !== 'faltou_injustificada' && (
+                <button
+                  className="btn btn-warning"
+                  onClick={() => handleMudarEstado('faltou_injustificada')}
+                  style={{ width: '100%' }}
+                >
+                  ✕ Falta Injustificada
+                </button>
+              )}
+              {consultaSelecionada.estado !== 'faltou_justificada' && (
+                <button
+                  className="btn btn-info"
+                  onClick={() => handleMudarEstado('faltou_justificada')}
+                  style={{ width: '100%' }}
+                >
+                  ⚠️ Falta Justificada
+                </button>
+              )}
+              {consultaSelecionada.estado !== 'cancelada' && (
+                <button
+                  className="btn btn-danger"
+                  onClick={() => handleMudarEstado('cancelada')}
+                  style={{ width: '100%' }}
+                >
+                  ✕ Cancelar
+                </button>
+              )}
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setEstadoModal(null);
+                  setConsultaSelecionada(null);
+                }}
+                style={{ width: '100%' }}
+              >
+                Fechar
               </button>
             </div>
           </div>

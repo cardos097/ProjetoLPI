@@ -820,6 +820,14 @@ table tr:hover {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background-color: #f3f4f6;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1127,6 +1135,14 @@ table tr:hover {
   border-color: #0f766e;
   background: #ccfbf1;
   color: #134e4a;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background-color: #f3f4f6;
 }
 
 select {
