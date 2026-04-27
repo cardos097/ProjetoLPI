@@ -43,6 +43,13 @@ export async function updateUtente(utenteId, utente) {
   return data;
 }
 
+export async function updateTerapeutaUtente(utenteId, terapeutaId) {
+  const { data } = await api.patch(`/utentes/${utenteId}/terapeuta`, {
+    terapeuta_id: terapeutaId,
+  });
+  return data;
+}
+
 export async function deleteUtente(utenteId) {
   await api.delete(`/utentes/${utenteId}`);
 }

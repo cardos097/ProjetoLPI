@@ -17,7 +17,8 @@ CREATE TYPE consulta_estado AS ENUM (
   'agendada',
   'cancelada',
   'realizada',
-  'faltou'
+  'faltou_injustificada',
+  'faltou_justificada'
 );
 
 CREATE TABLE users (

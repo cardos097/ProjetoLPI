@@ -16,7 +16,8 @@ import {
   Camera,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar } from '../services/utentes.jsx';
+import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar, updateTerapeutaUtente } from '../services/utentes.jsx';
+import { getTerapeutas } from '../services/consultas.jsx';
 import { getFichasAvaliacao } from '../services/fichas.jsx';
 import '../styles/user-profile.css';
 
@@ -38,7 +39,9 @@ export function UserPage() {
   const [consultas, setConsultas] = useState([]);
   const [registos, setRegistos] = useState([]);
   const [fichas, setFichas] = useState([]);
+  const [terapeutas, setTerapeutas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingTerapeutas, setLoadingTerapeutas] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('details');
   const [isEditMode, setIsEditMode] = useState(false);
@@ -126,9 +129,23 @@ export function UserPage() {
     fetchUserData();
   }, [profileUtenteId, isOwnProfile, user?.id, user?.name, user?.email]);
 
-  const handleEditClick = () => {
+  const handleEditClick = async () => {
     setIsEditMode(true);
     setActiveTab('details');
+    
+    // Carregar lista de terapeutas se for admin ou administrativo
+    if (user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') {
+      try {
+        setLoadingTerapeutas(true);
+        const data = await getTerapeutas();
+        setTerapeutas(data);
+      } catch (err) {
+        console.error('Erro ao carregar terapeutas:', err);
+        setError('Erro ao carregar lista de terapeutas');
+      } finally {
+        setLoadingTerapeutas(false);
+      }
+    }
   };
 
   const handleCancel = () => {
@@ -166,6 +183,7 @@ export function UserPage() {
     setSuccessMessage('');
 
     try {
+      // Atualizar dados do utente
       await updateUtente(editData.id, {
         nome: editData.nome,
         email: editData.email,
@@ -173,6 +191,12 @@ export function UserPage() {
         morada: editData.morada,
         data_nascimento: editData.data_nascimento,
       });
+
+      // Se foi alterado o terapeuta e o utilizador tem permissão
+      if ((user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && 
+          editData.terapeuta_id !== userDetails.terapeuta_id) {
+        await updateTerapeutaUtente(editData.id, editData.terapeuta_id);
+      }
 
       setUserDetails(editData);
       setIsEditMode(false);
@@ -548,6 +572,26 @@ export function UserPage() {
                       />
                     </div>
 
+                    {(user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && (
+                      <div className="form-group">
+                        <label htmlFor="terapeuta_id">Terapeuta</label>
+                        <select
+                          id="terapeuta_id"
+                          value={editData?.terapeuta_id || ''}
+                          onChange={(e) => handleInputChange('terapeuta_id', e.target.value ? parseInt(e.target.value) : null)}
+                          className="form-input"
+                          disabled={loadingTerapeutas}
+                        >
+                          <option value="">Sem terapeuta atribuído</option>
+                          {terapeutas.map((terapeuta) => (
+                            <option key={terapeuta.id} value={terapeuta.id}>
+                              {terapeuta.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     <div className="form-actions">
                       <button
                         className="btn btn-primary"
@@ -593,6 +637,10 @@ export function UserPage() {
                     <div className="detail-item">
                       <span className="detail-label">Morada</span>
                       <span className="detail-value">{userDetails?.morada || '-'}</span>
+                    </div>
+                    <div className="detail-item">
+                      <span className="detail-label">Terapeuta</span>
+                      <span className="detail-value">{userDetails?.terapeuta_nome || '-'}</span>
                     </div>
                     <div className="detail-item">
                       <span className="detail-label">Terapeuta Responsável</span>

@@ -124,34 +124,68 @@ export function EditarConsulta() {
     setSaving(true);
 
     try {
-      // Construir datas completas
-      const dataInicio = new Date(`${form.data_inicio}T${form.hora_inicio}`);
-      const dataFim = new Date(`${form.data_fim}T${form.hora_fim}`);
+      // Construir payload baseado nas permissões do utilizador
+      const payload = {};
 
-      if (dataFim <= dataInicio) {
-        setError('A data de fim deve ser posterior à data de início');
+      // Apenas adicionar campos que o utilizador tem permissão para editar
+      if (canEditTerapeuta && form.terapeuta_id) {
+        payload.terapeuta_id = parseInt(form.terapeuta_id);
+      }
+
+      if (canEditSala && form.sala_id) {
+        payload.sala_id = parseInt(form.sala_id);
+      }
+
+      if (canEditAreaClinica && form.area_clinica_id) {
+        payload.area_clinica_id = parseInt(form.area_clinica_id);
+      }
+
+      // Se é terapeuta, não permitir mudanças de data/hora
+      if (!canEditDataHora) {
+        // Terapeuta não pode alterar datas
+        setSaving(false);
+        // Se só está mudando data/hora, mostrar erro
+        if (Object.keys(payload).length === 0) {
+          setError('Terapeutas só podem alterar a sala. Nenhuma alteração foi feita.');
+          return;
+        }
+      } else {
+        // Admin pode alterar tudo, incluindo datas
+        // Construir datas completas
+        const dataInicio = new Date(`${form.data_inicio}T${form.hora_inicio}`);
+        const dataFim = new Date(`${form.data_fim}T${form.hora_fim}`);
+
+        if (dataFim <= dataInicio) {
+          setError('A data de fim deve ser posterior à data de início');
+          setSaving(false);
+          return;
+        }
+
+        if (form.data_inicio || form.hora_inicio || form.data_fim || form.hora_fim) {
+          payload.data_inicio = formatLocalDateTime(dataInicio);
+          payload.data_fim = formatLocalDateTime(dataFim);
+        }
+      }
+
+      if (Object.keys(payload).length === 0) {
+        setError('Nenhuma alteração foi feita');
         setSaving(false);
         return;
       }
 
-      // Se as datas foram alteradas, usar remarcarConsulta
-      const payload = {
-        terapeuta_id: form.terapeuta_id ? parseInt(form.terapeuta_id) : undefined,
-        sala_id: form.sala_id ? parseInt(form.sala_id) : undefined,
-        area_clinica_id: form.area_clinica_id ? parseInt(form.area_clinica_id) : undefined,
-      };
-
-      // Remover undefined values
-      Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
-
-      await updateConsulta(id, payload);
-
-      // Se data foi alterada, remarcar
-      if (form.data_inicio || form.hora_inicio || form.data_fim || form.hora_fim) {
+      // Se as datas foram alteradas e temos permissão, usar remarcarConsulta
+      if (payload.data_inicio && payload.data_fim) {
         await remarcarConsulta(id, {
-          data_inicio: formatLocalDateTime(dataInicio),
-          data_fim: formatLocalDateTime(dataFim),
+          data_inicio: payload.data_inicio,
+          data_fim: payload.data_fim,
         });
+        delete payload.data_inicio;
+        delete payload.data_fim;
+      }
+
+      // Atualizar outros campos
+      if (Object.keys(payload).length > 0) {
+        await updateConsulta(id, payload);
       }
 
       navigate('/consultas');
@@ -174,6 +208,14 @@ export function EditarConsulta() {
   const isPsicologiaConsulta = normalizeText(areaClinicaNome).includes('psicologia');
   const canAddFisioterapiaForm = canManageForms && isFisioterapiaConsulta;
   const canAddPsicologiaForm = canManageForms && isPsicologiaConsulta;
+
+  // Verificar permissões para editar campos específicos
+  const isTerapeuta = user?.role === 'terapeuta';
+  const isAdmin = user?.role === 'admin';
+  const canEditTerapeuta = isAdmin;
+  const canEditAreaClinica = isAdmin;
+  const canEditDataHora = isAdmin;
+  const canEditSala = true; // Terapeuta pode alterar sala
 
   const handleAddForm = () => {
     if (!isFisioterapiaConsulta) {
@@ -265,6 +307,8 @@ export function EditarConsulta() {
                 name="terapeuta_id"
                 value={form.terapeuta_id}
                 onChange={handleChange}
+                disabled={!canEditTerapeuta}
+                title={!canEditTerapeuta ? 'Terapeutas não podem alterar o terapeuta da consulta' : ''}
               >
                 <option value="">Selecionar terapeuta...</option>
                 {terapeutas.map((t) => (
@@ -281,6 +325,7 @@ export function EditarConsulta() {
                 name="sala_id"
                 value={form.sala_id}
                 onChange={handleChange}
+                disabled={!canEditSala}
               >
                 <option value="">Selecionar sala...</option>
                 {salas.map((s) => (
@@ -298,6 +343,8 @@ export function EditarConsulta() {
               name="area_clinica_id"
               value={form.area_clinica_id}
               onChange={handleChange}
+              disabled={!canEditAreaClinica}
+              title={!canEditAreaClinica ? 'Terapeutas não podem alterar a área clínica da consulta' : ''}
             >
               <option value="">Selecionar área...</option>
               {areasClinicas.map((a) => (
@@ -318,6 +365,8 @@ export function EditarConsulta() {
                 name="data_inicio"
                 value={form.data_inicio}
                 onChange={handleChange}
+                disabled={!canEditDataHora}
+                title={!canEditDataHora ? 'Terapeutas não podem alterar a data/hora de início' : ''}
               />
             </div>
 
@@ -328,6 +377,8 @@ export function EditarConsulta() {
                 name="hora_inicio"
                 value={form.hora_inicio}
                 onChange={handleChange}
+                disabled={!canEditDataHora}
+                title={!canEditDataHora ? 'Terapeutas não podem alterar a data/hora de início' : ''}
               />
             </div>
           </div>
@@ -340,6 +391,8 @@ export function EditarConsulta() {
                 name="data_fim"
                 value={form.data_fim}
                 onChange={handleChange}
+                disabled={!canEditDataHora}
+                title={!canEditDataHora ? 'Terapeutas não podem alterar a data/hora de fim' : ''}
               />
             </div>
 
@@ -350,6 +403,8 @@ export function EditarConsulta() {
                 name="hora_fim"
                 value={form.hora_fim}
                 onChange={handleChange}
+                disabled={!canEditDataHora}
+                title={!canEditDataHora ? 'Terapeutas não podem alterar a data/hora de fim' : ''}
               />
             </div>
           </div>
