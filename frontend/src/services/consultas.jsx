@@ -96,3 +96,15 @@ export async function checkDisponibilidade(dataInicio, dataFim) {
   });
   return data;
 }
+
+export async function uploadPdfConsulta(consultaId, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const { data } = await api.post(`/consultas/${consultaId}/upload-pdf`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return data;
+}

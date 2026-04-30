@@ -79,6 +79,7 @@ func main() {
 		auth.PATCH("/consultas/:id/estado", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UpdateEstadoConsulta)
 		auth.PUT("/consultas/:id/cancelar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CancelConsulta)
 		auth.PUT("/consultas/:id/remarcar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.RemarcarConsulta)
+		auth.POST("/consultas/:id/upload-pdf", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UploadPdfConsulta)
 
 		auth.GET("/utentes", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetUtentes)
 		auth.GET("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetUtenteByID)

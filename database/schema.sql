@@ -278,3 +278,15 @@ CREATE TABLE assiduidade (
   created_by INTEGER NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE documentos_consulta (
+  id SERIAL PRIMARY KEY,
+  consulta_id INTEGER NOT NULL REFERENCES consultas(id) ON DELETE CASCADE,
+  arquivo_url TEXT NOT NULL,
+  nome_arquivo VARCHAR(255) NOT NULL,
+  uploaded_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_documentos_consulta ON documentos_consulta(consulta_id);
+CREATE INDEX idx_documentos_uploaded_by ON documentos_consulta(uploaded_by);
