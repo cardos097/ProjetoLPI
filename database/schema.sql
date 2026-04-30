@@ -55,6 +55,7 @@ CREATE INDEX idx_terapeutas_supervisor ON terapeutas(supervisor_id);
 
 CREATE TABLE utentes (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  terapeuta_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   data_nascimento DATE,
   nif BYTEA,
   telefone VARCHAR(20),

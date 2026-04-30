@@ -33,6 +33,12 @@ export function ModalAgendarConsultaV2({
     useEffect(() => {
         if (isOpen) {
             carregarDados();
+            if (user?.role === 'terapeuta') {
+                setFormData((prev) => ({
+                    ...prev,
+                    terapeuta_id: String(user.id),
+                }));
+            }
         }
     }, [isOpen]);
 
@@ -106,7 +112,7 @@ export function ModalAgendarConsultaV2({
             setFormData((prev) => ({
                 ...prev,
                 sala_id: '',
-                terapeuta_id: '',
+                terapeuta_id: user?.role === 'terapeuta' ? prev.terapeuta_id : '',
             }));
         } else {
             setSalasFilterradas([]);
@@ -231,7 +237,7 @@ export function ModalAgendarConsultaV2({
             tipo: 'consulta_geral',
             area_clinica_id: '',
             sala_id: '',
-            terapeuta_id: '',
+            terapeuta_id: user?.role === 'terapeuta' ? String(user.id) : '',
             utente_id: '',
         });
     };
@@ -272,7 +278,7 @@ export function ModalAgendarConsultaV2({
                         />
                     </div>
 
-                    {user?.role === 'administrativo' && (
+                    {(user?.role === 'administrativo' || user?.role === 'terapeuta') && (
                         <div className="form-group">
                             <label htmlFor="utente_id">Utente/Paciente *</label>
                             <select

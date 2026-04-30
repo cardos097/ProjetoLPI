@@ -146,7 +146,12 @@ func GetConsultas(c *gin.Context) {
 
 	switch userRole {
 	case "terapeuta":
-		query = query.Where("terapeuta_id = ?", userID)
+		var terapeuta models.Terapeuta
+		if config.DB.Where("user_id = ? AND tipo = 'aluno'", userID).First(&terapeuta).Error == nil && terapeuta.SupervisorID != nil {
+			query = query.Where("terapeuta_id = ? OR terapeuta_id = ?", userID, *terapeuta.SupervisorID)
+		} else {
+			query = query.Where("terapeuta_id = ?", userID)
+		}
 	case "utente":
 		query = query.Where("utente_id = ?", userID)
 	}
