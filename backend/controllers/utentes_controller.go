@@ -59,16 +59,37 @@ type RegistoClinicoResponse struct {
 }
 
 func GetUtentes(c *gin.Context) {
-	var utentes []models.Utente
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
 
-	err := config.DB.Preload("User").Find(&utentes).Error
-	if err != nil {
+	var utentes []models.Utente
+	query := config.DB.Preload("User")
+
+	if userRole == "terapeuta" {
+		// Determinar o ID do professor responsável:
+		// se for aluno, usar o supervisor; se for professor, usar o próprio ID
+		responsavelID := userID
+		var terapeuta models.Terapeuta
+		if err := config.DB.Where("user_id = ?", userID).First(&terapeuta).Error; err == nil {
+			if terapeuta.Tipo == "aluno" && terapeuta.SupervisorID != nil {
+				responsavelID = *terapeuta.SupervisorID
+			}
+		}
+
+		// Mostrar utentes que têm pelo menos uma consulta com este terapeuta responsável
+		query = query.Where(
+			"utentes.user_id IN (SELECT DISTINCT utente_id FROM consultas WHERE terapeuta_id = ?)",
+			responsavelID,
+		)
+	}
+
+	if err := query.Find(&utentes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var response []UtenteResponse
-
+	response := []UtenteResponse{}
 	for _, utente := range utentes {
 		numeroProcesso := ""
 		telefone := ""
