@@ -3,10 +3,12 @@ package controllers
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -142,7 +144,8 @@ func GetConsultas(c *gin.Context) {
 		Preload("Utente").
 		Preload("Terapeuta").
 		Preload("Sala").
-		Preload("AreaClinica")
+		Preload("AreaClinica").
+		Preload("Documentos")
 
 	switch userRole {
 	case "terapeuta":
@@ -200,6 +203,7 @@ func GetConsultaByID(c *gin.Context) {
 		Preload("Terapeuta").
 		Preload("Sala").
 		Preload("AreaClinica").
+		Preload("Documentos").
 		First(&consulta, id).Error
 
 	if err != nil {
@@ -930,5 +934,97 @@ func UpdateEstadoConsulta(c *gin.Context) {
 		"terapeuta_id": consulta.TerapeutaID,
 		"data_inicio":  consulta.DataInicio.Format("2006-01-02 15:04:05"),
 		"data_fim":     consulta.DataFim.Format("2006-01-02 15:04:05"),
+	})
+}
+
+// UploadPdfConsulta uploads a PDF document to a consultation
+func UploadPdfConsulta(c *gin.Context) {
+	consultaIDStr := c.Param("id")
+	consultaID, err := strconv.ParseUint(consultaIDStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID da consulta inválido"})
+		return
+	}
+
+	// Verificar se a consulta existe
+	var consulta models.Consulta
+	if err := config.DB.First(&consulta, consultaID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Consulta não encontrada"})
+		return
+	}
+
+	// Obter ficheiro do formulário
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ficheiro não fornecido"})
+		return
+	}
+
+	// Validar que é PDF
+	if !strings.HasSuffix(strings.ToLower(file.Filename), ".pdf") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Apenas ficheiros PDF são permitidos"})
+		return
+	}
+
+	// Validar Content-Type
+	if file.Header.Get("Content-Type") != "application/pdf" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tipo de ficheiro inválido: apenas application/pdf é permitido"})
+		return
+	}
+
+	// Validar tamanho (máximo 50MB)
+	const maxSize = 50 * 1024 * 1024
+	if file.Size > maxSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Ficheiro demasiado grande (máximo 50MB)"})
+		return
+	}
+
+	// Gerar nome único para o ficheiro
+	timestamp := time.Now().Unix()
+	randNum := rand.Intn(10000)
+	uniqueFilename := fmt.Sprintf("%d-%d-%s", consultaID, timestamp, file.Filename)
+	newFilename := fmt.Sprintf("%d_%s", randNum, uniqueFilename)
+
+	// Guardar ficheiro na pasta uploads
+	uploadPath := fmt.Sprintf("./uploads/%s", newFilename)
+	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+		log.Printf("Erro ao guardar ficheiro: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar ficheiro"})
+		return
+	}
+
+	// Obter user ID do contexto
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User não identificado"})
+		return
+	}
+
+	// Guardar informações do documento na BD
+	documento := models.DocumentoConsulta{
+		ConsultaID:  uint(consultaID),
+		ArquivoURL:  fmt.Sprintf("/uploads/%s", newFilename),
+		NomeArquivo: file.Filename,
+		UploadedBy:  userID.(uint),
+		CreatedAt:   time.Now(),
+	}
+
+	if err := config.DB.Create(&documento).Error; err != nil {
+		log.Printf("Erro ao guardar documento na BD: %v", err)
+		// Remover o ficheiro se não conseguir guardar na BD
+		_, _ = os.Stat(uploadPath)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao registar documento"})
+		return
+	}
+
+	log.Printf("PDF carregado com sucesso: %s para consulta %d", newFilename, consultaID)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "Ficheiro carregado com sucesso",
+		"documento_id": documento.ID,
+		"consulta_id":  consultaID,
+		"arquivo_url":  documento.ArquivoURL,
+		"nome_arquivo": documento.NomeArquivo,
+		"created_at":   documento.CreatedAt.Format("2006-01-02 15:04:05"),
 	})
 }

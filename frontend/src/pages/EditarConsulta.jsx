@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
@@ -8,6 +8,7 @@ import {
   getTerapeutas,
   getSalas,
   getAreasClinicas,
+  uploadPdfConsulta,
 } from '../services/consultas.jsx';
 
 export function EditarConsulta() {
@@ -18,6 +19,8 @@ export function EditarConsulta() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [consulta, setConsulta] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [terapeutas, setTerapeutas] = useState([]);
   const [salas, setSalas] = useState([]);
@@ -265,6 +268,59 @@ export function EditarConsulta() {
     );
   };
 
+  const handleUploadPdf = async (event) => {
+    const file = event.target.files?.[0];
+    
+    if (!file) {
+      return;
+    }
+
+    // Validar tipo de ficheiro
+    if (!file.name.toLowerCase().endsWith('.pdf') || file.type !== 'application/pdf') {
+      setError('Por favor, selecione um ficheiro PDF válido');
+      return;
+    }
+
+    // Validar tamanho (máximo 50MB)
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError('O ficheiro é demasiado grande (máximo 50MB)');
+      return;
+    }
+
+    try {
+      setError('');
+      setUploading(true);
+      
+      const consultaId = getConsultaValue(consulta, 'id');
+      if (!consultaId) {
+        setError('Não foi possível identificar a consulta');
+        return;
+      }
+
+      await uploadPdfConsulta(consultaId, file);
+      
+      // Recarregar os dados da consulta
+      const consultaAtualizada = await getConsultaById(consultaId);
+      setConsulta(consultaAtualizada);
+      
+      setError('');
+      alert('Ficheiro carregado com sucesso!');
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Erro ao carregar ficheiro');
+    } finally {
+      setUploading(false);
+      // Limpar o input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handlePdfButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="page editar-consulta">
       <div className="page-header">
@@ -286,6 +342,21 @@ export function EditarConsulta() {
               + Ficha Psicologia
             </button>
           )}
+          <button 
+            className="btn btn-primary" 
+            onClick={handlePdfButtonClick}
+            disabled={uploading}
+            title="Carregar ficheiro PDF para esta consulta"
+          >
+            {uploading ? '⏳ A carregar...' : '📄 + Carregar PDF'}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf"
+            onChange={handleUploadPdf}
+            style={{ display: 'none' }}
+          />
         </div>
       </div>
 
@@ -408,6 +479,38 @@ export function EditarConsulta() {
               />
             </div>
           </div>
+
+          {consulta?.documentos && consulta.documentos.length > 0 && (
+            <div className="form-group">
+              <h3>Documentos Carregados</h3>
+              <div className="documentos-list" style={{ marginBottom: '1rem' }}>
+                {consulta.documentos.map((doc) => (
+                  <div key={doc.id} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem', 
+                    padding: '0.5rem', 
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '4px',
+                    marginBottom: '0.5rem'
+                  }}>
+                    <span style={{ fontSize: '1.2rem' }}>📄</span>
+                    <a 
+                      href={doc.arquivo_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ flex: 1, color: '#0066cc', textDecoration: 'none' }}
+                    >
+                      {doc.nome_arquivo}
+                    </a>
+                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                      {new Date(doc.created_at).toLocaleDateString('pt-PT')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="form-actions">
             <button

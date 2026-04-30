@@ -14,10 +14,11 @@ type Consulta struct {
 	CreatedBy     uint      `gorm:"column:created_by"`
 	CreatedAt     time.Time `gorm:"column:created_at"`
 
-	Utente      User        `gorm:"foreignKey:UtenteID"`
-	Terapeuta   User        `gorm:"foreignKey:TerapeutaID"`
-	Sala        Sala        `gorm:"foreignKey:SalaID"`
-	AreaClinica AreaClinica `gorm:"foreignKey:AreaClinicaID"`
+	Utente      User                `gorm:"foreignKey:UtenteID"`
+	Terapeuta   User                `gorm:"foreignKey:TerapeutaID"`
+	Sala        Sala                `gorm:"foreignKey:SalaID"`
+	AreaClinica AreaClinica         `gorm:"foreignKey:AreaClinicaID"`
+	Documentos  []DocumentoConsulta `gorm:"foreignKey:ConsultaID"`
 }
 
 func (Consulta) TableName() string {

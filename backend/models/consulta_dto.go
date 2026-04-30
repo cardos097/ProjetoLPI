@@ -7,21 +7,29 @@ type SimpleEntity struct {
 	Nome string `json:"nome"`
 }
 
+type DocumentoDTO struct {
+	ID          uint      `json:"id"`
+	ArquivoURL  string    `json:"arquivo_url"`
+	NomeArquivo string    `json:"nome_arquivo"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type ConsultaDTO struct {
-	ID            uint          `json:"id"`
-	UtenteID      uint          `json:"utente_id"`
-	TerapeutaID   uint          `json:"terapeuta_id"`
-	SalaID        uint          `json:"sala_id"`
-	AreaClinicaID uint          `json:"area_clinica_id"`
-	DataInicio    time.Time     `json:"data_inicio"`
-	DataFim       time.Time     `json:"data_fim"`
-	Duracao       int           `json:"duracao"` // em minutos
-	Estado        string        `json:"estado"`
-	Tipo          string        `json:"tipo"`
-	Utente        *SimpleEntity `json:"utente"`
-	Terapeuta     *SimpleEntity `json:"terapeuta"`
-	Sala          *SimpleEntity `json:"sala"`
-	AreaClinica   *SimpleEntity `json:"area_clinica"`
+	ID            uint           `json:"id"`
+	UtenteID      uint           `json:"utente_id"`
+	TerapeutaID   uint           `json:"terapeuta_id"`
+	SalaID        uint           `json:"sala_id"`
+	AreaClinicaID uint           `json:"area_clinica_id"`
+	DataInicio    time.Time      `json:"data_inicio"`
+	DataFim       time.Time      `json:"data_fim"`
+	Duracao       int            `json:"duracao"` // em minutos
+	Estado        string         `json:"estado"`
+	Tipo          string         `json:"tipo"`
+	Utente        *SimpleEntity  `json:"utente"`
+	Terapeuta     *SimpleEntity  `json:"terapeuta"`
+	Sala          *SimpleEntity  `json:"sala"`
+	AreaClinica   *SimpleEntity  `json:"area_clinica"`
+	Documentos    []DocumentoDTO `json:"documentos,omitempty"`
 }
 
 // ConvertToDTO converte uma Consulta para ConsultaDTO
@@ -51,6 +59,17 @@ func (c *Consulta) ConvertToDTO() *ConsultaDTO {
 		Nome: c.AreaClinica.Nome,
 	}
 
+	// Converter documentos
+	documentos := []DocumentoDTO{}
+	for _, doc := range c.Documentos {
+		documentos = append(documentos, DocumentoDTO{
+			ID:          doc.ID,
+			ArquivoURL:  doc.ArquivoURL,
+			NomeArquivo: doc.NomeArquivo,
+			CreatedAt:   doc.CreatedAt,
+		})
+	}
+
 	return &ConsultaDTO{
 		ID:            c.ID,
 		UtenteID:      c.UtenteID,
@@ -66,5 +85,6 @@ func (c *Consulta) ConvertToDTO() *ConsultaDTO {
 		Terapeuta:     terapeuta,
 		Sala:          sala,
 		AreaClinica:   areaClinica,
+		Documentos:    documentos,
 	}
 }
