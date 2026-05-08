@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -16,6 +17,7 @@ import (
 
 	"clinica-backend/config"
 	"clinica-backend/models"
+	"clinica-backend/utils"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -979,14 +981,16 @@ func UploadPdfConsulta(c *gin.Context) {
 		return
 	}
 
+	// Sanitizar nome do ficheiro — remove qualquer componente de diretório (path traversal)
+	safeFilename := filepath.Base(file.Filename)
+
 	// Gerar nome único para o ficheiro
 	timestamp := time.Now().Unix()
 	randNum := rand.Intn(10000)
-	uniqueFilename := fmt.Sprintf("%d-%d-%s", consultaID, timestamp, file.Filename)
-	newFilename := fmt.Sprintf("%d_%s", randNum, uniqueFilename)
+	newFilename := fmt.Sprintf("%d_%d-%d-%s", randNum, consultaID, timestamp, safeFilename)
 
 	// Guardar ficheiro na pasta uploads
-	uploadPath := fmt.Sprintf("./uploads/%s", newFilename)
+	uploadPath := filepath.Join("./uploads", newFilename)
 	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
 		log.Printf("Erro ao guardar ficheiro: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao guardar ficheiro"})
@@ -1004,7 +1008,7 @@ func UploadPdfConsulta(c *gin.Context) {
 	documento := models.DocumentoConsulta{
 		ConsultaID:  uint(consultaID),
 		ArquivoURL:  fmt.Sprintf("/uploads/%s", newFilename),
-		NomeArquivo: file.Filename,
+		NomeArquivo: safeFilename,
 		UploadedBy:  userID.(uint),
 		CreatedAt:   time.Now(),
 	}
@@ -1012,7 +1016,7 @@ func UploadPdfConsulta(c *gin.Context) {
 	if err := config.DB.Create(&documento).Error; err != nil {
 		log.Printf("Erro ao guardar documento na BD: %v", err)
 		// Remover o ficheiro se não conseguir guardar na BD
-		_, _ = os.Stat(uploadPath)
+		os.Remove(uploadPath)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao registar documento"})
 		return
 	}
@@ -1027,4 +1031,39 @@ func UploadPdfConsulta(c *gin.Context) {
 		"nome_arquivo": documento.NomeArquivo,
 		"created_at":   documento.CreatedAt.Format("2006-01-02 15:04:05"),
 	})
+}
+
+// ServeUploadedFile serve ficheiros de upload.
+// Avatars (/uploads/avatars/...) são públicos. Tudo o resto requer JWT válido.
+func ServeUploadedFile(c *gin.Context) {
+	filePath := c.Param("filepath")
+
+	cleanPath := filepath.Clean(filePath)
+	if strings.Contains(cleanPath, "..") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso negado"})
+		return
+	}
+
+	isAvatar := strings.HasPrefix(cleanPath, "/avatars/") || strings.HasPrefix(cleanPath, "avatars/")
+
+	if !isAvatar {
+		authHeader := c.GetHeader("Authorization")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Autenticação necessária"})
+			return
+		}
+		token := strings.TrimPrefix(authHeader, "Bearer ")
+		if _, err := utils.ValidateAppJWT(token); err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+			return
+		}
+	}
+
+	fullPath := filepath.Join("./uploads", cleanPath)
+	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Ficheiro não encontrado"})
+		return
+	}
+
+	c.File(fullPath)
 }

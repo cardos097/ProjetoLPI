@@ -145,7 +145,7 @@ export function CriarUtente() {
                 value={form.password}
                 onChange={handleChange}
                 required
-                minLength="6"
+                minLength="8"
               />
             </div>
 
@@ -157,7 +157,7 @@ export function CriarUtente() {
                 value={form.passwordConfirm}
                 onChange={handleChange}
                 required
-                minLength="6"
+                minLength="8"
               />
             </div>
           </div>

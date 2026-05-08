@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CalendarDate } from 'react-bootstrap-icons';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -50,7 +51,6 @@ export function CalendarioVisualizacao({
                         }
                     };
                 } catch (e) {
-                    console.error('Erro a processar consulta:', consulta, e);
                     return null;
                 }
             }).filter(Boolean);
@@ -58,30 +58,25 @@ export function CalendarioVisualizacao({
             setEvents(eventosFormatados);
             setError(null);
         } catch (e) {
-            console.error('Erro em CalendarioVisualizacao:', e);
             setError(e.message);
         }
     }, [consultas]);
 
     const handleDateClick = (info) => {
         try {
-            console.log('Date clicked:', info.dateStr);
             if (onDateClick) {
                 onDateClick(info.dateStr);
             }
         } catch (e) {
-            console.error('Erro ao clicar data:', e);
         }
     };
 
     const handleDateSelect = (info) => {
         try {
-            console.log('Date selected:', info.startStr);
             if (onDateClick) {
                 onDateClick(info.startStr);
             }
         } catch (e) {
-            console.error('Erro ao selecionar data:', e);
         }
     };
 
@@ -91,7 +86,6 @@ export function CalendarioVisualizacao({
                 onEventClick(info.event.extendedProps.consultaId, info.event.extendedProps);
             }
         } catch (e) {
-            console.error('Erro ao clicar evento:', e);
         }
     };
 
@@ -119,7 +113,7 @@ export function CalendarioVisualizacao({
     return (
         <div className="calendario-container">
             <div className="calendario-header">
-                <h3>📅 Calendário</h3>
+                <h3><CalendarDate size={18} /> Calendário</h3>
                 <p className="calendario-legenda">
                     <span className="legenda-item"><span className="cor agendada"></span> Agendada</span>
                     <span className="legenda-item"><span className="cor realizada"></span> Realizada</span>

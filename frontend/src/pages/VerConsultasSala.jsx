@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSalas, getConsultas } from '../services/consultas.jsx';
+import { Hospital, CalendarDate, PersonFill, Tag } from 'react-bootstrap-icons';
 import '../styles/dashboard.css';
 
 export function VerConsultasSala() {
@@ -42,7 +43,6 @@ export function VerConsultasSala() {
 
             setConsultas(consultasDaSala);
         } catch (err) {
-            console.error('Erro ao carregar dados:', err);
             setError('Erro ao carregar consultas da sala');
         } finally {
             setLoading(false);
@@ -118,7 +118,7 @@ export function VerConsultasSala() {
                     ← Voltar
                 </button>
                 <div>
-                    <h1>🏥 {sala.nome}</h1>
+                    <h1><Hospital size={20} /> {sala.nome}</h1>
                     <p>{sala.descricao}</p>
                 </div>
             </div>
@@ -131,7 +131,7 @@ export function VerConsultasSala() {
             )}
 
             <div className="sala-consultas-container">
-                <h2>📅 Consultas Agendadas ({consultas.length})</h2>
+                <h2><CalendarDate size={18} /> Consultas Agendadas ({consultas.length})</h2>
 
                 {consultas.length === 0 ? (
                     <div className="empty-state">
@@ -155,11 +155,11 @@ export function VerConsultasSala() {
                                         </span>
                                     </div>
                                     <div className="consulta-detalhes">
-                                        <p>📅 <strong>{formatarData(consulta.data_inicio)}</strong></p>
-                                        <p>👨‍⚕️ {consulta.terapeuta?.user?.nome || 'Não atribuído'}</p>
-                                        <p>🏥 {consulta.sala?.nome || 'Sala não atribuída'}</p>
+                                        <p><CalendarDate size={14} /> <strong>{formatarData(consulta.data_inicio)}</strong></p>
+                                        <p><PersonFill size={14} /> {consulta.terapeuta?.user?.nome || 'Não atribuído'}</p>
+                                        <p><Hospital size={14} /> {consulta.sala?.nome || 'Sala não atribuída'}</p>
                                         {consulta.area_clinica?.nome && (
-                                            <p>🏷️ {consulta.area_clinica.nome}</p>
+                                            <p><Tag size={14} /> {consulta.area_clinica.nome}</p>
                                         )}
                                     </div>
                                 </div>

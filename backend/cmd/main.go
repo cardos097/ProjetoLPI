@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/secure"
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,6 +47,16 @@ func main() {
 			}
 		}
 	}
+
+	r.Use(secure.New(secure.Config{
+		FrameDeny:             true,
+		ContentTypeNosniff:    true,
+		BrowserXssFilter:      true,
+		ReferrerPolicy:        "strict-origin-when-cross-origin",
+		STSSeconds:            31536000,
+		STSIncludeSubdomains:  true,
+		IsDevelopment:         config.GetEnvOptional("APP_ENV", "development") == "development",
+	}))
 
 	r.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
@@ -115,7 +126,8 @@ func main() {
 		auth.POST("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateAssiduidade)
 	}
 
-	r.Static("/uploads", "./uploads")
+	// Uploads: avatars públicos, PDFs protegidos — geridos num único handler
+	r.GET("/uploads/*filepath", controllers.ServeUploadedFile)
 
 	port := config.GetEnv("PORT")
 	r.Run(":" + port)

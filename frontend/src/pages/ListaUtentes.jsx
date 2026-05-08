@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtentes, deleteUtente } from '../services/utentes.jsx';
+import { Search, Eye, Pencil, Trash } from 'react-bootstrap-icons';
 
 export function ListaUtentes() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export function ListaUtentes() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
         />
-        <span className="search-icon">🔍</span>
+        <span className="search-icon"><Search size={16} /></span>
       </div>
 
       {filteredUtentes.length === 0 ? (
@@ -123,7 +124,7 @@ export function ListaUtentes() {
                       onClick={() => navigate(`/utentes/${utente.id}/perfil`)}
                       title="Ver"
                     >
-                      👁️
+                      <Eye size={16} />
                     </button>
                     {canManagedUtentes && (
                       <>
@@ -132,14 +133,14 @@ export function ListaUtentes() {
                           onClick={() => navigate(`/utentes/${utente.id}/editar`)}
                           title="Editar"
                         >
-                          ✏️
+                          <Pencil size={16} />
                         </button>
                         <button
                           className="btn-icon btn-delete"
                           onClick={() => setDeleteConfirm(utente.id)}
                           title="Eliminar"
                         >
-                          🗑️
+                          <Trash size={16} />
                         </button>
                       </>
                     )}

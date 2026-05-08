@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CalendarDate, ClipboardData, Search, ArrowRepeat, Eye, Pencil, X, Check, ExclamationTriangle } from 'react-bootstrap-icons';
 import { getConsultas, cancelConsulta, createConsulta, updateEstadoConsulta } from '../services/consultas.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
@@ -29,16 +30,10 @@ export function ListaConsultas() {
   const fetchConsultas = async () => {
     try {
       setError('');
-      console.log('Iniciando fetch de consultas...');
       const data = await getConsultas();
-      console.log('Consultas recebidas:', data);
-      if (data && data.length > 0) {
-        console.log('Primeira consulta:', data[0]);
-      }
       setConsultas(data || []);
       setFilteredConsultas(data || []);
     } catch (err) {
-      console.error('Erro ao carregar:', err);
       setError('Erro ao carregar consultas');
     } finally {
       setLoading(false);
@@ -82,14 +77,12 @@ export function ListaConsultas() {
 
   const handleMudarEstado = async (novoEstado) => {
     try {
-      console.log('Atualizando estado para:', novoEstado, 'Consulta:', consultaSelecionada);
       await updateEstadoConsulta(consultaSelecionada.id, novoEstado);
       setConsultas(consultas.map((c) => (c.id === consultaSelecionada.id ? { ...c, estado: novoEstado } : c)));
       setEstadoModal(null);
       setConsultaSelecionada(null);
       setError('');
     } catch (err) {
-      console.error('Erro ao atualizar estado:', err);
       setError(`Erro ao atualizar estado da consulta: ${err.response?.data?.error || err.message}`);
     }
   };
@@ -116,7 +109,6 @@ export function ListaConsultas() {
       setDataSelecionada(null);
       await fetchConsultas();
     } catch (err) {
-      console.error('Erro ao criar consulta:', err);
       alert('Erro ao agendar consulta: ' + err.message);
     }
   };
@@ -165,14 +157,14 @@ export function ListaConsultas() {
               onClick={() => setViewMode('tabela')}
               title="Visualizar como tabela"
             >
-              📋 Tabela
+              <ClipboardData size={14} /> Tabela
             </button>
             <button
               className={`view-btn ${viewMode === 'calendario' ? 'active' : ''}`}
               onClick={() => setViewMode('calendario')}
               title="Visualizar como calendário"
             >
-              📅 Calendário
+              <CalendarDate size={14} /> Calendário
             </button>
           </div>
           {canCreateConsulta && (
@@ -202,7 +194,7 @@ export function ListaConsultas() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><Search size={16} /></span>
         </div>
 
         <div className="filter-buttons">
@@ -270,7 +262,7 @@ export function ListaConsultas() {
                       onClick={() => navigate(`/consultas/${consulta.id}`)}
                       title="Ver"
                     >
-                      👁️
+                      <Eye size={16} />
                     </button>
                     {canManageConsultas && consulta.estado !== 'cancelada' && (
                       <>
@@ -283,7 +275,7 @@ export function ListaConsultas() {
                             }}
                             title="Alterar Estado"
                           >
-                            🔄
+                            <ArrowRepeat size={16} />
                           </button>
                         )}
                         <button
@@ -291,14 +283,14 @@ export function ListaConsultas() {
                           onClick={() => navigate(`/consultas/${consulta.id}/editar`)}
                           title="Editar"
                         >
-                          ✏️
+                          <Pencil size={16} />
                         </button>
                         <button
                           className="btn-icon btn-delete"
                           onClick={() => setCancelConfirm(consulta.id)}
                           title="Cancelar"
                         >
-                          ✕
+                          <X size={16} />
                         </button>
                       </>
                     )}
@@ -347,7 +339,7 @@ export function ListaConsultas() {
                   onClick={() => handleMudarEstado('realizada')}
                   style={{ width: '100%' }}
                 >
-                  ✓ Marcar como Realizada
+                  <Check size={16} /> Marcar como Realizada
                 </button>
               )}
               {consultaSelecionada.estado !== 'faltou_injustificada' && (
@@ -356,7 +348,7 @@ export function ListaConsultas() {
                   onClick={() => handleMudarEstado('faltou_injustificada')}
                   style={{ width: '100%' }}
                 >
-                  ✕ Falta Injustificada
+                  <X size={16} /> Falta Injustificada
                 </button>
               )}
               {consultaSelecionada.estado !== 'faltou_justificada' && (
@@ -365,7 +357,7 @@ export function ListaConsultas() {
                   onClick={() => handleMudarEstado('faltou_justificada')}
                   style={{ width: '100%' }}
                 >
-                  ⚠️ Falta Justificada
+                  <ExclamationTriangle size={16} /> Falta Justificada
                 </button>
               )}
               {consultaSelecionada.estado !== 'cancelada' && (
@@ -374,7 +366,7 @@ export function ListaConsultas() {
                   onClick={() => handleMudarEstado('cancelada')}
                   style={{ width: '100%' }}
                 >
-                  ✕ Cancelar
+                  <X size={16} /> Cancelar
                 </button>
               )}
               <button

@@ -46,8 +46,8 @@ export function CriarContaPage() {
         return;
       }
 
-      if (formData.password.length < 6) {
-        setError('A palavra-passe deve ter pelo menos 6 caracteres');
+      if (formData.password.length < 8) {
+        setError('A palavra-passe deve ter pelo menos 8 caracteres');
         setLoading(false);
         return;
       }

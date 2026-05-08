@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
+import { CalendarDate, ClipboardData, Person, PlusLg } from 'react-bootstrap-icons';
 import { getUtenteConsultas, getUtenteRegistos } from '../services/utentes.jsx';
 import '../styles/dashboard.css';
 
@@ -24,7 +25,6 @@ export function DashboardUtente() {
                     setRegistos(registosData || []);
                 }
             } catch (err) {
-                console.error('Erro ao carregar dados:', err);
             } finally {
                 setLoading(false);
             }
@@ -49,19 +49,19 @@ export function DashboardUtente() {
                     className={`tab-btn ${activeTab === 'consultas' ? 'active' : ''}`}
                     onClick={() => setActiveTab('consultas')}
                 >
-                    📅 Minhas Consultas
+                    <CalendarDate size={16} /> Minhas Consultas
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'registos' ? 'active' : ''}`}
                     onClick={() => setActiveTab('registos')}
                 >
-                    📋 Meus Registos
+                    <ClipboardData size={16} /> Meus Registos
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'perfil' ? 'active' : ''}`}
                     onClick={() => setActiveTab('perfil')}
                 >
-                    👤 Meu Perfil
+                    <Person size={16} /> Meu Perfil
                 </button>
             </div>
 
@@ -92,7 +92,7 @@ export function DashboardUtente() {
                         )}
                         {(user?.role === 'utente' || user?.role === 'administrativo') && (
                             <button className="btn-primary" onClick={() => navigate('/consultas/novo')}>
-                                ➕ Agendar Nova Consulta
+                                <PlusLg size={14} /> Agendar Nova Consulta
                             </button>
                         )}
                     </div>

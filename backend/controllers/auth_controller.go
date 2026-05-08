@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"clinica-backend/config"
@@ -14,16 +15,29 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/time/rate"
 )
+
+// loginLimiters guarda um rate limiter por IP: máximo 5 tentativas por minuto
+var loginLimiters sync.Map
+
+func getLoginLimiter(ip string) *rate.Limiter {
+	if l, ok := loginLimiters.Load(ip); ok {
+		return l.(*rate.Limiter)
+	}
+	l := rate.NewLimiter(rate.Every(time.Minute/5), 5)
+	loginLimiters.Store(ip, l)
+	return l
+}
 
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=3"`
+	Password string `json:"password" binding:"required,min=8"`
 }
 
 type RegisterRequest struct {
 	Email           string `json:"email" binding:"required,email"`
-	Password        string `json:"password" binding:"required,min=6"`
+	Password        string `json:"password" binding:"required,min=8"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
 	NomeCompleto    string `json:"nome_completo" binding:"required"`
 }
@@ -71,6 +85,11 @@ func getTipoTerapeutaFromEmail(email string) (string, string) {
 }
 
 func Login(c *gin.Context) {
+	if !getLoginLimiter(c.ClientIP()).Allow() {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Demasiadas tentativas de login. Tente novamente em breve."})
+		return
+	}
+
 	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {

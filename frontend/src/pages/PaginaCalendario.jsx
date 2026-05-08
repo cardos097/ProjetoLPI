@@ -3,6 +3,7 @@ import { getConsultas, createConsulta } from '../services/consultas.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
 import { ModalAgendarConsultaV2 } from '../components/ModalAgendarConsultaV2.jsx';
 import { useNavigate } from 'react-router-dom';
+import { CalendarDate } from 'react-bootstrap-icons';
 import '../styles/calendario.css';
 
 export function PaginaCalendario() {
@@ -21,7 +22,6 @@ export function PaginaCalendario() {
                 const data = await getConsultas();
                 setConsultas(data || []);
             } catch (err) {
-                console.error('Erro ao carregar consultas:', err);
                 setError('Erro ao carregar consultas');
             } finally {
                 setLoading(false);
@@ -51,7 +51,6 @@ export function PaginaCalendario() {
                 data_fim: formData.data_fim,
             };
 
-            console.log('🎯 Dados sendo enviados para backend:', consultaData);
 
             await createConsulta(consultaData);
             setModalOpen(false);
@@ -59,7 +58,6 @@ export function PaginaCalendario() {
             const data = await getConsultas();
             setConsultas(data || []);
         } catch (err) {
-            console.error('Erro ao criar consulta:', err);
             alert('Erro ao agendar consulta: ' + err.message);
         }
     };
@@ -76,7 +74,7 @@ export function PaginaCalendario() {
         <div className="page calendario-page">
             <div className="page-header">
                 <div>
-                    <h1>📅 Calendário de Consultas</h1>
+                    <h1><CalendarDate size={22} /> Calendário de Consultas</h1>
                     <p>Clica numa consulta para ver detalhes</p>
                 </div>
             </div>

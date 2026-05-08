@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { HourglassSplit, FileText as FileTextIcon } from 'react-bootstrap-icons';
 import {
   getConsultaById,
   updateConsulta,
@@ -348,7 +349,7 @@ export function EditarConsulta() {
             disabled={uploading}
             title="Carregar ficheiro PDF para esta consulta"
           >
-            {uploading ? '⏳ A carregar...' : '📄 + Carregar PDF'}
+            {uploading ? <><HourglassSplit size={16} /> A carregar...</> : <><FileTextIcon size={16} /> + Carregar PDF</>}
           </button>
           <input
             ref={fileInputRef}
@@ -494,7 +495,7 @@ export function EditarConsulta() {
                     borderRadius: '4px',
                     marginBottom: '0.5rem'
                   }}>
-                    <span style={{ fontSize: '1.2rem' }}>📄</span>
+                    <FileTextIcon size={20} />
                     <a 
                       href={doc.arquivo_url} 
                       target="_blank" 

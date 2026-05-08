@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, X, Trash2 } from 'lucide-react';
+import { Search, Plus, X, Trash } from 'react-bootstrap-icons';
 import { getAlunosDisponiveis, getAlunosDoProfessor, adicionarAluno, removerAluno } from '../services/terapeutas.jsx';
 import '../styles/gerir-alunos.css';
 
@@ -30,7 +30,6 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
       setMeuAlunos(meus);
     } catch (err) {
       setError('Erro ao carregar alunos');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -47,7 +46,6 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Erro ao adicionar aluno');
-      console.error(err);
     }
   };
 
@@ -64,7 +62,6 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Erro ao remover aluno');
-      console.error(err);
     }
   };
 
@@ -155,7 +152,7 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
                       className="btn-remover"
                       onClick={() => handleRemoverAluno(aluno.user_id)}
                     >
-                      <Trash2 size={18} />
+                      <Trash size={18} />
                       Remover
                     </button>
                   </div>

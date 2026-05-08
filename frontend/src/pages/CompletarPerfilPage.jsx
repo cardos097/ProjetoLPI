@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { ExclamationCircle, CheckCircle, ArrowRepeat } from 'react-bootstrap-icons';
 import axios from 'axios';
 import '../styles/completar-perfil.css';
 
@@ -23,17 +23,14 @@ export function CompletarPerfilPage() {
 
     // Se não for terapeuta, redireciona
     useEffect(() => {
-        console.log('CompletarPerfilPage - user:', user, 'token:', token);
 
         // Se não tem token, volta ao login
         if (!token) {
-            console.log('Sem token, redirecionando para login...');
             navigate('/login');
             return;
         }
 
         if (user?.role !== 'terapeuta') {
-            console.log('Não é terapeuta, redirecionando...');
             navigate('/dashboard');
             return;
         }
@@ -41,19 +38,16 @@ export function CompletarPerfilPage() {
         // Buscar áreas clínicas
         const fetchAreas = async () => {
             try {
-                console.log('Fetching areas com token:', token);
                 const response = await api.get('/areas-clinicas', {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
 
-                console.log('Areas recebidas:', response.data);
                 const areasArray = Array.isArray(response.data) ? response.data : [];
                 setAreaClinicas(areasArray);
                 setLoading(false);
             } catch (err) {
-                console.error('Erro ao carregar áreas:', err);
                 setErro('Erro ao carregar as áreas clínicas: ' + (err.response?.data?.error || err.message));
                 setLoading(false);
             }
@@ -74,7 +68,6 @@ export function CompletarPerfilPage() {
         setErro('');
 
         try {
-            console.log('Enviando PUT request com area_clinica_id:', parseInt(areaClinicaSelecionada));
             const response = await api.put('/terapeutas/area-clinica',
                 {
                     area_clinica_id: parseInt(areaClinicaSelecionada),
@@ -86,7 +79,6 @@ export function CompletarPerfilPage() {
                 }
             );
 
-            console.log('Resposta recebida:', response.data);
 
             // Atualizar o contexto com a nova área clínica
             updateUser({ area_clinica_id: parseInt(areaClinicaSelecionada) });
@@ -95,13 +87,9 @@ export function CompletarPerfilPage() {
 
             // Redirecionar após sucesso
             setTimeout(() => {
-                console.log('Redirecionando para /dashboard');
                 navigate('/dashboard');
             }, 1500);
         } catch (err) {
-            console.error('Erro ao atualizar:', err);
-            console.error('Status:', err.response?.status);
-            console.error('Data:', err.response?.data);
             setErro('Erro: ' + (err.response?.data?.error || err.message));
         } finally {
             setSalvando(false);
@@ -112,7 +100,7 @@ export function CompletarPerfilPage() {
         return (
             <div className="completar-perfil-container loading">
                 <div className="spinner">
-                    <Loader size={48} className="icon-spin" />
+                    <ArrowRepeat size={48} className="icon-spin" />
                 </div>
                 <p>Carregando áreas clínicas...</p>
             </div>
@@ -128,7 +116,7 @@ export function CompletarPerfilPage() {
         >
             {loading ? (
                 <div className="completar-perfil-loading">
-                    <Loader size={48} className="icon-spin" />
+                    <ArrowRepeat size={48} className="icon-spin" />
                     <p>Carregando áreas clínicas...</p>
                 </div>
             ) : (
@@ -174,7 +162,7 @@ export function CompletarPerfilPage() {
                             </label>
                             {areaClinicas.length === 0 ? (
                                 <div className="alert alert-error">
-                                    <AlertCircle size={20} />
+                                    <ExclamationCircle size={20} />
                                     <span>Nenhuma área clínica disponível</span>
                                 </div>
                             ) : (
@@ -202,7 +190,7 @@ export function CompletarPerfilPage() {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                             >
-                                <AlertCircle size={20} />
+                                <ExclamationCircle size={20} />
                                 <span>{erro}</span>
                             </motion.div>
                         )}
@@ -213,7 +201,7 @@ export function CompletarPerfilPage() {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                             >
-                                <CheckCircle size={20} />
+                                <CheckCircle size={20} className="text-success" />
                                 <span>Perfil atualizado com sucesso! Redirecionando...</span>
                             </motion.div>
                         )}
@@ -229,7 +217,7 @@ export function CompletarPerfilPage() {
                             >
                                 {salvando ? (
                                     <>
-                                        <Loader size={18} className="icon-spin" />
+                                        <ArrowRepeat size={18} className="icon-spin" />
                                         Guardando...
                                     </>
                                 ) : (

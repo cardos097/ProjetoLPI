@@ -282,7 +282,7 @@ type CreateUtenteRequest struct {
 	Telefone       string `json:"telefone"`
 	Morada         string `json:"morada"`
 	DataNascimento string `json:"data_nascimento"` // "2000-01-15"
-	Password       string `json:"password" binding:"required,min=6"`
+	Password       string `json:"password" binding:"required,min=8"`
 }
 
 type UpdateUtenteRequest struct {

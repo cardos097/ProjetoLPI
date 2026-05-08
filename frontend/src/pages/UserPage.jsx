@@ -2,19 +2,19 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
+  Person as User,
+  Envelope as Mail,
+  Telephone as Phone,
+  GeoAlt as MapPin,
+  CalendarDate as Calendar,
   Clock,
   FileText,
-  Stethoscope,
-  Edit2,
+  Clipboard2Pulse as Stethoscope,
+  PencilSquare as Edit2,
   Check,
   X,
   Camera,
-} from 'lucide-react';
+} from 'react-bootstrap-icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar, updateTerapeutaUtente } from '../services/utentes.jsx';
 import { getTerapeutas } from '../services/consultas.jsx';
@@ -78,14 +78,11 @@ export function UserPage() {
         let details = null;
         try {
           details = await getUtenteDetails(profileUtenteId);
-          console.log('📥 Detalhes carregados:', details);
-          console.log('📷 Foto URL:', details?.foto_url);
           setUserDetails(details);
           setEditData(details);
         } catch (err) {
           if (isOwnProfile) {
             // Se não encontrar utente, usa dados do auth context como fallback
-            console.warn('Utente não encontrado na base de dados, usando dados de autenticação');
             const fallbackData = {
               id: user.id,
               nome: user.name || user.email || 'Utilizador',
@@ -116,7 +113,6 @@ export function UserPage() {
           setRegistos(Array.isArray(registosData) ? registosData : []);
           setFichas(Array.isArray(fichasData) ? fichasData : []);
         } catch (err) {
-          console.warn('Erro ao carregar consultas/registos/fichas:', err);
           setConsultas([]);
           setRegistos([]);
           setFichas([]);
@@ -140,7 +136,6 @@ export function UserPage() {
         const data = await getTerapeutas();
         setTerapeutas(data);
       } catch (err) {
-        console.error('Erro ao carregar terapeutas:', err);
         setError('Erro ao carregar lista de terapeutas');
       } finally {
         setLoadingTerapeutas(false);
@@ -247,15 +242,12 @@ export function UserPage() {
 
     try {
       const response = await uploadAvatar(userDetails.id, file);
-      console.log('✓ Upload response:', response);
-      console.log('✓ Novo foto_url:', response.foto_url);
 
       // Atualizar userDetails com o novo foto_url
       const newUserDetails = {
         ...userDetails,
         foto_url: response.foto_url,
       };
-      console.log('✓ Objeto atualizado:', newUserDetails);
       setUserDetails(newUserDetails);
 
       // MANTER O PREVIEW INDEFINIDAMENTE - ele é o fallback
@@ -264,7 +256,6 @@ export function UserPage() {
       setSuccessMessage('✓ Avatar atualizado com sucesso!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('✗ Erro no upload:', err);
       const errorMsg =
         err.response?.data?.error ||
         err.message ||
@@ -359,10 +350,8 @@ export function UserPage() {
                     src={avatarPreview || (userDetails?.foto_url ? `http://localhost:8080${userDetails.foto_url}` : null)}
                     className="avatar-img"
                     onLoad={() => {
-                      console.log('✓ Imagem carregou com sucesso:', avatarPreview || userDetails?.foto_url);
                     }}
                     onError={(e) => {
-                      console.error('✗ Erro ao carregar imagem:', e.target.src);
                     }}
                   />
                 ) : (

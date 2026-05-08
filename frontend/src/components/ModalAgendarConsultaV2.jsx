@@ -53,7 +53,6 @@ export function ModalAgendarConsultaV2({
             setTerapeutas(terapeutasList);
             setUtentes(utentesList);
         } catch (erro) {
-            console.error('Erro ao carregar dados:', erro);
         }
     };
 
@@ -81,13 +80,9 @@ export function ModalAgendarConsultaV2({
                     const dataFim = `${formData.data} ${String(horaFim).padStart(2, '0')}:${String(minFim).padStart(2, '0')}:00`;
 
                     const resultado = await checkDisponibilidade(dataInicio, dataFim);
-                    console.log('📊 Resultado disponibilidade:', resultado);
-                    console.log('🚫 Salas indisponíveis (backend):', resultado.salas_indisponiveis);
-                    console.log('🚫 Terapeutas indisponíveis (backend):', resultado.terapeutas_indisponiveis);
                     setSalasIndisponiveis(resultado.salas_indisponiveis || []);
                     setTerapeutasIndisponiveis(resultado.terapeutas_indisponiveis || []);
                 } catch (erro) {
-                    console.error('Erro ao verificar disponibilidade:', erro);
                     setSalasIndisponiveis([]);
                     setTerapeutasIndisponiveis([]);
                 }
@@ -122,9 +117,6 @@ export function ModalAgendarConsultaV2({
     // Efeito separado para remover salas indisponíveis (sem resetar seleção)
     useEffect(() => {
         if (formData.area_clinica_id && salasIndisponiveis.length > 0) {
-            console.log('📌 Reaplicando filtro de indisponibilidade. Salas indisponiveis:', salasIndisponiveis);
-            console.log('📌 Total de salas na lista inicial:', salas.length);
-            console.log('📌 Salas na lista inicial:', salas.map(s => ({ id: s.id, nome: s.nome })));
 
             const salasDisponiveis = salas.filter((sala) => {
                 // Filtrar por área clínica
@@ -133,7 +125,6 @@ export function ModalAgendarConsultaV2({
                         (area) => area.id === parseInt(formData.area_clinica_id)
                     );
                     if (!temArea) {
-                        console.log(`❌ Sala ${sala.id} (${sala.nome}) não tem a área clínica - REMOVENDO`);
                         return false;
                     }
                 }
@@ -142,19 +133,15 @@ export function ModalAgendarConsultaV2({
                 const indisponivel = salasIndisponiveis.some(id => {
                     const indisponivelId = typeof id === 'string' ? parseInt(id) : id;
                     const resultado = salaId === indisponivelId;
-                    console.log(`   Comparando sala ${salaId} com indisponível ${indisponivelId}: ${resultado}`);
                     return resultado;
                 });
 
                 if (indisponivel) {
-                    console.log(`🚫 Sala ${salaId} (${sala.nome}) indisponível - REMOVENDO`);
                     return false;
                 } else {
-                    console.log(`✅ Sala ${salaId} (${sala.nome}) disponível - MANTENDO`);
                     return true;
                 }
             });
-            console.log('✅ Salas disponíveis após remover indisponíveis:', salasDisponiveis.map(s => ({ id: s.id, nome: s.nome })));
             setSalasFilterradas(salasDisponiveis);
         }
     }, [salasIndisponiveis, formData.area_clinica_id, salas]);
@@ -175,10 +162,8 @@ export function ModalAgendarConsultaV2({
                         });
                         return !indisponivel;
                     });
-                    console.log('✅ Terapeutas disponíveis após filtro:', terapeutasDisponiveis);
                     setTerapeutasFiltrados(terapeutasDisponiveis);
                 } catch (erro) {
-                    console.error('Erro ao carregar terapeutas da área:', erro);
                     setTerapeutasFiltrados([]);
                 }
             };

@@ -16,7 +16,6 @@ export function HomePage() {
   // Redirecionar terapeuta sem area_clinica para completar perfil
   useEffect(() => {
     if (user?.role === 'terapeuta' && !user?.area_clinica_id) {
-      console.log('Redirecionando para completar perfil...');
       navigate('/completar-perfil', { replace: true });
     }
   }, [user?.role, user?.area_clinica_id, navigate]);
@@ -31,7 +30,6 @@ export function HomePage() {
         const e = await getAreasClinicas();
         setEspecialidades(e || []);
       } catch (err) {
-        console.error('Erro ao carregar dados:', err);
       } finally {
         setLoading(false);
       }

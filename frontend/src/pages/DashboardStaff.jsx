@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { CalendarDate, People, Hospital, Mortarboard, Gear, PlusLg, Book, BarChart, Person } from 'react-bootstrap-icons';
 import { ListaUtentes } from './ListaUtentes.jsx';
 import { ListaConsultas } from './ListaConsultas.jsx';
 import { ListaSalas } from './ListaSalas.jsx';
@@ -26,7 +27,6 @@ export function DashboardStaff() {
             const alunos = await getAlunosDoProfessor();
             setMeuAlunos(alunos || []);
         } catch (err) {
-            console.error('Erro ao carregar alunos:', err);
             setMeuAlunos([]);
         } finally {
             setLoadingAlunos(false);
@@ -49,26 +49,26 @@ export function DashboardStaff() {
                     className={`tab-btn ${activeTab === 'consultas' ? 'active' : ''}`}
                     onClick={() => setActiveTab('consultas')}
                 >
-                    📅 Agenda
+                    <CalendarDate size={16} /> Agenda
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'utentes' ? 'active' : ''}`}
                     onClick={() => setActiveTab('utentes')}
                 >
-                    👥 Clientes/Pacientes
+                    <People size={16} /> Clientes/Pacientes
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'salas' ? 'active' : ''}`}
                     onClick={() => setActiveTab('salas')}
                 >
-                    🏥 Salas
+                    <Hospital size={16} /> Salas
                 </button>
                 {user.tipo === 'professor' && (
                     <button
                         className={`tab-btn ${activeTab === 'alunos' ? 'active' : ''}`}
                         onClick={() => setActiveTab('alunos')}
                     >
-                        🎓 Gerir Alunos
+                        <Mortarboard size={16} /> Gerir Alunos
                     </button>
                 )}
                 {user.role === 'admin' && (
@@ -76,7 +76,7 @@ export function DashboardStaff() {
                         className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
                         onClick={() => setActiveTab('admin')}
                     >
-                        ⚙️ Administração
+                        <Gear size={16} /> Administração
                     </button>
                 )}
             </div>
@@ -88,20 +88,20 @@ export function DashboardStaff() {
                 {activeTab === 'alunos' && user.tipo === 'professor' && (
                     <div className="alunos-section">
                         <div className="section-header">
-                            <h2>🎓 Gerir Alunos</h2>
+                            <h2><Mortarboard size={20} /> Gerir Alunos</h2>
                             <button
                                 className="btn-primary"
                                 onClick={() => {
                                     setIsAlunosModalOpen(true);
                                 }}
                             >
-                                ➕ Gerir Alunos
+                                <PlusLg size={14} /> Gerir Alunos
                             </button>
                         </div>
 
                         <div className="alunos-container">
                             <div className="alunos-card">
-                                <h3>📚 Meus Alunos ({meuAlunos.length})</h3>
+                                <h3><Book size={18} /> Meus Alunos ({meuAlunos.length})</h3>
                                 {loadingAlunos ? (
                                     <p className="loading">Carregando alunos...</p>
                                 ) : meuAlunos.length === 0 ? (
@@ -110,7 +110,7 @@ export function DashboardStaff() {
                                     <div className="alunos-grid">
                                         {meuAlunos.map(aluno => (
                                             <div key={aluno.user_id} className="aluno-card">
-                                                <div className="aluno-avatar">👨‍🎓</div>
+                                                <div className="aluno-avatar"><Mortarboard size={28} /></div>
                                                 <h4>{aluno.nome}</h4>
                                                 <p>{aluno.email}</p>
                                             </div>
@@ -126,15 +126,15 @@ export function DashboardStaff() {
                         <h2>Painel de Administração</h2>
                         <div className="admin-grid">
                             <div className="admin-card">
-                                <h3>📊 Estatísticas</h3>
+                                <h3><BarChart size={18} /> Estatísticas</h3>
                                 <p>Em desenvolvimento...</p>
                             </div>
                             <div className="admin-card">
-                                <h3>⚙️ Configurações</h3>
+                                <h3><Gear size={18} /> Configurações</h3>
                                 <p>Em desenvolvimento...</p>
                             </div>
                             <div className="admin-card">
-                                <h3>👤 Utilizadores</h3>
+                                <h3><Person size={18} /> Utilizadores</h3>
                                 <p>Em desenvolvimento...</p>
                             </div>
                         </div>

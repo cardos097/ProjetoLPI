@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { CalendarDate, PlusLg } from 'react-bootstrap-icons';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -75,7 +76,7 @@ export function Navbar() {
                     navigate('/calendario');
                     setConsultasDropdownOpen(false);
                   }}>
-                    📅 Calendário
+                    <CalendarDate size={14} /> Calendário
                   </a>
                   {(user?.role === 'utente' || user?.role === 'administrativo') && (
                     <a href="/consultas/nova" className="dropdown-item" onClick={(e) => {
@@ -83,7 +84,7 @@ export function Navbar() {
                       navigate('/consultas/nova');
                       setConsultasDropdownOpen(false);
                     }}>
-                      ➕ Marcar Consulta
+                      <PlusLg size={14} /> Marcar Consulta
                     </a>
                   )}
                 </div>
@@ -170,7 +171,7 @@ export function Navbar() {
                       navigate('/calendario');
                       setMobileMenuOpen(false);
                     }}>
-                      📅 Calendário
+                      <CalendarDate size={14} /> Calendário
                     </a>
                     {(user?.role === 'utente' || user?.role === 'administrativo') && (
                       <a href="/consultas/nova" className="mobile-submenu-item" onClick={(e) => {
@@ -178,7 +179,7 @@ export function Navbar() {
                         navigate('/consultas/nova');
                         setMobileMenuOpen(false);
                       }}>
-                        ➕ Marcar Consulta
+                        <PlusLg size={14} /> Marcar Consulta
                       </a>
                     )}
                   </div>
