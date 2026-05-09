@@ -49,13 +49,13 @@ func main() {
 	}
 
 	r.Use(secure.New(secure.Config{
-		FrameDeny:             true,
-		ContentTypeNosniff:    true,
-		BrowserXssFilter:      true,
-		ReferrerPolicy:        "strict-origin-when-cross-origin",
-		STSSeconds:            31536000,
-		STSIncludeSubdomains:  true,
-		IsDevelopment:         config.GetEnvOptional("APP_ENV", "development") == "development",
+		FrameDeny:            true,
+		ContentTypeNosniff:   true,
+		BrowserXssFilter:     true,
+		ReferrerPolicy:       "strict-origin-when-cross-origin",
+		STSSeconds:           31536000,
+		STSIncludeSubdomains: true,
+		IsDevelopment:        config.GetEnvOptional("APP_ENV", "development") == "development",
 	}))
 
 	r.Use(cors.New(cors.Config{
@@ -99,7 +99,7 @@ func main() {
 		auth.POST("/utentes/:id/avatar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.UploadAvatar)
 		auth.DELETE("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo"), controllers.DeleteUtente)
 		auth.GET("/utentes/:id/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetConsultasByUtenteID)
-		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetRegistosClinicosByUtenteID)
+		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetRegistosClinicosByUtenteID)
 
 		auth.GET("/salas", controllers.GetSalas)
 		auth.GET("/areas-clinicas", controllers.GetAreasClinicas)

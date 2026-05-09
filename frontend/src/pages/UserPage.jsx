@@ -14,10 +14,11 @@ import {
   Check,
   X,
   Camera,
+  FilePdf,
 } from 'react-bootstrap-icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar, updateTerapeutaUtente } from '../services/utentes.jsx';
-import { getTerapeutas } from '../services/consultas.jsx';
+import { getTerapeutas, getConsultas } from '../services/consultas.jsx';
 import { getFichasAvaliacao } from '../services/fichas.jsx';
 import '../styles/user-profile.css';
 
@@ -62,6 +63,36 @@ export function UserPage() {
     return data[key] ?? data[camelKey] ?? data[pascalKey];
   };
 
+  // Normalizar dados de consultas para formato consistente
+  const normalizeConsultas = (consultas) => {
+    if (!Array.isArray(consultas)) return [];
+    
+    return consultas.map((c) => {
+      // Se é ConsultaDTO (com objetos), converter para UtenteConsultaResponse
+      if (c.terapeuta && typeof c.terapeuta === 'object') {
+        return {
+          id: c.id,
+          terapeuta_nome: c.terapeuta?.nome || '-',
+          sala_nome: c.sala?.nome || '-',
+          area_clinica: c.area_clinica?.nome || '-',
+          estado: c.estado || '-',
+          data_inicio: c.data_inicio instanceof Date 
+            ? c.data_inicio.toLocaleString('pt-PT')
+            : typeof c.data_inicio === 'string'
+            ? c.data_inicio
+            : new Date(c.data_inicio).toLocaleString('pt-PT'),
+          data_fim: c.data_fim instanceof Date
+            ? c.data_fim.toLocaleString('pt-PT')
+            : typeof c.data_fim === 'string'
+            ? c.data_fim
+            : new Date(c.data_fim).toLocaleString('pt-PT'),
+        };
+      }
+      // Se já é UtenteConsultaResponse, manter como está
+      return c;
+    });
+  };
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -72,6 +103,11 @@ export function UserPage() {
           setError('Utilizador não autenticado');
           setLoading(false);
           return;
+        }
+
+        // Se é utente e a aba ativa é registos, resetar para details
+        if (user?.role === 'utente' && activeTab === 'registos') {
+          setActiveTab('details');
         }
 
         // Tenta buscar detalhes do utente
@@ -103,13 +139,22 @@ export function UserPage() {
 
         // Tenta buscar consultas, registos e fichas
         try {
-          const [consultasData, registosData, fichasData] = await Promise.all([
-            getUtenteConsultas(profileUtenteId).catch(() => []),
+          let consultasData = [];
+          
+          // Se for terapeuta/professor (próprio perfil), buscar suas consultas
+          if (isOwnProfile && user?.role === 'terapeuta') {
+            consultasData = await getConsultas().catch(() => []);
+          } else {
+            // Se for utente ou visualizando perfil de outro, buscar consultas do utente
+            consultasData = await getUtenteConsultas(profileUtenteId).catch(() => []);
+          }
+
+          const [registosData, fichasData] = await Promise.all([
             getUtenteRegistos(profileUtenteId).catch(() => []),
             getFichasAvaliacao(profileUtenteId).catch(() => []),
           ]);
 
-          setConsultas(Array.isArray(consultasData) ? consultasData : []);
+          setConsultas(Array.isArray(consultasData) ? normalizeConsultas(consultasData) : []);
           setRegistos(Array.isArray(registosData) ? registosData : []);
           setFichas(Array.isArray(fichasData) ? fichasData : []);
         } catch (err) {
@@ -123,7 +168,7 @@ export function UserPage() {
     };
 
     fetchUserData();
-  }, [profileUtenteId, isOwnProfile, user?.id, user?.name, user?.email]);
+  }, [profileUtenteId, isOwnProfile, user?.id, user?.name, user?.email, user?.role]);
 
   const handleEditClick = async () => {
     setIsEditMode(true);
@@ -443,22 +488,16 @@ export function UserPage() {
                 Consultas ({consultas.length})
               </button>
             </li>
-            <li>
-              <button
-                className={`tab-button ${activeTab === 'registos' ? 'active' : ''}`}
-                onClick={() => setActiveTab('registos')}
-              >
-                Registos ({registos.length})
-              </button>
-            </li>
-            <li>
-              <button
-                className={`tab-button ${activeTab === 'fichas' ? 'active' : ''}`}
-                onClick={() => setActiveTab('fichas')}
-              >
-                Formulários ({fichas.length})
-              </button>
-            </li>
+            {user?.role !== 'utente' && (
+              <li>
+                <button
+                  className={`tab-button ${activeTab === 'registos' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('registos')}
+                >
+                  Registos ({registos.length + fichas.length})
+                </button>
+              </li>
+            )}
           </ul>
 
           {/* Details Tab */}
@@ -729,107 +768,134 @@ export function UserPage() {
               <div className="card-header">
                 <h2 className="card-title">
                   <FileText size={20} />
-                  Registos Clínicos
+                  Registos Clínicos e Formulários
                 </h2>
               </div>
 
               <div className="card-content">
-                {registos.length === 0 ? (
+                {registos.length === 0 && fichas.length === 0 ? (
                   <div className="empty-state">
-                    <p>Nenhum registo clínico</p>
+                    <p>Nenhum registo clínico ou formulário</p>
                   </div>
                 ) : (
                   <div>
-                    {registos.map((registo, index) => (
-                      <motion.div
-                        key={registo.id}
-                        custom={index}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="registo-item"
-                      >
-                        <div className="registo-header">
-                          <div className="registo-icon">
-                            <Stethoscope size={18} />
-                          </div>
-                          <div className="registo-info">
-                            <p className="registo-title">{registo.area_clinica}</p>
-                            <div className="registo-meta">
-                              <span className="registo-author">{registo.criado_por}</span>
-                              <span className="registo-date">{registo.data_criacao}</span>
+                    {/* Documentos */}
+                    {registos.length > 0 && (
+                      <>
+                        <h3 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: '#444' }}>Documentos</h3>
+                        {registos.map((item, index) => (
+                          <motion.div
+                            key={item.id}
+                            custom={index}
+                            variants={itemVariants}
+                            initial="hidden"
+                            animate="visible"
+                            className="registo-item"
+                          >
+                            {item.tipo === 'documento' ? (
+                              <>
+                                <div className="registo-header">
+                                  <div className="registo-icon">
+                                    <FilePdf size={18} />
+                                  </div>
+                                  <div className="registo-info">
+                                    <p className="registo-title">📄 {item.nome_arquivo}</p>
+                                    <div className="registo-meta">
+                                      <span className="registo-author">{item.criado_por}</span>
+                                      <span className="registo-date">{item.data_criacao}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="registo-separator"></div>
+                                <a 
+                                  href={item.arquivo_url} 
+                                  download 
+                                  className="registo-link"
+                                  style={{
+                                    display: 'inline-block',
+                                    marginTop: '8px',
+                                    padding: '8px 12px',
+                                    backgroundColor: '#e5e7eb',
+                                    borderRadius: '4px',
+                                    color: '#1f2937',
+                                    textDecoration: 'none',
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                    transition: 'background-color 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => e.target.style.backgroundColor = '#d1d5db'}
+                                  onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e7eb'}
+                                >
+                                  📥 Descarregar
+                                </a>
+                              </>
+                            ) : (
+                              <>
+                                <div className="registo-header">
+                                  <div className="registo-icon">
+                                    <Stethoscope size={18} />
+                                  </div>
+                                  <div className="registo-info">
+                                    <p className="registo-title">{item.area_clinica}</p>
+                                    <div className="registo-meta">
+                                      <span className="registo-author">{item.criado_por}</span>
+                                      <span className="registo-date">{item.data_criacao}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="registo-separator"></div>
+
+                                <p className="registo-content">{item.conteudo}</p>
+                              </>
+                            )}
+                          </motion.div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Registos */}
+                    {fichas.length > 0 && (
+                      <>
+                        {registos.length > 0 && <div style={{ margin: '24px 0', borderTop: '1px solid #e5e7eb' }} />}
+                        <h3 style={{ marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: '#444' }}>Registos</h3>
+                        {fichas.map((ficha, index) => (
+                          <motion.div
+                            key={getFichaValue(ficha, 'id') || `ficha-${index}`}
+                            custom={index + registos.length}
+                            variants={itemVariants}
+                            initial="hidden"
+                            animate="visible"
+                            className="registo-item"
+                          >
+                            <div className="registo-header">
+                              <div className="registo-icon">
+                                <FileText size={18} />
+                              </div>
+                              <div className="registo-info">
+                                <p className="registo-title">{getFichaValue(ficha, 'tipo_registo') || 'Formulário'}</p>
+                                <div className="registo-meta">
+                                  <span className="registo-author">Criado por: {getFichaValue(ficha, 'created_by') || '-'}</span>
+                                  <span className="registo-date">{getFichaValue(ficha, 'created_at') || '-'}</span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
 
-                        <div className="registo-separator"></div>
+                            <div className="registo-separator"></div>
 
-                        <p className="registo-content">{registo.conteudo}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Fichas de Avaliação Tab */}
-          <motion.div
-            className={`tabs-content ${activeTab === 'fichas' ? 'active' : ''}`}
-            variants={tabVariants}
-            initial="hidden"
-            animate={activeTab === 'fichas' ? 'visible' : 'hidden'}
-          >
-            <div className="card">
-              <div className="card-header">
-                <h2 className="card-title">
-                  <FileText size={20} />
-                  Formulários de Avaliação
-                </h2>
-              </div>
-
-              <div className="card-content">
-                {fichas.length === 0 ? (
-                  <div className="empty-state">
-                    <p>Nenhum formulário de avaliação</p>
-                  </div>
-                ) : (
-                  <div>
-                    {fichas.map((ficha, index) => (
-                      <motion.div
-                        key={getFichaValue(ficha, 'id') || `ficha-${index}`}
-                        custom={index}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="registo-item"
-                      >
-                        <div className="registo-header">
-                          <div className="registo-icon">
-                            <FileText size={18} />
-                          </div>
-                          <div className="registo-info">
-                            <p className="registo-title">{getFichaValue(ficha, 'tipo_registo') || 'Formulário'}</p>
-                            <div className="registo-meta">
-                              <span className="registo-author">Criado por: {getFichaValue(ficha, 'created_by') || '-'}</span>
-                              <span className="registo-date">{getFichaValue(ficha, 'created_at') || '-'}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="registo-separator"></div>
-
-                        <p className="registo-content">
-                          <strong>Diagnóstico:</strong> {getFichaValue(ficha, 'diagnostico_queixa_principal') || '-'}
-                        </p>
-                        <p className="registo-content">
-                          <strong>Objetivos/Prognóstico:</strong> {getFichaValue(ficha, 'objetivos_prognostico') || '-'}
-                        </p>
-                        <p className="registo-content">
-                          <strong>Plano terapêutico:</strong> {getFichaValue(ficha, 'plano_terapeutico') || '-'}
-                        </p>
-                      </motion.div>
-                    ))}
+                            <p className="registo-content">
+                              <strong>Diagnóstico:</strong> {getFichaValue(ficha, 'diagnostico_queixa_principal') || '-'}
+                            </p>
+                            <p className="registo-content">
+                              <strong>Objetivos/Prognóstico:</strong> {getFichaValue(ficha, 'objetivos_prognostico') || '-'}
+                            </p>
+                            <p className="registo-content">
+                              <strong>Plano terapêutico:</strong> {getFichaValue(ficha, 'plano_terapeutico') || '-'}
+                            </p>
+                          </motion.div>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDate, ClipboardData, Person, PlusLg } from 'react-bootstrap-icons';
-import { getUtenteConsultas, getUtenteRegistos } from '../services/utentes.jsx';
+import { CalendarDate, Person, PlusLg } from 'react-bootstrap-icons';
+import { getUtenteConsultas } from '../services/utentes.jsx';
 import '../styles/dashboard.css';
 
 export function DashboardUtente() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [consultas, setConsultas] = useState([]);
-    const [registos, setRegistos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('consultas');
 
@@ -17,12 +16,8 @@ export function DashboardUtente() {
         const fetchData = async () => {
             try {
                 if (user?.id) {
-                    const [consultasData, registosData] = await Promise.all([
-                        getUtenteConsultas(user.id),
-                        getUtenteRegistos(user.id),
-                    ]);
+                    const consultasData = await getUtenteConsultas(user.id);
                     setConsultas(consultasData || []);
-                    setRegistos(registosData || []);
                 }
             } catch (err) {
             } finally {
@@ -50,12 +45,6 @@ export function DashboardUtente() {
                     onClick={() => setActiveTab('consultas')}
                 >
                     <CalendarDate size={16} /> Minhas Consultas
-                </button>
-                <button
-                    className={`tab-btn ${activeTab === 'registos' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('registos')}
-                >
-                    <ClipboardData size={16} /> Meus Registos
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'perfil' ? 'active' : ''}`}
@@ -94,25 +83,6 @@ export function DashboardUtente() {
                             <button className="btn-primary" onClick={() => navigate('/consultas/novo')}>
                                 <PlusLg size={14} /> Agendar Nova Consulta
                             </button>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'registos' && (
-                    <div className="registos-section">
-                        <h2>Meus Registos</h2>
-                        {registos.length === 0 ? (
-                            <p className="empty-state">Ainda não tem registos</p>
-                        ) : (
-                            <div className="registos-list">
-                                {registos.map((registo) => (
-                                    <div key={registo.id} className="registo-card">
-                                        <h4>{registo.titulo}</h4>
-                                        <p>{registo.descricao}</p>
-                                        <small>{new Date(registo.data).toLocaleDateString('pt-PT')}</small>
-                                    </div>
-                                ))}
-                            </div>
                         )}
                     </div>
                 )}

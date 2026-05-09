@@ -58,6 +58,19 @@ type RegistoClinicoResponse struct {
 	DataCriacao string `json:"data_criacao"`
 }
 
+type RegistoOuDocumentoResponse struct {
+	ID          uint   `json:"id"`
+	Tipo        string `json:"tipo"` // "registo" ou "documento"
+	ConsultaID  *uint  `json:"consulta_id"`
+	AreaClinica string `json:"area_clinica"`
+	Conteudo    string `json:"conteudo"` // Para registos
+	CriadoPor   string `json:"criado_por"`
+	DataCriacao string `json:"data_criacao"`
+	// Para documentos
+	NomeArquivo string `json:"nome_arquivo"`
+	ArquivoURL  string `json:"arquivo_url"`
+}
+
 func GetUtentes(c *gin.Context) {
 	userID, _ := getAuthenticatedUserID(c)
 	roleValue, _ := c.Get("userRole")
@@ -241,7 +254,7 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 
 	err := config.DB.Where("utente_id = ?", id).First(&processo).Error
 	if err != nil {
-		c.JSON(http.StatusOK, []RegistoClinicoResponse{})
+		c.JSON(http.StatusOK, []RegistoOuDocumentoResponse{})
 		return
 	}
 
@@ -259,11 +272,27 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 		return
 	}
 
-	var response []RegistoClinicoResponse
+	// Buscar documentos de consulta do utente
+	var documentos []models.DocumentoConsulta
+	err = config.DB.
+		Preload("UserUpload").
+		Joins("JOIN consultas ON consultas.id = documentos_consulta.consulta_id").
+		Where("consultas.utente_id = ?", id).
+		Order("documentos_consulta.created_at DESC").
+		Find(&documentos).Error
 
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var response []RegistoOuDocumentoResponse
+
+	// Adicionar registos clínicos
 	for _, r := range registos {
-		response = append(response, RegistoClinicoResponse{
+		response = append(response, RegistoOuDocumentoResponse{
 			ID:          r.ID,
+			Tipo:        "registo",
 			ConsultaID:  r.ConsultaID,
 			AreaClinica: r.AreaClinica.Nome,
 			Conteudo:    r.Conteudo,
@@ -272,6 +301,20 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 		})
 	}
 
+	// Adicionar documentos de consulta
+	for _, d := range documentos {
+		response = append(response, RegistoOuDocumentoResponse{
+			ID:          d.ID,
+			Tipo:        "documento",
+			NomeArquivo: d.NomeArquivo,
+			ArquivoURL:  d.ArquivoURL,
+			CriadoPor:   d.UserUpload.Nome,
+			DataCriacao: d.CreatedAt.Format("2006-01-02 15:04:05"),
+		})
+	}
+
+	// Ordenar por data descendente
+	// Usar sorting simples baseado em DataCriacao
 	c.JSON(http.StatusOK, response)
 }
 
