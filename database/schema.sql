@@ -29,12 +29,16 @@ CREATE TABLE users (
   role user_role NOT NULL,
   active BOOLEAN DEFAULT TRUE,
   google_sub VARCHAR(255) UNIQUE,
+  email_verified BOOLEAN DEFAULT FALSE,
+  verification_code VARCHAR(255) UNIQUE,
+  verification_code_expires_at TIMESTAMP,
   last_login_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_verification_code ON users(verification_code);
 
 CREATE TABLE areas_clinicas (
   id SERIAL PRIMARY KEY,

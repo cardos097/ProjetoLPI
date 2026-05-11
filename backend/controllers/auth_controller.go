@@ -2,8 +2,11 @@ package controllers
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,6 +31,17 @@ func getLoginLimiter(ip string) *rate.Limiter {
 	l := rate.NewLimiter(rate.Every(time.Minute/5), 5)
 	loginLimiters.Store(ip, l)
 	return l
+}
+
+// generateVerificationCode gera um código de verificação de 6 dígitos
+func generateVerificationCode() (string, error) {
+	b := make([]byte, 3)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	// Converter para um número entre 100000 e 999999
+	code := fmt.Sprintf("%06d", int(uint(b[0])<<16|uint(b[1])<<8|uint(b[2]))%1000000)
+	return code, nil
 }
 
 type LoginRequest struct {
@@ -57,10 +71,11 @@ type LoginResponse struct {
 }
 
 type RegisterResponse struct {
-	Message string `json:"message"`
-	UserID  uint   `json:"user_id"`
-	Token   string `json:"token"`
-	Role    string `json:"role"`
+	Message          string `json:"message"`
+	UserID           uint   `json:"user_id"`
+	Token            string `json:"token,omitempty"`
+	Role             string `json:"role"`
+	VerificationCode string `json:"verification_code,omitempty"`
 }
 
 func getTipoTerapeutaFromEmail(email string) (string, string) {
@@ -113,6 +128,12 @@ func Login(c *gin.Context) {
 
 	if !user.Active {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Utilizador inativo"})
+		return
+	}
+
+	// Verificar se o email foi verificado (não aplicar para contas Google)
+	if !user.EmailVerified && user.GoogleSub == nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Por favor verifique o seu email antes de entrar"})
 		return
 	}
 
@@ -182,11 +203,12 @@ func GoogleLogin(c *gin.Context) {
 	result := config.DB.Where("google_sub = ?", claims.Sub).First(&user)
 	if result.Error != nil {
 		user = models.User{
-			Email:     claims.Email,
-			Nome:      claims.Name,
-			GoogleSub: &claims.Sub,
-			Role:      role,
-			Active:    true,
+			Email:         claims.Email,
+			Nome:          claims.Name,
+			GoogleSub:     &claims.Sub,
+			Role:          role,
+			Active:        true,
+			EmailVerified: true, // Contas Google são verificadas automaticamente
 		}
 
 		if err := config.DB.Create(&user).Error; err != nil {
@@ -298,12 +320,25 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	// Gerar código de verificação
+	verificationCode, err := generateVerificationCode()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao gerar código de verificação"})
+		return
+	}
+
+	// Definir expiração do código em 24 horas
+	expiresAt := time.Now().Add(24 * time.Hour)
+
 	newUser := models.User{
-		Email:        req.Email,
-		Nome:         req.NomeCompleto,
-		PasswordHash: string(hashedPassword),
-		Role:         "utente",
-		Active:       true,
+		Email:                     req.Email,
+		Nome:                      req.NomeCompleto,
+		PasswordHash:              string(hashedPassword),
+		Role:                      "utente",
+		Active:                    true,
+		EmailVerified:             false,
+		VerificationCode:          &verificationCode,
+		VerificationCodeExpiresAt: &expiresAt,
 	}
 
 	if err := config.DB.Create(&newUser).Error; err != nil {
@@ -330,18 +365,96 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateAppJWT(newUser.ID, newUser.Email, newUser.Role)
+	// Enviar email de verificação
+	err = utils.SendVerificationEmail(newUser.Email, verificationCode)
+	if err != nil {
+		log.Printf("Aviso: Falha ao enviar email de verificação para %s: %v", newUser.Email, err)
+		// Não interromper o fluxo se o email falhar
+	}
+
+	response := RegisterResponse{
+		Message:          "Conta criada com sucesso. Por favor verifique o seu email.",
+		UserID:           newUser.ID,
+		Role:             newUser.Role,
+		VerificationCode: "", // Vazio por padrão (segurança)
+	}
+
+	// Em desenvolvimento, mostrar o código para testes
+	// Em produção, apenas o email contém o código
+	if os.Getenv("ENVIRONMENT") == "development" {
+		response.VerificationCode = verificationCode
+	}
+
+	c.JSON(http.StatusCreated, response)
+}
+
+// VerifyEmail verifica o código de email, marca como verificado e faz login automático
+func VerifyEmail(c *gin.Context) {
+	var req struct {
+		UserID uint   `json:"user_id" binding:"required"`
+		Code   string `json:"code" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id e code são obrigatórios"})
+		return
+	}
+
+	var user models.User
+	if err := config.DB.Where("id = ?", req.UserID).First(&user).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Utilizador não encontrado"})
+		return
+	}
+
+	// Verificar se o código foi expirado
+	if user.VerificationCodeExpiresAt == nil || time.Now().After(*user.VerificationCodeExpiresAt) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Código expirado"})
+		return
+	}
+
+	// Verificar se o código está correto
+	if user.VerificationCode == nil || *user.VerificationCode != req.Code {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Código inválido"})
+		return
+	}
+
+	// Marcar como verificado
+	now := time.Now()
+	config.DB.Model(&user).Updates(map[string]interface{}{
+		"email_verified":               true,
+		"verification_code":            nil,
+		"verification_code_expires_at": nil,
+		"last_login_at":                now,
+	})
+
+	// Gerar token JWT para auto-login
+	token, err := utils.GenerateAppJWT(user.ID, user.Email, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao gerar token"})
 		return
 	}
 
-	response := RegisterResponse{
-		Message: "Conta criada com sucesso",
-		UserID:  newUser.ID,
-		Token:   token,
-		Role:    newUser.Role,
+	// Buscar dados adicionais do terapeuta se aplicável
+	var tipo string
+	var areaClinicaID *uint
+	if user.Role == "terapeuta" {
+		var terapeuta models.Terapeuta
+		if err := config.DB.Where("user_id = ?", user.ID).First(&terapeuta).Error; err == nil {
+			tipo = terapeuta.Tipo
+			areaClinicaID = terapeuta.AreaClinicaID
+		}
 	}
 
-	c.JSON(http.StatusCreated, response)
+	// Retornar dados de login completo para auto-login
+	response := LoginResponse{
+		Token:         token,
+		UserID:        user.ID,
+		Role:          user.Role,
+		Name:          user.Nome,
+		Email:         user.Email,
+		Tipo:          tipo,
+		AreaClinicaID: areaClinicaID,
+	}
+
+	c.JSON(http.StatusOK, response)
 }

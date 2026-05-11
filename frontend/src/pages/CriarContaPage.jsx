@@ -17,6 +17,9 @@ export function CriarContaPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [userId, setUserId] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,16 +68,57 @@ export function CriarContaPage() {
         nome_completo: formData.nome_completo,
       });
 
-      setSuccess('Conta criada com sucesso! A entrar...');
-      login(session);
-      
-      // Redirecionar após 1 segundo
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      setUserId(session.user_id);
+      setShowVerification(true);
+      setSuccess('Código de verificação enviado para seu email. Verifique sua caixa de entrada.');
 
     } catch (err) {
       setError(err?.response?.data?.error || err.message || 'Falha ao criar conta');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (!verificationCode.trim()) {
+        setError('Por favor insira o código de verificação');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost:8080/auth/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          code: verificationCode,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Falha na verificação');
+      }
+
+      const loginData = await response.json();
+      setSuccess('Email verificado! Bem-vindo à Clínica Universitária!');
+      
+      // Auto-login com os dados retornados
+      login(loginData);
+      
+      // Redirecionar ao dashboard
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 800);
+    } catch (err) {
+      setError(err?.message || 'Falha na verificação');
     } finally {
       setLoading(false);
     }
@@ -97,60 +141,76 @@ export function CriarContaPage() {
               <p>Registe-se na Clínica Universitária</p>
             </div>
 
-            <form className="login-form" onSubmit={handleSubmit}>
-              <label>
-                Nome Completo
-                <input
-                  type="text"
-                  name="nome_completo"
-                  value={formData.nome_completo}
-                  onChange={handleChange}
-                  placeholder="Seu nome completo"
-                  required
-                />
-              </label>
+            <form className="login-form" onSubmit={showVerification ? handleVerifyCode : handleSubmit}>
+              {!showVerification ? (
+                <>
+                  <label>
+                    Nome Completo
+                    <input
+                      type="text"
+                      name="nome_completo"
+                      value={formData.nome_completo}
+                      onChange={handleChange}
+                      placeholder="Seu nome completo"
+                      required
+                    />
+                  </label>
 
-              <label>
-                Email
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="seu.email@ufp.edu.pt"
-                  required
-                />
-              </label>
+                  <label>
+                    Email
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="Email"
+                      required
+                    />
+                  </label>
 
-              <label>
-                Palavra-passe
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Mínimo 6 caracteres"
-                  required
-                />
-              </label>
+                  <label>
+                    Palavra-passe
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Mínimo 8 caracteres"
+                      required
+                    />
+                  </label>
 
-              <label>
-                Confirmar Palavra-passe
-                <input
-                  type="password"
-                  name="confirm_password"
-                  value={formData.confirm_password}
-                  onChange={handleChange}
-                  placeholder="Confirme a palavra-passe"
-                  required
-                />
-              </label>
+                  <label>
+                    Confirmar Palavra-passe
+                    <input
+                      type="password"
+                      name="confirm_password"
+                      value={formData.confirm_password}
+                      onChange={handleChange}
+                      placeholder="Confirme a palavra-passe"
+                      required
+                    />
+                  </label>
+                </>
+              ) : (
+                <label>
+                  Código de Verificação
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="Insira o código de verificação de 6 dígitos"
+                    maxLength="6"
+                    required
+                  />
+                </label>
+              )}
 
               {error && <p className="login-error">{error}</p>}
               {success && <p style={{ color: '#10b981', fontSize: '14px', textAlign: 'center' }}>{success}</p>}
 
               <button type="submit" className="login-button" disabled={loading}>
-                {loading ? 'A criar conta...' : 'Criar Conta'}
+                {loading ? (showVerification ? 'A verificar...' : 'A criar conta...') : (showVerification ? 'Verificar' : 'Criar Conta')}
               </button>
             </form>
 

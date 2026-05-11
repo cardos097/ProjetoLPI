@@ -30,6 +30,11 @@ func main() {
 	jwtSecret := config.GetEnvOptional("JWT_SECRET", "your-secret-key-change-in-production")
 	utils.SetJWTSecret(jwtSecret)
 
+	// Inicializar configuração de email
+	if err := utils.InitEmailConfig(); err != nil {
+		log.Printf("Aviso: Falha ao inicializar email config: %v", err)
+	}
+
 	r := gin.Default()
 
 	allowedOrigins := []string{

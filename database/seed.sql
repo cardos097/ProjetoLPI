@@ -28,6 +28,9 @@ INSERT INTO users (nome, email, password_hash, role) VALUES
 ('Professor 1', 'professor1@ufp.edu.pt', '$2b$10$U2j9fXeaUu3F303iXwLDMeHJewhI/SQnL/v1BRiXl.cUYqWHUnnoO', 'terapeuta'),
 ('Professor Fisioterapia', 'professorfisio@ufp.edu.pt', '$2a$10$4VzXeJf1.wycd5nQiOybX.CrH8jeno6QQ7.SqCiZBbB8GkggJ9IFW', 'terapeuta');
 
+-- Marcar todos os utilizadores seed como verificados
+UPDATE users SET email_verified = TRUE WHERE email NOT LIKE '%@ufp.edu.pt' OR email LIKE '%@ufp.edu.pt';
+
 ---------------------------------------------------------
 -- TERAPEUTAS
 ---------------------------------------------------------

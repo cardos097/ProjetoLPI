@@ -126,21 +126,16 @@ export async function registerRequest({ email, password, confirm_password, nome_
     nome_completo,
   });
 
-  const token = data.token || data.access_token;
   const userId = data.user_id || data.userId || data.id;
-  const role = data.role || 'utente';
+  const verificationCode = data.verification_code;
 
-  if (!token || !userId) {
-    throw new Error('Resposta de registo inválida (faltam token/userId)');
+  if (!userId) {
+    throw new Error('Resposta de registo inválida (faltam user_id)');
   }
 
   return {
-    token,
-    user: {
-      id: Number(userId),
-      role,
-      name: nome_completo,
-      email,
-    },
+    user_id: Number(userId),
+    verification_code: verificationCode,
+    email,
   };
 }
