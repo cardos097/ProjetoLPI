@@ -193,7 +193,7 @@
 
 .profile-contact-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
 
@@ -368,7 +368,7 @@
 /* Consultas Grid */
 .consultas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
   width: 100%;
 }
@@ -807,4 +807,87 @@
   color: #166534;
   font-size: 14px;
   margin-bottom: 16px;
+}
+/* ===== Secções do perfil (Dados Pessoais / Informação Clínica) ===== */
+.profile-section {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px 20px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.profile-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary-color, #1E7D5B);
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.details-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.details-grid-full {
+  grid-column: 1 / -1;
+}
+
+.edit-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.edit-grid-full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .details-grid-2col,
+  .edit-grid-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .details-grid-full,
+  .edit-grid-full {
+    grid-column: 1;
+  }
+
+  .profile-contact-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ===== Consultas mobile cards (perfil) ===== */
+.consulta-profile-card {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 10px;
+}
+
+.consulta-profile-card .card-area {
+  font-weight: 600;
+  font-size: 15px;
+  color: #111827;
+}
+
+.consulta-profile-card .card-sub {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 3px 0 8px;
+}
+
+.consulta-profile-card .card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }

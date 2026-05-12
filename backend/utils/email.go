@@ -61,7 +61,7 @@ func SendVerificationEmail(toEmail, verificationCode string) error {
 
 	from := fmt.Sprintf("%s <%s>", emailConfig.FromName, emailConfig.FromEmail)
 	to := toEmail
-	subject := "Verificação de Email - Clínica Universitária"
+	subject := "Verificação de Email — UAAPS"
 
 	// Corpo do email em HTML
 	body := fmt.Sprintf(`
@@ -84,14 +84,14 @@ func SendVerificationEmail(toEmail, verificationCode string) error {
 			<h1>Verificação de Email</h1>
 		</div>
 		<div class="content">
-			<p>Bem-vindo à Clínica Universitária!</p>
+			<p>Bem-vindo à Unidade Académica de Aprendizagem e Prática em Saúde (UAAPS)!</p>
 			<p>Para completar o seu registo, utilize o seguinte código de verificação:</p>
 			<div class="code">%s</div>
 			<p>Este código expira em 24 horas.</p>
 			<p>Se não criou esta conta, ignore este email.</p>
 		</div>
 		<div class="footer">
-			<p>Clínica Universitária - Cuidados de Saúde Especializados</p>
+			<p>UAAPS — Unidade Académica de Aprendizagem e Prática em Saúde</p>
 		</div>
 	</div>
 </body>
@@ -124,13 +124,13 @@ func sendMockEmail(toEmail, verificationCode string) error {
 	fmt.Println("📧 EMAIL MOCK (Development Mode)")
 	fmt.Println(separator)
 	fmt.Printf("Para: %s\n", toEmail)
-	fmt.Printf("De: Clínica Universitária <rececao@clinica.pt>\n")
-	fmt.Printf("Assunto: Verificação de Email - Clínica Universitária\n")
+	fmt.Printf("De: UAAPS <uaaps@ufp.pt>\n")
+	fmt.Printf("Assunto: Verificação de Email — UAAPS\n")
 	fmt.Printf("Data: %s\n", time.Now().Format("2006-01-02 15:04:05"))
 	fmt.Println(dash)
 	fmt.Println("Corpo:")
 	fmt.Println(dash)
-	fmt.Printf("Bem-vindo à Clínica Universitária!\n\n")
+	fmt.Printf("Bem-vindo à Unidade Académica de Aprendizagem e Prática em Saúde (UAAPS)!\n\n")
 	fmt.Printf("Para completar o seu registo, utilize o seguinte código de verificação:\n\n")
 	fmt.Printf("   🔐 %s\n\n", verificationCode)
 	fmt.Printf("Este código expira em 24 horas.\n")

@@ -1,0 +1,59 @@
+package controllers
+
+import (
+	"time"
+
+	"clinica-backend/config"
+	"clinica-backend/models"
+)
+
+// isAlunoOutsideWindow retorna true se o utilizador é aluno terapeuta
+// e o momento atual está fora da janela [data_inicio-2h, data_fim+2h].
+func isAlunoOutsideWindow(userID uint, consulta *models.Consulta) bool {
+	var t models.Terapeuta
+	if err := config.DB.Where("user_id = ? AND tipo = 'aluno'", userID).First(&t).Error; err != nil {
+		return false // não é aluno, sem restrição
+	}
+	now := time.Now()
+	return now.Before(consulta.DataInicio.Add(-2*time.Hour)) ||
+		now.After(consulta.DataFim.Add(2*time.Hour))
+}
+
+// terapeutaHasAccessToUtente retorna true se o terapeuta tem pelo menos
+// uma consulta com este utente (direto ou via supervisor).
+func terapeutaHasAccessToUtente(userID uint, utenteID uint) bool {
+	var t models.Terapeuta
+	if err := config.DB.Where("user_id = ?", userID).First(&t).Error; err != nil {
+		return false
+	}
+	var count int64
+	q := config.DB.Model(&models.Consulta{}).Where("utente_id = ?", utenteID)
+	if t.Tipo == "aluno" && t.SupervisorID != nil {
+		q = q.Where("terapeuta_id = ? OR terapeuta_id = ?", userID, *t.SupervisorID)
+	} else {
+		q = q.Where("terapeuta_id = ?", userID)
+	}
+	q.Count(&count)
+	return count > 0
+}
+
+// alunoHasActiveConsulta retorna true se o aluno tem pelo menos uma
+// consulta ativa (dentro de ±2h) com utenteID. Para não-alunos devolve true.
+func alunoHasActiveConsulta(userID uint, utenteID uint) bool {
+	var t models.Terapeuta
+	if err := config.DB.Where("user_id = ? AND tipo = 'aluno'", userID).First(&t).Error; err != nil {
+		return true // não é aluno, sem restrição
+	}
+	now := time.Now()
+	q := config.DB.Model(&models.Consulta{}).
+		Where("utente_id = ? AND data_inicio <= ? AND data_fim >= ?",
+			utenteID, now.Add(2*time.Hour), now.Add(-2*time.Hour))
+	if t.SupervisorID != nil {
+		q = q.Where("terapeuta_id = ? OR terapeuta_id = ?", userID, *t.SupervisorID)
+	} else {
+		q = q.Where("terapeuta_id = ?", userID)
+	}
+	var count int64
+	q.Count(&count)
+	return count > 0
+}

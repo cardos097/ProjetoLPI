@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { loginRequest, loginWithGoogle } from '../services/auth.jsx';
+import { loginRequest, loginWithGoogle, resendVerificationRequest, verifyEmailRequest } from '../services/auth.jsx';
 import { GoogleLogin } from '@react-oauth/google';
 
 export function LoginPage() {
@@ -12,6 +12,10 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showResend, setShowResend] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [userId, setUserId] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +27,41 @@ export function LoginPage() {
       login(session);
       navigate('/dashboard');
     } catch (err) {
-      setError(err?.response?.data?.error || err.message || 'Falha no login');
+      const msg = err?.response?.data?.error || err.message || 'Falha no login';
+      setError(msg);
+      if (err?.response?.status === 403 && msg.toLowerCase().includes('verif')) {
+        setShowResend(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const data = await resendVerificationRequest({ email });
+      setUserId(data.user_id);
+      setShowResend(false);
+      setShowVerification(true);
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Erro ao reenviar código');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const session = await verifyEmailRequest({ user_id: userId, code: verificationCode });
+      login(session);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || 'Código inválido');
     } finally {
       setLoading(false);
     }
@@ -58,72 +96,121 @@ export function LoginPage() {
               <div className="login-logo">
                 <img
                   src="/images/ufp-logo.png"
-                  alt="Logo Clínica Universitária"
+                  alt="Logo UAAPS"
                 />
               </div>
               <h1>Bem-vindo</h1>
-              <p>Acesso à Clínica Universitária</p>
+              <p>Acesso à UAAPS</p>
             </div>
 
-            <form className="login-form" onSubmit={handleSubmit}>
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@email.pt"
-                  required
-                />
-              </label>
+            {!showVerification ? (
+              <form className="login-form" onSubmit={handleSubmit}>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setShowResend(false); }}
+                    placeholder="example@email.pt"
+                    required
+                  />
+                </label>
 
-              <label>
-                Palavra-passe
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Insira sua palavra-passe"
-                  required
-                />
-              </label>
+                <label>
+                  Palavra-passe
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Insira sua palavra-passe"
+                    required
+                  />
+                </label>
 
-              {error && <p className="login-error">{error}</p>}
+                {error && <p className="login-error">{error}</p>}
 
-              <button type="submit" className="login-button" disabled={loading}>
-                {loading ? 'A entrar...' : 'Entrar'}
-              </button>
+                {showResend && (
+                  <button
+                    type="button"
+                    className="login-button"
+                    style={{ background: '#f59e0b', marginTop: '4px' }}
+                    onClick={handleResend}
+                    disabled={loading}
+                  >
+                    {loading ? 'A enviar...' : 'Reenviar código de verificação'}
+                  </button>
+                )}
 
-              <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
-                Não tem conta?
-                <Link
-                  to="/criar-conta"
-                  style={{
-                    marginLeft: '5px',
-                    color: '#059669',
-                    textDecoration: 'none',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
+                <button type="submit" className="login-button" disabled={loading}>
+                  {loading ? 'A entrar...' : 'Entrar'}
+                </button>
+
+                <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
+                  Não tem conta?
+                  <Link
+                    to="/criar-conta"
+                    style={{
+                      marginLeft: '5px',
+                      color: '#059669',
+                      textDecoration: 'none',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Criar conta aqui
+                  </Link>
+                </div>
+              </form>
+            ) : (
+              <form className="login-form" onSubmit={handleVerify}>
+                <p style={{ fontSize: '14px', color: '#374151', marginBottom: '16px' }}>
+                  Introduza o código de 6 dígitos enviado para <strong>{email}</strong>.
+                </p>
+                <label>
+                  Código de Verificação
+                  <input
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    placeholder="000000"
+                    maxLength="6"
+                    required
+                    autoFocus
+                  />
+                </label>
+
+                {error && <p className="login-error">{error}</p>}
+
+                <button type="submit" className="login-button" disabled={loading}>
+                  {loading ? 'A verificar...' : 'Verificar e Entrar'}
+                </button>
+
+                <button
+                  type="button"
+                  style={{ marginTop: '8px', background: 'none', border: 'none', color: '#059669', cursor: 'pointer', fontSize: '14px', width: '100%' }}
+                  onClick={() => { setShowVerification(false); setError(''); setVerificationCode(''); }}
                 >
-                  Criar conta aqui
-                </Link>
-              </div>
-            </form>
+                  ← Voltar ao login
+                </button>
+              </form>
+            )}
 
-            <div className="login-divider">
-              <span className="login-divider-text">Ou continue com</span>
-            </div>
-
-            <div className="login-google-wrapper">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                text="signin_with"
-                theme="outline"
-                size="large"
-              />
-            </div>
+            {!showVerification && (
+              <>
+                <div className="login-divider">
+                  <span className="login-divider-text">Ou continue com</span>
+                </div>
+                <div className="login-google-wrapper">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    text="signin_with"
+                    theme="outline"
+                    size="large"
+                  />
+                </div>
+              </>
+            )}
 
             <p style={{ textAlign: 'center', fontSize: '12px', color: '#9ca3af', marginTop: '20px' }}>
               ⓘ Apenas utilizadores com email @ufp.edu.pt podem aceder
@@ -139,7 +226,7 @@ export function LoginPage() {
           }}
         >
           <div className="login-image-content">
-            <h2>Clínica Universitária</h2>
+            <h2>UAAPS</h2>
             <p>Cuidados de saúde especializados com profissionais qualificados</p>
           </div>
         </div>

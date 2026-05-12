@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"clinica-backend/config"
@@ -134,6 +135,21 @@ func GetUtentes(c *gin.Context) {
 func GetUtenteByID(c *gin.Context) {
 	id := c.Param("id")
 
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+	if utenteID, err := strconv.ParseUint(id, 10, 64); err == nil {
+		uid := uint(utenteID)
+		if userRole == "terapeuta" && !terapeutaHasAccessToUtente(userID, uid) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder a este utente"})
+			return
+		}
+		if !alunoHasActiveConsulta(userID, uid) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível durante uma consulta ativa"})
+			return
+		}
+	}
+
 	var utente models.Utente
 
 	err := config.DB.
@@ -200,6 +216,21 @@ func GetUtenteByID(c *gin.Context) {
 func GetConsultasByUtenteID(c *gin.Context) {
 	id := c.Param("id")
 
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+	if utenteID, err := strconv.ParseUint(id, 10, 64); err == nil {
+		uid := uint(utenteID)
+		if userRole == "terapeuta" && !terapeutaHasAccessToUtente(userID, uid) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder a este utente"})
+			return
+		}
+		if !alunoHasActiveConsulta(userID, uid) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível durante uma consulta ativa"})
+			return
+		}
+	}
+
 	if roleValue, exists := c.Get("userRole"); exists {
 		if userRole, ok := roleValue.(string); ok && userRole == "utente" {
 			authenticatedID, err := getAuthenticatedUserID(c)
@@ -249,6 +280,21 @@ func GetConsultasByUtenteID(c *gin.Context) {
 
 func GetRegistosClinicosByUtenteID(c *gin.Context) {
 	id := c.Param("id")
+
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+	if utenteID, err := strconv.ParseUint(id, 10, 64); err == nil {
+		uid := uint(utenteID)
+		if userRole == "terapeuta" && !terapeutaHasAccessToUtente(userID, uid) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder a este utente"})
+			return
+		}
+		if !alunoHasActiveConsulta(userID, uid) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível durante uma consulta ativa"})
+			return
+		}
+	}
 
 	var processo models.ProcessoClinico
 
@@ -427,6 +473,16 @@ func CreateUtente(c *gin.Context) {
 func UpdateUtente(c *gin.Context) {
 	id := c.Param("id")
 
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+	if userRole == "utente" {
+		if paramID, err := strconv.ParseUint(id, 10, 64); err != nil || uint(paramID) != userID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para editar este perfil"})
+			return
+		}
+	}
+
 	var req UpdateUtenteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
@@ -534,6 +590,16 @@ func DeleteUtente(c *gin.Context) {
 func UploadAvatar(c *gin.Context) {
 	id := c.Param("id")
 
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+	if userRole == "utente" || userRole == "terapeuta" {
+		if paramID, err := strconv.ParseUint(id, 10, 64); err != nil || uint(paramID) != userID {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Só pode alterar o seu próprio avatar"})
+			return
+		}
+	}
+
 	// Validar que o utilizador existe
 	user := models.User{}
 	if err := config.DB.Where("id = ?", id).First(&user).Error; err != nil {
@@ -574,6 +640,21 @@ func UploadAvatar(c *gin.Context) {
 	if contentType == "" || !allowedTypes[contentType] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Apenas imagens (JPEG, PNG) são permitidas"})
 		return
+	}
+
+	// Validar magic bytes — Content-Type é controlado pelo cliente
+	{
+		src, err := file.Open()
+		if err == nil {
+			buf := make([]byte, 512)
+			n, _ := src.Read(buf)
+			src.Close()
+			detected := http.DetectContentType(buf[:n])
+			if detected != "image/jpeg" && detected != "image/png" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Ficheiro inválido: não é uma imagem real"})
+				return
+			}
+		}
 	}
 
 	if file.Size > 5*1024*1024 {

@@ -572,12 +572,12 @@ table tr:hover {
   font-size: 18px;
 }
 
-.consultas-list {
+.home-consultas-list {
   display: grid;
   gap: 12px;
 }
 
-.consulta-item {
+.home-consulta-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -587,17 +587,17 @@ table tr:hover {
   border-left: 3px solid var(--ufp-primary);
 }
 
-.consulta-info {
+.home-consulta-info {
   flex: 1;
 }
 
-.consulta-terapeuta {
+.home-consulta-terapeuta {
   margin: 0;
   font-weight: 500;
   color: #111827;
 }
 
-.consulta-info small {
+.home-consulta-info small {
   color: #9ca3af;
   font-size: 12px;
 }
@@ -2306,5 +2306,117 @@ textarea:focus {
 
   .view-btn {
     flex: 1;
+  }
+}
+/* ===== Stats Bar (ListaConsultas) ===== */
+.consultas-stats-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 90px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  border-color: var(--ufp-primary);
+  background: #f0fdf4;
+}
+
+.stat-card.active {
+  border-color: var(--ufp-primary);
+  background: #f0fdf4;
+}
+
+.stat-card .stat-num {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ufp-primary);
+  line-height: 1;
+}
+
+.stat-card .stat-label {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ===== Mobile/Desktop visibility ===== */
+.desktop-only { display: block; }
+.mobile-only  { display: none; }
+
+@media (max-width: 640px) {
+  .desktop-only { display: none !important; }
+  .mobile-only  { display: block !important; }
+}
+
+/* ===== Mobile consulta cards ===== */
+.consultas-mobile-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.consulta-mobile-card {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.consulta-mobile-card .card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.consulta-mobile-card .card-nome {
+  font-weight: 600;
+  font-size: 15px;
+  color: #111827;
+}
+
+.consulta-mobile-card .card-meta {
+  font-size: 13px;
+  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.consulta-mobile-card .card-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 10px;
+}
+
+.consulta-mobile-card .card-actions .btn-icon {
+  padding: 8px 10px;
+}
+
+/* ===== Responsive table columns ===== */
+@media (max-width: 900px) {
+  .consultas-table .col-area,
+  .consultas-table .col-sala {
+    display: none;
   }
 }

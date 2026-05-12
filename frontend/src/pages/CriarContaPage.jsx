@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { registerRequest } from '../services/auth.jsx';
+import { registerRequest, verifyEmailRequest } from '../services/auth.jsx';
 
 export function CriarContaPage() {
   const navigate = useNavigate();
@@ -91,27 +91,9 @@ export function CriarContaPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/auth/verify-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          code: verificationCode,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Falha na verificação');
-      }
-
-      const loginData = await response.json();
-      setSuccess('Email verificado! Bem-vindo à Clínica Universitária!');
-      
-      // Auto-login com os dados retornados
-      login(loginData);
+      const session = await verifyEmailRequest({ user_id: userId, code: verificationCode });
+      setSuccess('Email verificado! Bem-vindo à UAAPS!');
+      login(session);
       
       // Redirecionar ao dashboard
       setTimeout(() => {
@@ -134,11 +116,11 @@ export function CriarContaPage() {
               <div className="login-logo">
                 <img
                   src="/images/ufp-logo.png"
-                  alt="Logo Clínica Universitária"
+                  alt="Logo UAAPS"
                 />
               </div>
               <h1>Criar Conta</h1>
-              <p>Registe-se na Clínica Universitária</p>
+              <p>Registe-se na UAAPS</p>
             </div>
 
             <form className="login-form" onSubmit={showVerification ? handleVerifyCode : handleSubmit}>
@@ -238,7 +220,7 @@ export function CriarContaPage() {
           }}
         >
           <div className="login-image-content">
-            <h2>Clínica Universitária</h2>
+            <h2>UAAPS</h2>
             <p>Cuidados de saúde especializados com profissionais qualificados</p>
           </div>
         </div>

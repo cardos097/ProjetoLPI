@@ -20,6 +20,10 @@ func main() {
 	config.LoadEnv()
 	config.ConnectDB()
 
+	if env := config.GetEnvOptional("ENVIRONMENT", ""); env == "" {
+		log.Println("AVISO: variável ENVIRONMENT não definida — assumido 'production'. Defina ENVIRONMENT=development para ativar modo de desenvolvimento.")
+	}
+
 	googleClientID := config.GetEnvOptional("GOOGLE_CLIENT_ID", "")
 	if googleClientID != "" {
 		if err := utils.InitGoogle(context.Background(), googleClientID); err != nil {
@@ -27,7 +31,7 @@ func main() {
 		}
 	}
 
-	jwtSecret := config.GetEnvOptional("JWT_SECRET", "your-secret-key-change-in-production")
+	jwtSecret := config.GetEnv("JWT_SECRET")
 	utils.SetJWTSecret(jwtSecret)
 
 	// Inicializar configuração de email
@@ -64,7 +68,7 @@ func main() {
 	}))
 
 	r.Use(cors.New(cors.Config{
-		AllowAllOrigins: true,
+		AllowOrigins:    allowedOrigins,
 		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:   []string{"Content-Length"},
@@ -82,6 +86,7 @@ func main() {
 	routes.RegisterAuthRoutes(r)
 
 	r.POST("/utentes", controllers.CreateUtente)
+	r.GET("/areas-clinicas", controllers.GetAreasClinicas)
 
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware())
@@ -107,7 +112,6 @@ func main() {
 		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetRegistosClinicosByUtenteID)
 
 		auth.GET("/salas", controllers.GetSalas)
-		auth.GET("/areas-clinicas", controllers.GetAreasClinicas)
 		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetTerapeutas)
 		auth.GET("/terapeutas/area/:area_id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetTerapeutasByArea)
 		auth.GET("/alunos-disponiveis", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDisponiveis)

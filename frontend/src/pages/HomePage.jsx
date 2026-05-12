@@ -5,6 +5,20 @@ import { HeroSection } from '../components/HeroSection.jsx';
 import { Footer } from '../components/Footer.jsx';
 import { getUtenteConsultas } from '../services/utentes.jsx';
 import { getAreasClinicas } from '../services/consultas.jsx';
+import { Activity, HeartPulse, MicFill, Egg, HospitalFill } from 'react-bootstrap-icons';
+
+const AREA_CONFIG = {
+  fisioterapia: { icon: Activity,     desc: 'Reabilitação física e tratamento de lesões musculoesqueléticas.' },
+  psicologia:   { icon: HeartPulse,   desc: 'Apoio psicológico, avaliação e intervenção clínica.' },
+  nutricao:     { icon: Egg,          desc: 'Aconselhamento nutricional e planos alimentares personalizados.' },
+  fala:         { icon: MicFill,      desc: 'Avaliação e reabilitação de perturbações da comunicação.' },
+};
+
+function getAreaConfig(nome) {
+  const key = (nome || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const match = Object.keys(AREA_CONFIG).find(k => key.includes(k));
+  return AREA_CONFIG[match] || { icon: HospitalFill, desc: 'Cuidados de saúde especializados.' };
+}
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -45,14 +59,14 @@ export function HomePage() {
       <HeroSection
         logo={{
           url: '/images/ufp-logo.png',
-          alt: 'Logo Clínica Universitária UFP',
-          text: 'Clínica Universitária',
+          alt: 'Logo UAAPS',
+          text: 'UAAPS',
         }}
         slogan="CUIDADOS DE SAÚDE ESPECIALIZADOS"
         title={
           <>
             Bem-vindo à<br />
-            <span style={{ color: 'var(--ufp-primary)' }}>Clínica Universitária</span>
+            <span style={{ color: 'var(--ufp-primary)' }}>Unidade Académica de Aprendizagem e Prática em Saúde</span>
           </>
         }
         subtitle="Acesso a profissionais especializados em Fisioterapia, Psicologia, Nutrição e Terapia da Fala. Cuidados de saúde personalizados para o seu bem-estar."
@@ -62,7 +76,7 @@ export function HomePage() {
         }}
         backgroundImage="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200&auto=format&fit=crop&q=80"
         contactInfo={{
-          website: "www.clinica.ufp.pt",
+          website: "uaaps.ufp.pt",
           phone: "+351 22 1234 567",
           address: "Porto, Portugal",
         }}
@@ -88,11 +102,11 @@ export function HomePage() {
             ) : consultas.length === 0 ? (
               <p className="empty-state">Nenhuma consulta agendada</p>
             ) : (
-              <div className="consultas-list">
+              <div className="home-consultas-list">
                 {consultas.map((consulta) => (
-                  <div key={consulta.id} className="consulta-item">
-                    <div className="consulta-info">
-                      <p className="consulta-terapeuta">{consulta.terapeuta_nome}</p>
+                  <div key={consulta.id} className="home-consulta-item">
+                    <div className="home-consulta-info">
+                      <p className="home-consulta-terapeuta">{consulta.terapeuta_nome}</p>
                       <small>{consulta.data_inicio}</small>
                     </div>
                     <span className={`status ${consulta.estado?.toLowerCase() || 'agendada'}`}>
@@ -111,11 +125,16 @@ export function HomePage() {
         <div className="container">
           <h2>Especialidades</h2>
           <div className="especialidades-grid">
-            {especialidades.map((esp) => (
-              <div key={esp.id} className="especialidade-card">
-                <h3>{esp.nome}</h3>
-              </div>
-            ))}
+            {especialidades.map((esp) => {
+              const { icon: Icon, desc } = getAreaConfig(esp.nome);
+              return (
+                <div key={esp.id} className="especialidade-card">
+                  <div className="especialidade-icon"><Icon size={36} /></div>
+                  <h3>{esp.nome}</h3>
+                  <p>{desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -156,7 +175,7 @@ export function HomePage() {
           <div className="contactos-grid">
             <div className="contacto-card">
               <h3>Localização</h3>
-              <p>Clínica Universitária<br />Porto, Portugal</p>
+              <p>UAAPS<br />Porto, Portugal</p>
             </div>
             <div className="contacto-card">
               <h3>Telefone</h3>
@@ -164,7 +183,7 @@ export function HomePage() {
             </div>
             <div className="contacto-card">
               <h3>Email</h3>
-              <p>contato@clinica.pt</p>
+              <p>uaaps@ufp.pt</p>
             </div>
           </div>
         </div>

@@ -15,6 +15,7 @@ import {
   X,
   Camera,
   FilePdf,
+  ArrowRepeat,
 } from 'react-bootstrap-icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar, updateTerapeutaUtente } from '../services/utentes.jsx';
@@ -541,140 +542,103 @@ export function UserPage() {
                 {isEditMode ? (
                   // Modo edição
                   <div className="edit-form">
-                    <div className="form-group">
-                      <label htmlFor="nome">Nome Completo *</label>
-                      <input
-                        id="nome"
-                        type="text"
-                        value={editData?.nome || ''}
-                        onChange={(e) => handleInputChange('nome', e.target.value)}
-                        placeholder="Nome completo"
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="email">Email *</label>
-                      <input
-                        id="email"
-                        type="email"
-                        value={editData?.email || ''}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        placeholder="Email"
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="telefone">Telefone</label>
-                      <input
-                        id="telefone"
-                        type="tel"
-                        value={editData?.telefone || ''}
-                        onChange={(e) => handleInputChange('telefone', e.target.value)}
-                        placeholder="Telefone"
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="morada">Morada</label>
-                      <input
-                        id="morada"
-                        type="text"
-                        value={editData?.morada || ''}
-                        onChange={(e) => handleInputChange('morada', e.target.value)}
-                        placeholder="Morada completa"
-                        className="form-input"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="data_nascimento">Data de Nascimento</label>
-                      <input
-                        id="data_nascimento"
-                        type="date"
-                        value={editData?.data_nascimento || ''}
-                        onChange={(e) => handleInputChange('data_nascimento', e.target.value)}
-                        className="form-input"
-                      />
+                    <div className="profile-section">
+                      <p className="profile-section-title"><User size={12} /> Dados Pessoais</p>
+                      <div className="edit-grid-2col">
+                        <div className="form-group">
+                          <label htmlFor="nome">Nome Completo *</label>
+                          <input id="nome" type="text" value={editData?.nome || ''} onChange={(e) => handleInputChange('nome', e.target.value)} placeholder="Nome completo" className="form-input" />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="email">Email *</label>
+                          <input id="email" type="email" value={editData?.email || ''} onChange={(e) => handleInputChange('email', e.target.value)} placeholder="Email" className="form-input" />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="telefone">Telefone</label>
+                          <input id="telefone" type="tel" value={editData?.telefone || ''} onChange={(e) => handleInputChange('telefone', e.target.value)} placeholder="Telefone" className="form-input" />
+                        </div>
+                        <div className="form-group">
+                          <label htmlFor="data_nascimento">Data de Nascimento</label>
+                          <input id="data_nascimento" type="date" value={editData?.data_nascimento || ''} onChange={(e) => handleInputChange('data_nascimento', e.target.value)} className="form-input" />
+                        </div>
+                        <div className="form-group edit-grid-full">
+                          <label htmlFor="morada">Morada</label>
+                          <input id="morada" type="text" value={editData?.morada || ''} onChange={(e) => handleInputChange('morada', e.target.value)} placeholder="Morada completa" className="form-input" />
+                        </div>
+                      </div>
                     </div>
 
                     {(user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && (
-                      <div className="form-group">
-                        <label htmlFor="terapeuta_id">Terapeuta</label>
-                        <select
-                          id="terapeuta_id"
-                          value={editData?.terapeuta_id || ''}
-                          onChange={(e) => handleInputChange('terapeuta_id', e.target.value ? parseInt(e.target.value) : null)}
-                          className="form-input"
-                          disabled={loadingTerapeutas}
-                        >
-                          <option value="">Sem terapeuta atribuído</option>
-                          {terapeutas.map((terapeuta) => (
-                            <option key={terapeuta.id} value={terapeuta.id}>
-                              {terapeuta.nome}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="profile-section">
+                        <p className="profile-section-title"><FileText size={12} /> Informação Clínica</p>
+                        <div className="form-group">
+                          <label htmlFor="terapeuta_id">Terapeuta</label>
+                          <select id="terapeuta_id" value={editData?.terapeuta_id || ''} onChange={(e) => handleInputChange('terapeuta_id', e.target.value ? parseInt(e.target.value) : null)} className="form-input" disabled={loadingTerapeutas}>
+                            <option value="">Sem terapeuta atribuído</option>
+                            {terapeutas.map((terapeuta) => (
+                              <option key={terapeuta.id} value={terapeuta.id}>{terapeuta.nome}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     )}
 
                     <div className="form-actions">
-                      <button
-                        className="btn btn-primary"
-                        onClick={handleSave}
-                        disabled={isSaving}
-                      >
-                        <Check size={18} />
-                        {isSaving ? 'A guardar...' : 'Guardar'}
+                      <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+                        {isSaving ? <><ArrowRepeat size={16} className="icon-spin" /> A guardar...</> : <><Check size={16} /> Guardar</>}
                       </button>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={handleCancel}
-                        disabled={isSaving}
-                      >
-                        <X size={18} />
-                        Cancelar
+                      <button className="btn btn-secondary" onClick={handleCancel} disabled={isSaving}>
+                        <X size={16} /> Cancelar
                       </button>
                     </div>
                   </div>
                 ) : (
                   // Modo visualização
-                  <div className="details-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Nome Completo</span>
-                      <span className="detail-value">{userDetails?.nome || '-'}</span>
+                  <>
+                    <div className="profile-section">
+                      <p className="profile-section-title"><User size={12} /> Dados Pessoais</p>
+                      <div className="details-grid-2col">
+                        <div className="detail-item">
+                          <span className="detail-label">Nome Completo</span>
+                          <span className="detail-value">{userDetails?.nome || '-'}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">Email</span>
+                          <span className="detail-value">{userDetails?.email || '-'}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">Telefone</span>
+                          <span className="detail-value">{userDetails?.telefone || '-'}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">Data de Nascimento</span>
+                          <span className="detail-value">{userDetails?.data_nascimento || '-'}</span>
+                        </div>
+                        <div className="detail-item details-grid-full">
+                          <span className="detail-label">Morada</span>
+                          <span className="detail-value">{userDetails?.morada || '-'}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Email</span>
-                      <span className="detail-value">{userDetails?.email || '-'}</span>
+
+                    <div className="profile-section">
+                      <p className="profile-section-title"><FileText size={12} /> Informação Clínica</p>
+                      <div className="details-grid-2col">
+                        <div className="detail-item">
+                          <span className="detail-label">Número de Processo</span>
+                          <span className="detail-value">{userDetails?.numero_processo || '-'}</span>
+                        </div>
+                        <div className="detail-item">
+                          <span className="detail-label">Terapeuta</span>
+                          <span className="detail-value">{userDetails?.terapeuta_nome || '-'}</span>
+                        </div>
+                        <div className="detail-item details-grid-full">
+                          <span className="detail-label">Terapeuta Responsável</span>
+                          <span className="detail-value">{userDetails?.terapeuta_responsavel_nome || '-'}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Número de Processo</span>
-                      <span className="detail-value">{userDetails?.numero_processo || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Telefone</span>
-                      <span className="detail-value">{userDetails?.telefone || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Data de Nascimento</span>
-                      <span className="detail-value">{userDetails?.data_nascimento || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Morada</span>
-                      <span className="detail-value">{userDetails?.morada || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Terapeuta</span>
-                      <span className="detail-value">{userDetails?.terapeuta_nome || '-'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Terapeuta Responsável</span>
-                      <span className="detail-value">{userDetails?.terapeuta_responsavel_nome || '-'}</span>
-                    </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -701,57 +665,51 @@ export function UserPage() {
                     <p>Nenhuma consulta registrada</p>
                   </div>
                 ) : (
-                  <div className="consultas-grid">
-                    {consultas.map((consulta, index) => (
-                      <motion.div
-                        key={consulta.id}
-                        custom={index}
-                        variants={itemVariants}
-                        initial="hidden"
-                        animate="visible"
-                        className="consulta-item"
-                      >
-                        <div className="consulta-header">
-                          <div>
-                            <p className="consulta-title">{consulta.area_clinica}</p>
-                            <p className="consulta-subtitle">
-                              Terapeuta: {consulta.terapeuta_nome}
-                            </p>
+                  <>
+                    {/* Desktop grid */}
+                    <div className="consultas-grid desktop-only">
+                      {consultas.map((consulta, index) => (
+                        <motion.div key={consulta.id} custom={index} variants={itemVariants} initial="hidden" animate="visible" className="consulta-item">
+                          <div className="consulta-header">
+                            <div>
+                              <p className="consulta-title">{consulta.area_clinica}</p>
+                              <p className="consulta-subtitle">Terapeuta: {consulta.terapeuta_nome}</p>
+                            </div>
+                            <span className={`status-badge ${getStatusBadgeClass(consulta.estado)}`}>{consulta.estado}</span>
                           </div>
-                          <span
-                            className={`status-badge ${getStatusBadgeClass(
-                              consulta.estado
-                            )}`}
-                          >
-                            {consulta.estado}
-                          </span>
-                        </div>
+                          <div className="consulta-separator"></div>
+                          <div className="consulta-details">
+                            <div className="consulta-detail">
+                              <span className="consulta-detail-label">Sala</span>
+                              <span className="consulta-detail-value">{consulta.sala_nome || '-'}</span>
+                            </div>
+                            <div className="consulta-detail">
+                              <span className="consulta-detail-label">Data Início</span>
+                              <span className="consulta-detail-value">{consulta.data_inicio}</span>
+                            </div>
+                            <div className="consulta-detail">
+                              <span className="consulta-detail-label">Data Término</span>
+                              <span className="consulta-detail-value">{consulta.data_fim || '-'}</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
 
-                        <div className="consulta-separator"></div>
-
-                        <div className="consulta-details">
-                          <div className="consulta-detail">
-                            <span className="consulta-detail-label">Sala</span>
-                            <span className="consulta-detail-value">
-                              {consulta.sala_nome || '-'}
-                            </span>
+                    {/* Mobile cards */}
+                    <div className="mobile-only">
+                      {consultas.map((consulta) => (
+                        <div key={consulta.id} className="consulta-profile-card">
+                          <div className="card-row">
+                            <span className="card-area">{consulta.area_clinica}</span>
+                            <span className={`status-badge ${getStatusBadgeClass(consulta.estado)}`}>{consulta.estado}</span>
                           </div>
-                          <div className="consulta-detail">
-                            <span className="consulta-detail-label">Data Início</span>
-                            <span className="consulta-detail-value">
-                              {consulta.data_inicio}
-                            </span>
-                          </div>
-                          <div className="consulta-detail">
-                            <span className="consulta-detail-label">Data Término</span>
-                            <span className="consulta-detail-value">
-                              {consulta.data_fim || '-'}
-                            </span>
-                          </div>
+                          <p className="card-sub">{consulta.terapeuta_nome} · {consulta.sala_nome || '-'}</p>
+                          <p className="card-sub" style={{ margin: 0 }}>{consulta.data_inicio}</p>
                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </div>

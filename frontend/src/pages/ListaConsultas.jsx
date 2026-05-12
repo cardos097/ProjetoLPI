@@ -143,12 +143,18 @@ export function ListaConsultas() {
     return <div className="page">A carregar consultas...</div>;
   }
 
+  const counts = {
+    todas: consultas.length,
+    agendada: consultas.filter(c => c.estado === 'agendada').length,
+    realizada: consultas.filter(c => c.estado === 'realizada').length,
+    cancelada: consultas.filter(c => c.estado === 'cancelada').length,
+  };
+
   return (
-    <div className="page consultas-list">
+    <div className="page gestao-consultas">
       <div className="page-header">
         <div>
           <h1>Gestão de Consultas</h1>
-          <p>Total: {filteredConsultas.length} consultas</p>
         </div>
         <div className="header-actions">
           <div className="view-toggle">
@@ -184,6 +190,26 @@ export function ListaConsultas() {
           <button onClick={() => setError('')}>×</button>
         </div>
       )}
+
+      {/* Stats bar */}
+      <div className="consultas-stats-bar">
+        <div className={`stat-card ${filterEstado === 'todas' ? 'active' : ''}`} onClick={() => setFilterEstado('todas')}>
+          <span className="stat-num">{counts.todas}</span>
+          <span className="stat-label">Total</span>
+        </div>
+        <div className={`stat-card ${filterEstado === 'agendada' ? 'active' : ''}`} onClick={() => setFilterEstado('agendada')}>
+          <span className="stat-num">{counts.agendada}</span>
+          <span className="stat-label">Agendadas</span>
+        </div>
+        <div className={`stat-card ${filterEstado === 'realizada' ? 'active' : ''}`} onClick={() => setFilterEstado('realizada')}>
+          <span className="stat-num">{counts.realizada}</span>
+          <span className="stat-label">Realizadas</span>
+        </div>
+        <div className={`stat-card ${filterEstado === 'cancelada' ? 'active' : ''}`} onClick={() => setFilterEstado('cancelada')}>
+          <span className="stat-num">{counts.cancelada}</span>
+          <span className="stat-label">Canceladas</span>
+        </div>
+      </div>
 
       <div className="filters-section">
         <div className="search-box">
@@ -230,76 +256,98 @@ export function ListaConsultas() {
           <p>Nenhuma consulta encontrada</p>
         </div>
       ) : (
-        <div className="table-container">
-          <table className="consultas-table">
-            <thead>
-              <tr>
-                <th>Utente</th>
-                <th>Terapeuta</th>
-                <th>Área Clínica</th>
-                <th>Sala</th>
-                <th>Data Início</th>
-                <th>Estado</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredConsultas.map((consulta) => (
-                <tr key={consulta.id}>
-                  <td>{consulta.utente?.nome || '-'}</td>
-                  <td>{consulta.terapeuta?.nome || '-'}</td>
-                  <td>{consulta.area_clinica?.nome || '-'}</td>
-                  <td>{consulta.sala?.nome || '-'}</td>
-                  <td>{formatDateTime(consulta.data_inicio)}</td>
-                  <td>
-                    <span className={`status ${consulta.estado || 'agendada'}`}>
-                      {(consulta.estado || 'agendada').charAt(0).toUpperCase() + (consulta.estado || 'agendada').slice(1)}
-                    </span>
-                  </td>
-                  <td className="actions">
-                    <button
-                      className="btn-icon btn-view"
-                      onClick={() => navigate(`/consultas/${consulta.id}`)}
-                      title="Ver"
-                    >
-                      <Eye size={16} />
-                    </button>
-                    {canManageConsultas && consulta.estado !== 'cancelada' && (
-                      <>
-                        {canAlterEstado(consulta) && (
-                          <button
-                            className="btn-icon btn-edit"
-                            onClick={() => {
-                              setConsultaSelecionada(consulta);
-                              setEstadoModal(true);
-                            }}
-                            title="Alterar Estado"
-                          >
-                            <ArrowRepeat size={16} />
-                          </button>
-                        )}
-                        <button
-                          className="btn-icon btn-edit"
-                          onClick={() => navigate(`/consultas/${consulta.id}/editar`)}
-                          title="Editar"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          className="btn-icon btn-delete"
-                          onClick={() => setCancelConfirm(consulta.id)}
-                          title="Cancelar"
-                        >
-                          <X size={16} />
-                        </button>
-                      </>
-                    )}
-                  </td>
+        <>
+          {/* Tabela — desktop */}
+          <div className="table-container desktop-only">
+            <table className="consultas-table">
+              <thead>
+                <tr>
+                  <th>Utente</th>
+                  <th>Terapeuta</th>
+                  <th className="col-area">Área Clínica</th>
+                  <th className="col-sala">Sala</th>
+                  <th>Data Início</th>
+                  <th>Estado</th>
+                  <th>Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filteredConsultas.map((consulta) => (
+                  <tr key={consulta.id}>
+                    <td>{consulta.utente?.nome || '-'}</td>
+                    <td>{consulta.terapeuta?.nome || '-'}</td>
+                    <td className="col-area">{consulta.area_clinica?.nome || '-'}</td>
+                    <td className="col-sala">{consulta.sala?.nome || '-'}</td>
+                    <td>{formatDateTime(consulta.data_inicio)}</td>
+                    <td>
+                      <span className={`status ${consulta.estado || 'agendada'}`}>
+                        {(consulta.estado || 'agendada').charAt(0).toUpperCase() + (consulta.estado || 'agendada').slice(1)}
+                      </span>
+                    </td>
+                    <td className="actions">
+                      <button className="btn-icon btn-view" onClick={() => navigate(`/consultas/${consulta.id}`)} title="Ver">
+                        <Eye size={16} />
+                      </button>
+                      {canManageConsultas && consulta.estado !== 'cancelada' && (
+                        <>
+                          {canAlterEstado(consulta) && (
+                            <button className="btn-icon btn-edit" onClick={() => { setConsultaSelecionada(consulta); setEstadoModal(true); }} title="Alterar Estado">
+                              <ArrowRepeat size={16} />
+                            </button>
+                          )}
+                          <button className="btn-icon btn-edit" onClick={() => navigate(`/consultas/${consulta.id}/editar`)} title="Editar">
+                            <Pencil size={16} />
+                          </button>
+                          <button className="btn-icon btn-delete" onClick={() => setCancelConfirm(consulta.id)} title="Cancelar">
+                            <X size={16} />
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Cards — mobile */}
+          <div className="consultas-mobile-cards mobile-only">
+            {filteredConsultas.map((consulta) => (
+              <div key={consulta.id} className="consulta-mobile-card">
+                <div className="card-top">
+                  <span className="card-nome">{consulta.utente?.nome || '-'}</span>
+                  <span className={`status ${consulta.estado || 'agendada'}`}>
+                    {(consulta.estado || 'agendada').charAt(0).toUpperCase() + (consulta.estado || 'agendada').slice(1)}
+                  </span>
+                </div>
+                <div className="card-meta">
+                  <span>{consulta.terapeuta?.nome || '-'} · {consulta.area_clinica?.nome || '-'}</span>
+                  <span>{formatDateTime(consulta.data_inicio)}</span>
+                </div>
+                <div className="card-actions">
+                  <button className="btn-icon btn-view" onClick={() => navigate(`/consultas/${consulta.id}`)} title="Ver">
+                    <Eye size={18} />
+                  </button>
+                  {canManageConsultas && consulta.estado !== 'cancelada' && (
+                    <>
+                      {canAlterEstado(consulta) && (
+                        <button className="btn-icon btn-edit" onClick={() => { setConsultaSelecionada(consulta); setEstadoModal(true); }} title="Alterar Estado">
+                          <ArrowRepeat size={18} />
+                        </button>
+                      )}
+                      <button className="btn-icon btn-edit" onClick={() => navigate(`/consultas/${consulta.id}/editar`)} title="Editar">
+                        <Pencil size={18} />
+                      </button>
+                      <button className="btn-icon btn-delete" onClick={() => setCancelConfirm(consulta.id)} title="Cancelar">
+                        <X size={18} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Modal de Confirmação de Cancelar */}

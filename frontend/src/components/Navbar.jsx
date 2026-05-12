@@ -22,7 +22,7 @@ export function Navbar() {
         <div className="navbar-brand">
           <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
             <img src="/images/ufp-logo.png" alt="Logo Clínica" className="navbar-logo-img" />
-            <span className="navbar-logo-text">Clínica Universitária</span>
+            <span className="navbar-logo-text">UAAPS</span>
           </a>
         </div>
 

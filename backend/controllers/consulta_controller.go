@@ -69,7 +69,7 @@ func parseDateTime(value string) (time.Time, error) {
 	layouts := []string{"2006-01-02 15:04:05", "2006-01-02 15:04"}
 
 	for _, layout := range layouts {
-		parsed, err := time.Parse(layout, value)
+		parsed, err := time.ParseInLocation(layout, value, time.Local)
 		if err == nil {
 			return parsed, nil
 		}
@@ -92,7 +92,7 @@ func parseHourMinuteOnDate(baseDate time.Time, hhmm string) (time.Time, error) {
 		parsed.Minute(),
 		0,
 		0,
-		time.UTC,
+		time.Local,
 	), nil
 }
 
@@ -152,9 +152,16 @@ func GetConsultas(c *gin.Context) {
 	switch userRole {
 	case "terapeuta":
 		var terapeuta models.Terapeuta
-		if config.DB.Where("user_id = ? AND tipo = 'aluno'", userID).First(&terapeuta).Error == nil && terapeuta.SupervisorID != nil {
-			query = query.Where("terapeuta_id = ? OR terapeuta_id = ?", userID, *terapeuta.SupervisorID)
+		if err := config.DB.Where("user_id = ?", userID).First(&terapeuta).Error; err == nil && terapeuta.Tipo == "aluno" {
+			if terapeuta.SupervisorID != nil {
+				// Aluno com supervisor: vê as suas + as do supervisor
+				query = query.Where("terapeuta_id = ? OR terapeuta_id = ?", userID, *terapeuta.SupervisorID)
+			} else {
+				// Aluno sem supervisor: sem acesso a nenhuma consulta
+				query = query.Where("1 = 0")
+			}
 		} else {
+			// Professor ou terapeuta sem registo: vê só as suas
 			query = query.Where("terapeuta_id = ?", userID)
 		}
 	case "utente":
@@ -224,6 +231,11 @@ func GetConsultaByID(c *gin.Context) {
 
 	if userRole == "utente" && consulta.UtenteID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder a esta consulta"})
+		return
+	}
+
+	if userRole == "terapeuta" && isAlunoOutsideWindow(userID, &consulta) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
 		return
 	}
 
@@ -466,6 +478,10 @@ func ligarTerapeutaResponsavel(utenteID, terapeutaID uint) {
 func CancelConsulta(c *gin.Context) {
 	id := c.Param("id")
 
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+
 	var consulta models.Consulta
 	err := config.DB.First(&consulta, id).Error
 
@@ -484,6 +500,16 @@ func CancelConsulta(c *gin.Context) {
 		return
 	}
 
+	if userRole == "terapeuta" && consulta.TerapeutaID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Só pode cancelar as suas próprias consultas"})
+		return
+	}
+
+	if isAlunoOutsideWindow(userID, &consulta) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
+		return
+	}
+
 	consulta.Estado = "cancelada"
 
 	if err := config.DB.Save(&consulta).Error; err != nil {
@@ -499,6 +525,10 @@ func RemarcarConsulta(c *gin.Context) {
 	var req RemarcarConsultaRequest
 	var consulta models.Consulta
 
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
 		return
@@ -511,6 +541,16 @@ func RemarcarConsulta(c *gin.Context) {
 		}
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if userRole == "terapeuta" && consulta.TerapeutaID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Só pode remarcar as suas próprias consultas"})
+		return
+	}
+
+	if isAlunoOutsideWindow(userID, &consulta) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
 		return
 	}
 
@@ -598,6 +638,11 @@ func UpdateConsulta(c *gin.Context) {
 
 	if consulta.Estado == "cancelada" {
 		c.JSON(http.StatusConflict, gin.H{"error": "Não é possível atualizar uma consulta cancelada"})
+		return
+	}
+
+	if isAlunoOutsideWindow(userID, &consulta) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
 		return
 	}
 
@@ -892,6 +937,11 @@ func UpdateEstadoConsulta(c *gin.Context) {
 	}
 	log.Printf("[UpdateEstadoConsulta] Consulta encontrada. ID: %d, TerapeutaID: %d, Estado atual: %s", consulta.ID, consulta.TerapeutaID, consulta.Estado)
 
+	if isAlunoOutsideWindow(userID, &consulta) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
+		return
+	}
+
 	// Verificar permissões: admin, administrativo ou o terapeuta da consulta
 	if userRole != "admin" && userRole != "administrativo" {
 		if userRole == "terapeuta" {
@@ -955,6 +1005,11 @@ func UploadPdfConsulta(c *gin.Context) {
 		return
 	}
 
+	if uid, err := getAuthenticatedUserID(c); err == nil && isAlunoOutsideWindow(uid, &consulta) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
+		return
+	}
+
 	// Obter ficheiro do formulário
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -972,6 +1027,20 @@ func UploadPdfConsulta(c *gin.Context) {
 	if file.Header.Get("Content-Type") != "application/pdf" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Tipo de ficheiro inválido: apenas application/pdf é permitido"})
 		return
+	}
+
+	// Validar magic bytes — impede ficheiros disfarçados de PDF
+	{
+		src, err := file.Open()
+		if err == nil {
+			magic := make([]byte, 4)
+			src.Read(magic)
+			src.Close()
+			if string(magic) != "%PDF" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Ficheiro inválido: não é um PDF real"})
+				return
+			}
+		}
 	}
 
 	// Validar tamanho (máximo 50MB)
@@ -1053,9 +1122,22 @@ func ServeUploadedFile(c *gin.Context) {
 			return
 		}
 		token := strings.TrimPrefix(authHeader, "Bearer ")
-		if _, err := utils.ValidateAppJWT(token); err != nil {
+		claims, err := utils.ValidateAppJWT(token)
+		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
 			return
+		}
+		// Alunos só acedem a ficheiros de consultas dentro da janela ±2h
+		var doc models.DocumentoConsulta
+		archiveURL := "/uploads" + cleanPath
+		if config.DB.Where("arquivo_url = ?", archiveURL).First(&doc).Error == nil {
+			var consulta models.Consulta
+			if config.DB.First(&consulta, doc.ConsultaID).Error == nil {
+				if isAlunoOutsideWindow(claims.UserID, &consulta) {
+					c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
+					return
+				}
+			}
 		}
 	}
 

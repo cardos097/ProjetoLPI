@@ -115,7 +115,7 @@ export function Footer() {
 
         {/* Copyright */}
         <div className="footer-bottom">
-          <p>© {new Date().getFullYear()} Clínica Universitária UFP. Todos os direitos reservados</p>
+          <p>© {new Date().getFullYear()} UAAPS. Todos os direitos reservados</p>
         </div>
       </div>
     </footer>

@@ -139,3 +139,13 @@ export async function registerRequest({ email, password, confirm_password, nome_
     email,
   };
 }
+
+export async function verifyEmailRequest({ user_id, code }) {
+  const { data } = await api.post('/auth/verify-email', { user_id, code });
+  return buildSession(data, data.email);
+}
+
+export async function resendVerificationRequest({ email }) {
+  const { data } = await api.post('/auth/resend-verification', { email });
+  return data;
+}
