@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Person as User,
@@ -37,6 +37,7 @@ function getRoleDisplayName(role) {
 export function UserPage() {
   const { user } = useAuth();
   const { id: routeUtenteId } = useParams();
+  const navigate = useNavigate();
   const [userDetails, setUserDetails] = useState(null);
   const [consultas, setConsultas] = useState([]);
   const [registos, setRegistos] = useState([]);
@@ -257,6 +258,16 @@ export function UserPage() {
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleConsultaClick = (consultaId) => {
+    // Utentes veem apenas detalhes (read-only)
+    if (user?.role === 'utente') {
+      navigate(`/consultas/${consultaId}/detalhes`);
+    } else {
+      // Terapeutas, admin e outros podem editar
+      navigate(`/consultas/${consultaId}/editar`);
+    }
   };
 
   const handleAvatarChange = async (e) => {
@@ -669,7 +680,16 @@ export function UserPage() {
                     {/* Desktop grid */}
                     <div className="consultas-grid desktop-only">
                       {consultas.map((consulta, index) => (
-                        <motion.div key={consulta.id} custom={index} variants={itemVariants} initial="hidden" animate="visible" className="consulta-item">
+                        <motion.div 
+                          key={consulta.id} 
+                          custom={index} 
+                          variants={itemVariants} 
+                          initial="hidden" 
+                          animate="visible" 
+                          className="consulta-item"
+                          onClick={() => handleConsultaClick(consulta.id)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="consulta-header">
                             <div>
                               <p className="consulta-title">{consulta.area_clinica}</p>
@@ -699,7 +719,12 @@ export function UserPage() {
                     {/* Mobile cards */}
                     <div className="mobile-only">
                       {consultas.map((consulta) => (
-                        <div key={consulta.id} className="consulta-profile-card">
+                        <div 
+                          key={consulta.id} 
+                          className="consulta-profile-card"
+                          onClick={() => handleConsultaClick(consulta.id)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <div className="card-row">
                             <span className="card-area">{consulta.area_clinica}</span>
                             <span className={`status-badge ${getStatusBadgeClass(consulta.estado)}`}>{consulta.estado}</span>

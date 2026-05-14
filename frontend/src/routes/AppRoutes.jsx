@@ -12,6 +12,7 @@ import { EditarUtente } from '../pages/EditarUtente.jsx';
 import { ListaConsultas } from '../pages/ListaConsultas.jsx';
 import { AgendarConsulta } from '../pages/AgendarConsulta.jsx';
 import { EditarConsulta } from '../pages/EditarConsulta.jsx';
+import { DetalhesConsulta } from '../pages/DetalhesConsulta.jsx';
 import { PaginaCalendario } from '../pages/PaginaCalendario.jsx';
 import { ListaSalas } from '../pages/ListaSalas.jsx';
 import { VerConsultasSala } from '../pages/VerConsultasSala.jsx';
@@ -167,6 +168,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <EditarConsulta />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/consultas/:id/detalhes"
+        element={
+          <ProtectedRoute>
+            <DetalhesConsulta />
           </ProtectedRoute>
         }
       />

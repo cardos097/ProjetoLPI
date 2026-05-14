@@ -828,6 +828,17 @@ table tr:hover {
   background-color: #f3f4f6;
 }
 
+.form-group .detail-value {
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -380,11 +380,14 @@
   border-radius: 8px;
   background: var(--bg-light);
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .consulta-item:hover {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   border-color: var(--primary-light);
+  background: #ffffff;
+  transform: translateY(-2px);
 }
 
 .consulta-header {
@@ -872,6 +875,14 @@
   padding: 14px 16px;
   border: 1px solid #e5e7eb;
   margin-bottom: 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.consulta-profile-card:active {
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-color: #2D9B6D;
 }
 
 .consulta-profile-card .card-area {
