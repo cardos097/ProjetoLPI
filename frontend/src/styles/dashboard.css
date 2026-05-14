@@ -134,7 +134,7 @@
     font-size: 0.85rem;
 }
 
-.consulta-card .btn-editar {
+.consulta-card .btn-detalhes {
     width: 100%;
     padding: 0.5rem 1rem;
     background: var(--ufp-primary);
@@ -146,7 +146,7 @@
     transition: background 0.3s ease;
 }
 
-.consulta-card .btn-editar:hover {
+.consulta-card .btn-detalhes:hover {
     background: var(--ufp-secondary);
 }
 

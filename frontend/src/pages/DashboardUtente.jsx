@@ -66,21 +66,21 @@ export function DashboardUtente() {
                                     <div key={consulta.id} className="consulta-card">
                                         <div className="consulta-info">
                                             <h4>{consulta.tipo}</h4>
-                                            <p>Data: {new Date(consulta.data).toLocaleDateString('pt-PT')}</p>
+                                            <p>Data: {new Date(consulta.data_inicio).toLocaleDateString('pt-PT')}</p>
                                             <p>Status: {consulta.estado}</p>
                                         </div>
                                         <button
-                                            className="btn-editar"
-                                            onClick={() => navigate(`/consultas/${consulta.id}/editar`)}
+                                            className="btn-detalhes"
+                                            onClick={() => navigate(`/consultas/${consulta.id}/detalhes`)}
                                         >
-                                            Editar
+                                            Ver Detalhes
                                         </button>
                                     </div>
                                 ))}
                             </div>
                         )}
                         {(user?.role === 'utente' || user?.role === 'administrativo') && (
-                            <button className="btn-primary" onClick={() => navigate('/consultas/novo')}>
+                            <button className="btn-primary" onClick={() => navigate('/consultas/nova')}>
                                 <PlusLg size={14} /> Agendar Nova Consulta
                             </button>
                         )}
