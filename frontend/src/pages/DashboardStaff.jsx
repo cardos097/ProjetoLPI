@@ -5,6 +5,7 @@ import { ListaUtentes } from './ListaUtentes.jsx';
 import { ListaConsultas } from './ListaConsultas.jsx';
 import { ListaSalas } from './ListaSalas.jsx';
 import { GerirAlunosModal } from '../components/GerirAlunosModal.jsx';
+import { CriarUtenteModal } from '../components/CriarUtenteModal.jsx';
 import { getAlunosDoProfessor } from '../services/terapeutas.jsx';
 import '../styles/dashboard.css';
 
@@ -12,6 +13,7 @@ export function DashboardStaff() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('consultas');
     const [isAlunosModalOpen, setIsAlunosModalOpen] = useState(false);
+    const [isUtenteModalOpen, setIsUtenteModalOpen] = useState(false);
     const [meuAlunos, setMeuAlunos] = useState([]);
     const [loadingAlunos, setLoadingAlunos] = useState(false);
 
@@ -62,6 +64,12 @@ export function DashboardStaff() {
                     onClick={() => setActiveTab('salas')}
                 >
                     <Hospital size={16} /> Salas
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === 'adicionar-utente' ? 'active' : ''}`}
+                    onClick={() => setIsUtenteModalOpen(true)}
+                >
+                    <PlusLg size={16} /> Adicionar Utente
                 </button>
                 {user.tipo === 'professor' && (
                     <button
@@ -148,6 +156,14 @@ export function DashboardStaff() {
                 onSuccess={() => {
                     setIsAlunosModalOpen(false);
                     carregarAlunos();
+                }}
+            />
+
+            <CriarUtenteModal
+                isOpen={isUtenteModalOpen}
+                onClose={() => setIsUtenteModalOpen(false)}
+                onSuccess={() => {
+                    setIsUtenteModalOpen(false);
                 }}
             />
         </div>

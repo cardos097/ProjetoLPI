@@ -1,0 +1,193 @@
+import { useState } from 'react';
+import { X, PlusLg } from 'react-bootstrap-icons';
+import { createUtente } from '../services/utentes.jsx';
+import '../styles/gerir-alunos.css';
+
+export function CriarUtenteModal({ isOpen, onClose, onSuccess }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [form, setForm] = useState({
+    nome: '',
+    email: '',
+    numero_utente_saude: '',
+    telefone: '',
+    numero_processo: '',
+    data_nascimento: '',
+    morada: '',
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    // Validações básicas
+    if (!form.nome || !form.numero_utente_saude || !form.telefone || !form.numero_processo || !form.data_nascimento) {
+      setError('Nome, Número de Utente de Saúde, Telefone, Número de Processo e Data de Nascimento são obrigatórios');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await createUtente(form);
+      setSuccess('Utente criado com sucesso!');
+      setForm({
+        nome: '',
+        email: '',
+        numero_utente_saude: '',
+        telefone: '',
+        numero_processo: '',
+        data_nascimento: '',
+        morada: '',
+      });
+      onSuccess?.();
+      setTimeout(() => {
+        onClose();
+        setSuccess('');
+      }, 1500);
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Erro ao criar utente');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content criar-utente-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Adicionar Novo Utente</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="modal-body">
+          {error && <div className="alert alert-error">{error}</div>}
+          {success && <div className="alert alert-success">{success}</div>}
+
+          <form onSubmit={handleSubmit} className="criar-utente-form">
+            <div className="form-section">
+              <h3>Informações Pessoais</h3>
+
+              <div className="form-group">
+                <label>Nome Completo *</label>
+                <input
+                  type="text"
+                  name="nome"
+                  value={form.nome}
+                  onChange={handleChange}
+                  placeholder="Nome Completo"
+                  required
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="Email"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Número de Utente de Saúde *</label>
+                  <input
+                    type="text"
+                    name="numero_utente_saude"
+                    value={form.numero_utente_saude}
+                    onChange={handleChange}
+                    placeholder="Número de Utente de Saúde"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Data de Nascimento *</label>
+                  <input
+                    type="date"
+                    name="data_nascimento"
+                    value={form.data_nascimento}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Telefone *</label>
+                  <input
+                    type="tel"
+                    name="telefone"
+                    value={form.telefone}
+                    onChange={handleChange}
+                    placeholder="Telefone"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Número de Processo *</label>
+                  <input
+                    type="text"
+                    name="numero_processo"
+                    value={form.numero_processo}
+                    onChange={handleChange}
+                    placeholder="Número de Processo"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group full-width">
+                <label>Morada</label>
+                <textarea
+                  name="morada"
+                  value={form.morada}
+                  onChange={handleChange}
+                  placeholder="Morada"
+                  rows="2"
+                />
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={onClose}
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={loading}
+              >
+                <PlusLg size={14} />
+                {loading ? 'A criar...' : 'Criar Utente'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
