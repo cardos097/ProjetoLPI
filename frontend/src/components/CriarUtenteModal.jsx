@@ -33,6 +33,24 @@ export function CriarUtenteModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    // Validar telemóvel (9 dígitos)
+    const telefoneLimpo = form.telefone.replace(/\D/g, '');
+    if (telefoneLimpo.length !== 9) {
+      setError('Telefone deve ter 9 dígitos');
+      return;
+    }
+    if (!telefoneLimpo.match(/^9[1236]\d{7}$/)) {
+      setError('Telefone português inválido');
+      return;
+    }
+
+    // Validar número de utente de saúde (10 dígitos)
+    const numeroUtenteLimpo = form.numero_utente_saude.replace(/\D/g, '');
+    if (numeroUtenteLimpo.length !== 10) {
+      setError('Número de Utente de Saúde deve ter 10 dígitos');
+      return;
+    }
+
     setLoading(true);
 
     try {
