@@ -285,7 +285,7 @@ export function ListaConsultas() {
                       </span>
                     </td>
                     <td className="actions">
-                      <button className="btn-icon btn-view" onClick={() => navigate(`/consultas/${consulta.id}`)} title="Ver">
+                      <button className="btn-icon btn-view" onClick={() => navigate(`/consultas/${consulta.id}/detalhes`)} title="Ver">
                         <Eye size={16} />
                       </button>
                       {canManageConsultas && consulta.estado !== 'cancelada' && (
@@ -325,7 +325,7 @@ export function ListaConsultas() {
                   <span>{formatDateTime(consulta.data_inicio)}</span>
                 </div>
                 <div className="card-actions">
-                  <button className="btn-icon btn-view" onClick={() => navigate(`/consultas/${consulta.id}`)} title="Ver">
+                  <button className="btn-icon btn-view" onClick={() => navigate(`/consultas/${consulta.id}/detalhes`)} title="Ver">
                     <Eye size={18} />
                   </button>
                   {canManageConsultas && consulta.estado !== 'cancelada' && (
