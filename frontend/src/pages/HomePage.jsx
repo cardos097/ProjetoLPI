@@ -76,7 +76,7 @@ export function HomePage() {
         }}
         backgroundImage="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200&auto=format&fit=crop&q=80"
         contactInfo={{
-          website: "uaaps.ufp.pt",
+          website: "ess.fernandopessoa.pt",
           phone: "+351 22 1234 567",
           address: "Porto, Portugal",
         }}
@@ -121,7 +121,7 @@ export function HomePage() {
       )}
 
       {/* Especialidades */}
-      <section className="especialidades-section">
+      <section className="especialidades-section" id="especialidades">
         <div className="container">
           <h2>Especialidades</h2>
           <div className="especialidades-grid">
@@ -169,14 +169,20 @@ export function HomePage() {
       )}
 
       {/* Contactos */}
-      <section className="contactos-section">
+      <section className="contactos-section" id="contactos">
         <div className="container">
           <h2>Contactos</h2>
           <div className="contactos-grid">
-            <div className="contacto-card">
+            <a
+              href="https://www.google.com/maps/place/Escola+Superior+de+Sa%C3%BAde+Fernando+Pessoa/@41.1729392,-8.6110556,18.17z/data=!4m14!1m7!3m6!1s0xd24644e96bfbb8d:0x1b56312fb4975696!2sUniversidade+Fernando+Pessoa!8m2!3d41.1728847!4d-8.6111563!16s%2Fm%2F02z11pb!3m5!1s0xd246592f310e125:0xd30720c344524d36!8m2!3d41.173248!4d-8.6097179!16s%2Fg%2F11smrcgq9b?entry=ttu&g_ep=EgoyMDI2MDUxMy4wIKXMDSoASAFQAw%3D%3D"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="contacto-card"
+              style={{ cursor: 'pointer' }}
+            >
               <h3>Localização</h3>
               <p>UAAPS<br />Porto, Portugal</p>
-            </div>
+            </a>
             <div className="contacto-card">
               <h3>Telefone</h3>
               <p>+351 22 1234 567</p>

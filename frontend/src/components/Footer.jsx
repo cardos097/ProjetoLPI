@@ -1,12 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 
 const links = [
-  { title: 'Especialidades', href: '#' },
-  { title: 'Consultas', href: '/consultas' },
-  { title: 'Contactos', href: '#' },
-  { title: 'Sobre Nós', href: '#' },
-  { title: 'Privacidade', href: '#' },
-  { title: 'Ajuda', href: '#' },
+  { title: 'Especialidades', href: '#especialidades' },
+  { title: 'Contactos', href: '#contactos' },
 ];
 
 export function Footer() {
@@ -15,6 +11,11 @@ export function Footer() {
   const handleNavigation = (href) => {
     if (href.startsWith('/')) {
       navigate(href);
+    } else if (href.startsWith('#')) {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -29,7 +30,7 @@ export function Footer() {
               href={link.href}
               className="footer-link"
               onClick={(e) => {
-                if (link.href.startsWith('/')) {
+                if (link.href.startsWith('/') || link.href.startsWith('#')) {
                   e.preventDefault();
                   handleNavigation(link.href);
                 }
@@ -43,10 +44,10 @@ export function Footer() {
         <div className="footer-social-section">
           <div className="social-icons-footer">
             <a
-              href="#"
+              href="https://ess.fernandopessoa.pt/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="X/Twitter"
+              aria-label="Website"
               className="social-icon-footer">
               <svg
                 className="icon-size"
@@ -54,30 +55,15 @@ export function Footer() {
                 width="20"
                 height="20"
                 viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M10.488 14.651L15.25 21h7l-7.858-10.478L20.93 3h-2.65l-5.117 5.886L8.75 3h-7l7.51 10.015L2.32 21h2.65zM16.25 19L5.75 5h2l10.5 14z"></path>
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.5"></circle>
+                <path d="M12 2v20M2 12h20" stroke="currentColor" strokeWidth="1.5"></path>
+                <path d="M6 5c0 0 0 14 6 14s6-14 6-14" stroke="currentColor" strokeWidth="1.5" fill="none"></path>
+                <path d="M6 19c0 0 0-14 6-14s6 14 6 14" stroke="currentColor" strokeWidth="1.5" fill="none"></path>
+                <ellipse cx="12" cy="12" rx="10" ry="3.5" fill="none" stroke="currentColor" strokeWidth="1.5"></ellipse>
               </svg>
             </a>
             <a
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="LinkedIn"
-              className="social-icon-footer">
-              <svg
-                className="icon-size"
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37z"></path>
-              </svg>
-            </a>
-            <a
-              href="#"
+              href="https://www.facebook.com/a.fernando.pessoa"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Facebook"
@@ -94,7 +80,7 @@ export function Footer() {
               </svg>
             </a>
             <a
-              href="#"
+              href="https://www.instagram.com/a.fernando.pessoa/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"

@@ -98,7 +98,9 @@ const HeroSection = React.forwardRef(({ logo, slogan, title, subtitle, callToAct
             <div className="contact-grid">
               <div className="contact-item">
                 <InfoIcon type="website" />
-                <span>{contactInfo.website}</span>
+                <a href="https://ess.fernandopessoa.pt/" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {contactInfo.website}
+                </a>
               </div>
               <div className="contact-item">
                 <InfoIcon type="phone" />
@@ -106,7 +108,9 @@ const HeroSection = React.forwardRef(({ logo, slogan, title, subtitle, callToAct
               </div>
               <div className="contact-item">
                 <InfoIcon type="address" />
-                <span>{contactInfo.address}</span>
+                <a href="https://www.google.com/maps/place/Escola+Superior+de+Sa%C3%BAde+Fernando+Pessoa/@41.1729392,-8.6110556,18.17z/data=!4m14!1m7!3m6!1s0xd24644e96bfbb8d:0x1b56312fb4975696!2sUniversidade+Fernando+Pessoa!8m2!3d41.1728847!4d-8.6111563!16s%2Fm%2F02z11pb!3m5!1s0xd246592f310e125:0xd30720c344524d36!8m2!3d41.173248!4d-8.6097179!16s%2Fg%2F11smrcgq9b?entry=ttu&g_ep=EgoyMDI2MDUxMy4wIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {contactInfo.address}
+                </a>
               </div>
             </div>
           </motion.footer>
