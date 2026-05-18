@@ -24,7 +24,7 @@ CREATE TYPE consulta_estado AS ENUM (
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   nome VARCHAR(150) NOT NULL,
-  email VARCHAR(150) UNIQUE NOT NULL,
+  email VARCHAR(150),
   password_hash TEXT,
   role user_role NOT NULL,
   active BOOLEAN DEFAULT TRUE,
@@ -37,7 +37,7 @@ CREATE TABLE users (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_users_email ON users(email);
+CREATE UNIQUE INDEX users_email_partial_unique ON users(email) WHERE email IS NOT NULL AND email <> '';
 CREATE INDEX idx_users_verification_code ON users(verification_code);
 
 CREATE TABLE areas_clinicas (

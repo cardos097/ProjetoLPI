@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { registerRequest, verifyEmailRequest } from '../services/auth.jsx';
+import { Eye, EyeSlash } from 'react-bootstrap-icons';
 
 export function CriarContaPage() {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ export function CriarContaPage() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showVerification, setShowVerification] = useState(false);
@@ -152,26 +155,42 @@ export function CriarContaPage() {
 
                   <label>
                     Palavra-passe
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Mínimo 8 caracteres"
-                      required
-                    />
+                    <div style={{ position: 'relative', display: 'block' }}>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Mínimo 8 caracteres"
+                        required
+                        style={{ paddingRight: 40, width: '100%', boxSizing: 'border-box' }}
+                      />
+                      <button type="button" onClick={() => setShowPassword(p => !p)} tabIndex={-1}
+                        aria-label={showPassword ? 'Ocultar password' : 'Mostrar password'}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 0 }}>
+                        {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </label>
 
                   <label>
                     Confirmar Palavra-passe
-                    <input
-                      type="password"
-                      name="confirm_password"
-                      value={formData.confirm_password}
-                      onChange={handleChange}
-                      placeholder="Confirme a palavra-passe"
-                      required
-                    />
+                    <div style={{ position: 'relative', display: 'block' }}>
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirm_password"
+                        value={formData.confirm_password}
+                        onChange={handleChange}
+                        placeholder="Confirme a palavra-passe"
+                        required
+                        style={{ paddingRight: 40, width: '100%', boxSizing: 'border-box' }}
+                      />
+                      <button type="button" onClick={() => setShowConfirmPassword(p => !p)} tabIndex={-1}
+                        aria-label={showConfirmPassword ? 'Ocultar password' : 'Mostrar password'}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 0 }}>
+                        {showConfirmPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </label>
                 </>
               ) : (

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"crypto/rand"
 	"fmt"
 	"net/http"
 	"os"
@@ -366,12 +367,12 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 
 type CreateUtenteRequest struct {
 	Nome           string `json:"nome" binding:"required"`
-	Email          string `json:"email" binding:"required,email"`
+	Email          string `json:"email" binding:"omitempty,email"`
 	NumeroProcesso string `json:"numero_processo"`
 	Telefone       string `json:"telefone"`
 	Morada         string `json:"morada"`
 	DataNascimento string `json:"data_nascimento"` // "2000-01-15"
-	Password       string `json:"password" binding:"required,min=8"`
+	Password       string `json:"password" binding:"omitempty,min=8"`
 }
 
 type UpdateUtenteRequest struct {
@@ -391,23 +392,38 @@ func CreateUtente(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao processar password"})
-		return
+	// Gerar hash da password (fornecida pelo staff, ou aleatória para contas sem login)
+	var passwordHash string
+	if req.Password != "" {
+		hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao processar password"})
+			return
+		}
+		passwordHash = string(hashed)
+	} else {
+		randomBytes := make([]byte, 32)
+		rand.Read(randomBytes)
+		hashed, _ := bcrypt.GenerateFromPassword(randomBytes, bcrypt.DefaultCost)
+		passwordHash = string(hashed)
 	}
 
 	// Criar User
 	user := models.User{
-		Nome:         req.Nome,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Role:         "utente",
-		Active:       true,
+		Nome:          req.Nome,
+		Email:         req.Email,
+		PasswordHash:  passwordHash,
+		Role:          "utente",
+		Active:        true,
+		EmailVerified: true, // contas criadas por staff não precisam verificar email
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email já existe"})
+		if req.Email != "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email já existe"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 

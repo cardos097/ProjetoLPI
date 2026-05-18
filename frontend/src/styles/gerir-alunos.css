@@ -306,6 +306,8 @@
 
 .modal-actions .btn-primary,
 .modal-actions .btn-secondary {
+  flex: 1;
+  justify-content: center;
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;

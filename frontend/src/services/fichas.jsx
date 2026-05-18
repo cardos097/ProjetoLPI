@@ -19,6 +19,11 @@ export async function getFichasAvaliacao(utenteId) {
   return data;
 }
 
+export async function getFichaAvaliacaoById(id) {
+  const { data } = await api.get(`/fichas-avaliacao/${id}`);
+  return data;
+}
+
 export async function createFichaAvaliacao(ficha) {
   const { data } = await api.post('/fichas-avaliacao', ficha);
   return data;

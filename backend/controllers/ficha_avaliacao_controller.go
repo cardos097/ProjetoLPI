@@ -132,6 +132,12 @@ func GetFichasAvaliacao(c *gin.Context) {
 		query = query.Where("utente_id = ?", utenteID)
 	}
 
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	if userRole, _ := roleValue.(string); userRole == "terapeuta" {
+		query = query.Where("created_by IN ?", getVisibleTerapeutaIDs(userID))
+	}
+
 	if err := query.
 		Preload("Utente").
 		Preload("Utente.User").

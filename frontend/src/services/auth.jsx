@@ -149,3 +149,8 @@ export async function resendVerificationRequest({ email }) {
   const { data } = await api.post('/auth/resend-verification', { email });
   return data;
 }
+
+export async function claimUtenteAccount({ numero_processo, data_nascimento, email, password }) {
+  const { data } = await api.post('/auth/claim-utente', { numero_processo, data_nascimento, email, password });
+  return data;
+}

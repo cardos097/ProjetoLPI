@@ -85,7 +85,6 @@ func main() {
 
 	routes.RegisterAuthRoutes(r)
 
-	r.POST("/utentes", controllers.CreateUtente)
 	r.GET("/areas-clinicas", controllers.GetAreasClinicas)
 
 	auth := r.Group("/")
@@ -102,6 +101,7 @@ func main() {
 		auth.PUT("/consultas/:id/remarcar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.RemarcarConsulta)
 		auth.POST("/consultas/:id/upload-pdf", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UploadPdfConsulta)
 
+		auth.POST("/utentes", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateUtente)
 		auth.GET("/utentes", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetUtentes)
 		auth.GET("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetUtenteByID)
 		auth.PATCH("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.UpdateUtente)
@@ -109,7 +109,7 @@ func main() {
 		auth.POST("/utentes/:id/avatar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.UploadAvatar)
 		auth.DELETE("/utentes/:id", middleware.RoleMiddleware("admin", "administrativo"), controllers.DeleteUtente)
 		auth.GET("/utentes/:id/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetConsultasByUtenteID)
-		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetRegistosClinicosByUtenteID)
+		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetRegistosClinicosByUtenteID)
 
 		auth.GET("/salas", controllers.GetSalas)
 		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetTerapeutas)
@@ -131,8 +131,14 @@ func main() {
 		auth.PATCH("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaPsicologia)
 		auth.DELETE("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaPsicologia)
 
+		auth.GET("/documentos", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetDocumentos)
 		auth.GET("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetAssiduidade)
 		auth.POST("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateAssiduidade)
+
+		auth.GET("/admin/stats", middleware.RoleMiddleware("admin"), controllers.GetAdminStats)
+		auth.GET("/admin/users", middleware.RoleMiddleware("admin"), controllers.GetStaffUsers)
+		auth.PATCH("/admin/users/:id/toggle-active", middleware.RoleMiddleware("admin"), controllers.ToggleUserActive)
+		auth.POST("/admin/users", middleware.RoleMiddleware("admin"), controllers.CreateStaffUser)
 	}
 
 	// Uploads: avatars públicos, PDFs protegidos — geridos num único handler

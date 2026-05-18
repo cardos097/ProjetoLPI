@@ -37,6 +37,17 @@ func terapeutaHasAccessToUtente(userID uint, utenteID uint) bool {
 	return count > 0
 }
 
+// getVisibleTerapeutaIDs retorna os IDs do terapeuta e, se for professor, também dos seus alunos.
+func getVisibleTerapeutaIDs(userID uint) []uint {
+	ids := []uint{userID}
+	var alunos []models.Terapeuta
+	config.DB.Where("supervisor_id = ? AND tipo = 'aluno'", userID).Find(&alunos)
+	for _, a := range alunos {
+		ids = append(ids, a.UserID)
+	}
+	return ids
+}
+
 // alunoHasActiveConsulta retorna true se o aluno tem pelo menos uma
 // consulta ativa (dentro de ±2h) com utenteID. Para não-alunos devolve true.
 func alunoHasActiveConsulta(userID uint, utenteID uint) bool {

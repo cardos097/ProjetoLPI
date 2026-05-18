@@ -19,6 +19,7 @@ import { VerConsultasSala } from '../pages/VerConsultasSala.jsx';
 import { CriarFichaAvaliacao } from '../pages/CriarFichaAvaliacao.jsx';
 import { CriarFichaPsicologia } from '../pages/CriarFichaPsicologia.jsx';
 import { CompletarPerfilPage } from '../pages/CompletarPerfilPage.jsx';
+import { AtivarContaPage } from '../pages/AtivarContaPage.jsx';
 import { Layout } from '../components/Layout.jsx';
 import { Navbar } from '../components/Navbar.jsx';
 
@@ -47,6 +48,7 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/criar-conta" element={<CriarContaPage />} />
+      <Route path="/ativar-conta" element={<AtivarContaPage />} />
       <Route
         path="/"
         element={

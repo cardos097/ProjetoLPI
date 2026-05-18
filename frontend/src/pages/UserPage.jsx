@@ -232,6 +232,7 @@ export function UserPage() {
         telefone: editData.telefone,
         morada: editData.morada,
         data_nascimento: editData.data_nascimento,
+        numero_processo: editData.numero_processo,
       });
 
       // Se foi alterado o terapeuta e o utilizador tem permissão
@@ -582,6 +583,19 @@ export function UserPage() {
                     {(user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && (
                       <div className="profile-section">
                         <p className="profile-section-title"><FileText size={12} /> Informação Clínica</p>
+                        {(user?.role === 'admin' || user?.role === 'administrativo') && (
+                          <div className="form-group">
+                            <label htmlFor="numero_processo">Número de Processo</label>
+                            <input
+                              id="numero_processo"
+                              type="text"
+                              value={editData?.numero_processo || ''}
+                              onChange={(e) => handleInputChange('numero_processo', e.target.value)}
+                              className="form-input"
+                              placeholder="Ex: 2024/001"
+                            />
+                          </div>
+                        )}
                         <div className="form-group">
                           <label htmlFor="terapeuta_id">Terapeuta</label>
                           <select id="terapeuta_id" value={editData?.terapeuta_id || ''} onChange={(e) => handleInputChange('terapeuta_id', e.target.value ? parseInt(e.target.value) : null)} className="form-input" disabled={loadingTerapeutas}>

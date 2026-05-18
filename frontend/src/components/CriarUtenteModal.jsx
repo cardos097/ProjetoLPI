@@ -54,7 +54,9 @@ export function CriarUtenteModal({ isOpen, onClose, onSuccess }) {
     setLoading(true);
 
     try {
-      await createUtente(form);
+      const payload = { ...form };
+      if (!payload.email) delete payload.email; // não enviar string vazia ao backend
+      await createUtente(payload);
       setSuccess('Utente criado com sucesso!');
       setForm({
         nome: '',
@@ -111,13 +113,13 @@ export function CriarUtenteModal({ isOpen, onClose, onSuccess }) {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Email</label>
+                  <label>Email <span style={{ fontWeight: 400, color: '#6b7280', fontSize: '12px' }}>(opcional — o familiar pode ativar depois)</span></label>
                   <input
                     type="email"
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    placeholder="Email"
+                    placeholder="Email (opcional)"
                   />
                 </div>
 
@@ -185,19 +187,19 @@ export function CriarUtenteModal({ isOpen, onClose, onSuccess }) {
               </div>
             </div>
 
-            <div className="modal-actions">
+            <div style={{ display: 'flex', gap: 12, paddingTop: 20, borderTop: '1px solid #e5e7eb', marginTop: 8 }}>
               <button
                 type="button"
-                className="btn-secondary"
                 onClick={onClose}
                 disabled={loading}
+                style={{ flex: '1 1 0', minWidth: 0, padding: '10px 16px', borderRadius: 6, border: 'none', background: '#e5e7eb', color: '#111827', fontWeight: 500, cursor: 'pointer', fontSize: 14 }}
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                className="btn-primary"
                 disabled={loading}
+                style={{ flex: '1 1 0', minWidth: 0, padding: '10px 16px', borderRadius: 6, border: 'none', background: '#059669', color: 'white', fontWeight: 500, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 <PlusLg size={14} />
                 {loading ? 'A criar...' : 'Criar Utente'}

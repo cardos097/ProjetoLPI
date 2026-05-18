@@ -132,6 +132,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	if user.Email == "" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Conta não ativada. Use 'Ativar conta' para definir o seu email e password."})
+		return
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email ou password inválidos"})
@@ -245,20 +250,19 @@ func GoogleLogin(c *gin.Context) {
 
 			if err := config.DB.Create(&processo).Error; err != nil {
 			}
-		} else if role == "terapeuta" {
-			tipoTerapeuta, numeroMecanografico := getTipoTerapeutaFromEmail(claims.Email)
+		}
+	}
 
-			terapeuta := models.Terapeuta{
-				UserID:        user.ID,
-				Tipo:          tipoTerapeuta,
-				AreaClinicaID: nil,
-			}
-
+	// Garantir que o perfil de terapeuta existe (mesmo se criação anterior falhou)
+	if role == "terapeuta" {
+		var t models.Terapeuta
+		if config.DB.Where("user_id = ?", user.ID).First(&t).Error != nil {
+			tipoTerapeuta, numeroMecanografico := getTipoTerapeutaFromEmail(user.Email)
+			novoT := models.Terapeuta{UserID: user.ID, Tipo: tipoTerapeuta}
 			if numeroMecanografico != "" {
-				terapeuta.NumeroMecanografico = &numeroMecanografico
+				novoT.NumeroMecanografico = &numeroMecanografico
 			}
-
-			if err := config.DB.Create(&terapeuta).Error; err != nil {
+			if err := config.DB.Create(&novoT).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao criar perfil de terapeuta"})
 				return
 			}
@@ -520,4 +524,76 @@ func ResendVerification(c *gin.Context) {
 		resp["verification_code"] = code
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+// ClaimUtenteAccount permite a um familiar ativar a conta de um utente sem email,
+// definindo o email e password com base no número de processo e data de nascimento.
+func ClaimUtenteAccount(c *gin.Context) {
+	var req struct {
+		NumeroProcesso string `json:"numero_processo" binding:"required"`
+		DataNascimento string `json:"data_nascimento" binding:"required"`
+		Email          string `json:"email" binding:"required,email"`
+		Password       string `json:"password" binding:"required,min=8"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		return
+	}
+
+	// Encontrar utente pelo número de processo
+	var utente models.Utente
+	if err := config.DB.Preload("User").Where("numero_processo = ?", req.NumeroProcesso).First(&utente).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Número de processo não encontrado"})
+		return
+	}
+
+	// Verificar que a conta ainda não foi ativada
+	if utente.User.Email != "" {
+		c.JSON(http.StatusConflict, gin.H{"error": "Esta conta já foi ativada. Pode fazer login normalmente."})
+		return
+	}
+
+	// Verificar data de nascimento
+	if utente.DataNascimento == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Conta sem data de nascimento registada. Contacte a clínica."})
+		return
+	}
+	dob, err := time.Parse("2006-01-02", req.DataNascimento)
+	if err != nil || !utente.DataNascimento.Truncate(24*time.Hour).Equal(dob.Truncate(24*time.Hour)) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados incorretos"})
+		return
+	}
+
+	// Verificar que o email não está já em uso
+	var existing models.User
+	if config.DB.Where("email = ?", req.Email).First(&existing).Error == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Este email já está registado"})
+		return
+	}
+
+	// Atualizar user com email + password
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro interno"})
+		return
+	}
+	config.DB.Model(&utente.User).Updates(map[string]interface{}{
+		"email":          req.Email,
+		"password_hash":  string(hashed),
+		"email_verified": true,
+	})
+
+	// Auto-login
+	token, err := utils.GenerateAppJWT(utente.User.ID, req.Email, utente.User.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar token"})
+		return
+	}
+	c.JSON(http.StatusOK, LoginResponse{
+		Token:  token,
+		UserID: utente.User.ID,
+		Role:   utente.User.Role,
+		Name:   utente.User.Nome,
+		Email:  req.Email,
+	})
 }

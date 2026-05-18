@@ -1149,3 +1149,51 @@ func ServeUploadedFile(c *gin.Context) {
 
 	c.File(fullPath)
 }
+
+type DocumentoListResponse struct {
+	ID           uint   `json:"id"`
+	ConsultaID   uint   `json:"consulta_id"`
+	NomeArquivo  string `json:"nome_arquivo"`
+	ArquivoURL   string `json:"arquivo_url"`
+	UtenteNome   string `json:"utente_nome"`
+	DataConsulta string `json:"data_consulta"`
+	CreatedAt    string `json:"created_at"`
+}
+
+func GetDocumentos(c *gin.Context) {
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	userRole, _ := roleValue.(string)
+
+	var docs []models.DocumentoConsulta
+	query := config.DB.Preload("UserUpload")
+
+	if userRole == "terapeuta" {
+		query = query.Where("uploaded_by IN ?", getVisibleTerapeutaIDs(userID))
+	}
+
+	if err := query.Order("created_at DESC").Find(&docs).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Enriquecer com dados da consulta (utente + data)
+	var result []DocumentoListResponse
+	for _, d := range docs {
+		entry := DocumentoListResponse{
+			ID:          d.ID,
+			ConsultaID:  d.ConsultaID,
+			NomeArquivo: d.NomeArquivo,
+			ArquivoURL:  d.ArquivoURL,
+			CreatedAt:   d.CreatedAt.Format("2006-01-02"),
+		}
+		var consulta models.Consulta
+		if config.DB.Preload("Utente").First(&consulta, d.ConsultaID).Error == nil {
+			entry.UtenteNome = consulta.Utente.Nome
+			entry.DataConsulta = consulta.DataInicio.Format("2006-01-02")
+		}
+		result = append(result, entry)
+	}
+
+	c.JSON(http.StatusOK, result)
+}

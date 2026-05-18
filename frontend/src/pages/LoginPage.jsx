@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { loginRequest, loginWithGoogle, resendVerificationRequest, verifyEmailRequest } from '../services/auth.jsx';
 import { GoogleLogin } from '@react-oauth/google';
+import { Eye, EyeSlash } from 'react-bootstrap-icons';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showResend, setShowResend] = useState(false);
@@ -118,13 +120,21 @@ export function LoginPage() {
 
                 <label>
                   Palavra-passe
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Insira sua palavra-passe"
-                    required
-                  />
+                  <div style={{ position: 'relative', display: 'block' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Insira sua palavra-passe"
+                      required
+                      style={{ paddingRight: 40, width: '100%', boxSizing: 'border-box' }}
+                    />
+                    <button type="button" onClick={() => setShowPassword(p => !p)} tabIndex={-1}
+                      aria-label={showPassword ? 'Ocultar password' : 'Mostrar password'}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: 0 }}>
+                      {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </label>
 
                 {error && <p className="login-error">{error}</p>}
@@ -149,15 +159,18 @@ export function LoginPage() {
                   Não tem conta?
                   <Link
                     to="/criar-conta"
-                    style={{
-                      marginLeft: '5px',
-                      color: '#059669',
-                      textDecoration: 'none',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
+                    style={{ marginLeft: '5px', color: '#059669', textDecoration: 'none', fontWeight: '600' }}
                   >
                     Criar conta aqui
+                  </Link>
+                </div>
+                <div style={{ marginTop: '10px', textAlign: 'center', fontSize: '14px', color: '#666' }}>
+                  Conta criada por profissional de saúde?
+                  <Link
+                    to="/ativar-conta"
+                    style={{ marginLeft: '5px', color: '#059669', textDecoration: 'none', fontWeight: '600' }}
+                  >
+                    Ativar aqui
                   </Link>
                 </div>
               </form>
