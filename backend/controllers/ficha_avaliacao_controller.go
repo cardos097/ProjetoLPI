@@ -81,6 +81,7 @@ type CreateFichaRequest struct {
 	IMC                        *float64 `json:"imc"`
 	DiagnosticoQueixaPrincipal string   `json:"diagnostico_queixa_principal"`
 	TipoRegisto                string   `json:"tipo_registo"`
+	AvaliacaoSubjetiva         string   `json:"avaliacao_subjetiva"`
 	DiagnosticoFisioterapia    string   `json:"diagnostico_fisioterapia"`
 	ObjetivosPrognostico       string   `json:"objetivos_prognostico"`
 	PlanoTerapeutico           string   `json:"plano_terapeutico"`
@@ -108,6 +109,7 @@ type UpdateFichaRequest struct {
 	IMC                        *float64 `json:"imc"`
 	DiagnosticoQueixaPrincipal *string  `json:"diagnostico_queixa_principal"`
 	TipoRegisto                *string  `json:"tipo_registo"`
+	AvaliacaoSubjetiva         *string  `json:"avaliacao_subjetiva"`
 	DiagnosticoFisioterapia    *string  `json:"diagnostico_fisioterapia"`
 	ObjetivosPrognostico       *string  `json:"objetivos_prognostico"`
 	PlanoTerapeutico           *string  `json:"plano_terapeutico"`
@@ -220,6 +222,7 @@ func CreateFichaAvaliacao(c *gin.Context) {
 		IMC:                        req.IMC,
 		DiagnosticoQueixaPrincipal: req.DiagnosticoQueixaPrincipal,
 		TipoRegisto:                req.TipoRegisto,
+		AvaliacaoSubjetiva:         req.AvaliacaoSubjetiva,
 		DiagnosticoFisioterapia:    req.DiagnosticoFisioterapia,
 		ObjetivosPrognostico:       req.ObjetivosPrognostico,
 		PlanoTerapeutico:           req.PlanoTerapeutico,
@@ -300,6 +303,9 @@ func UpdateFichaAvaliacao(c *gin.Context) {
 	if req.TipoRegisto != nil {
 		ficha.TipoRegisto = *req.TipoRegisto
 	}
+	if req.AvaliacaoSubjetiva != nil {
+		ficha.AvaliacaoSubjetiva = *req.AvaliacaoSubjetiva
+	}
 	if req.DiagnosticoFisioterapia != nil {
 		ficha.DiagnosticoFisioterapia = *req.DiagnosticoFisioterapia
 	}
@@ -354,4 +360,15 @@ func UpdateFichaAvaliacao(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, ficha)
+}
+
+func DeleteFichaAvaliacao(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := config.DB.Delete(&models.FichaAvaliacao{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Ficha eliminada com sucesso"})
 }

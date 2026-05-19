@@ -211,8 +211,10 @@ export function EditarConsulta() {
   const areaClinicaNome = selectedAreaClinica?.nome || getConsultaValue(consulta, 'area_clinica_nome') || '';
   const isFisioterapiaConsulta = normalizeText(areaClinicaNome).includes('fisioterapia');
   const isPsicologiaConsulta = normalizeText(areaClinicaNome).includes('psicologia');
+  const isTerapiaFalaConsulta = normalizeText(areaClinicaNome).includes('fala');
   const canAddFisioterapiaForm = canManageForms && isFisioterapiaConsulta;
   const canAddPsicologiaForm = canManageForms && isPsicologiaConsulta;
+  const canAddTerapiaFalaForm = canManageForms && isTerapiaFalaConsulta;
 
   // Verificar permissões para editar campos específicos
   const isTerapeuta = user?.role === 'terapeuta';
@@ -261,6 +263,30 @@ export function EditarConsulta() {
 
     navigate(
       `/fichas-psicologia/nova?utente_id=${utenteId}&consulta_id=${getConsultaValue(consulta, 'id')}`,
+      {
+        state: {
+          utenteId,
+          consultaId: getConsultaValue(consulta, 'id'),
+        },
+      }
+    );
+  };
+
+  const handleAddTerapiaFalaForm = () => {
+    if (!isTerapiaFalaConsulta) {
+      setError('O formulário de terapia da fala só está disponível para consultas de terapia da fala');
+      return;
+    }
+
+    const utenteId = getConsultaValue(consulta, 'utente_id');
+
+    if (!utenteId) {
+      setError('Não foi possível identificar o utente desta consulta');
+      return;
+    }
+
+    navigate(
+      `/fichas-terapia-fala/nova?utente_id=${utenteId}&consulta_id=${getConsultaValue(consulta, 'id')}`,
       {
         state: {
           utenteId,
@@ -342,6 +368,11 @@ export function EditarConsulta() {
           {canAddPsicologiaForm && (
             <button className="btn btn-primary" onClick={handleAddPsicologiaForm}>
               + Ficha Psicologia
+            </button>
+          )}
+          {canAddTerapiaFalaForm && (
+            <button className="btn btn-primary" onClick={handleAddTerapiaFalaForm}>
+              + Ficha Terapia da Fala
             </button>
           )}
           <button 

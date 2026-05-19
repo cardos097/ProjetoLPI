@@ -3,26 +3,25 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { DateInput } from '../components/DateInput.jsx';
 import { getUtenteDetails } from '../services/utentes.jsx';
-import { createFichaAvaliacao, getFichasAvaliacao } from '../services/fichas.jsx';
+import { createFichaTerapiaFala, getFichasTerapiaFala } from '../services/fichas.jsx';
 import { getConsultaById } from '../services/consultas.jsx';
+import { getAlunosDoProfessor } from '../services/terapeutas.jsx';
 
 const emptyForm = {
   nome_completo: '',
   numero_processo: '',
   data_nascimento: '',
   sexo: '',
-  diagnostico_queixa_principal: '',
-  tipo_registo: 'individual',
   avaliacao_subjetiva: '',
-  diagnostico_fisioterapia: '',
+  avaliacao_objetiva: '',
+  diagnostico_terapia_fala: '',
   objetivos_prognostico: '',
   plano_terapeutico: '',
   plano_progressao: '',
-  historia_pessoal: '',
-  sinss: '',
+  estudante_id: '',
 };
 
-export function CriarFichaAvaliacao() {
+export function CriarFichaTerapiaFala() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -40,9 +39,10 @@ export function CriarFichaAvaliacao() {
   const [selectedFicha, setSelectedFicha] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [lockedFields, setLockedFields] = useState({});
-  const [isFisioterapiaConsulta, setIsFisioterapiaConsulta] = useState(false);
+  const [isTerapiaFalaConsulta, setIsTerapiaFalaConsulta] = useState(false);
   const [terapeutaResponsavel, setTerapeutaResponsavel] = useState(null);
-  const [estudanteFisioterapia, setEstudanteFisioterapia] = useState(null);
+  const [estudanteTerapiaFala, setEstudanteTerapiaFala] = useState(null);
+  const [alunos, setAlunos] = useState([]);
 
   const normalizeText = (value) => String(value || '')
     .normalize('NFD')
@@ -65,33 +65,35 @@ export function CriarFichaAvaliacao() {
   useEffect(() => {
     const fetchData = async () => {
       if (!utenteId || !consultaId) {
-        setError('Este formulário só pode ser aberto a partir de uma consulta de fisioterapia');
+        setError('Este formulário só pode ser aberto a partir de uma consulta de terapia da fala');
         setLoading(false);
         return;
       }
 
       try {
         setError('');
-        const [utenteData, fichasData, consultaData] = await Promise.all([
+        const [utenteData, fichasData, consultaData, alunosData] = await Promise.all([
           getUtenteDetails(utenteId),
-          getFichasAvaliacao(utenteId).catch(() => []),
+          getFichasTerapiaFala(utenteId).catch(() => []),
           getConsultaById(consultaId),
+          getAlunosDoProfessor().catch(() => []),
         ]);
 
         const consultaAreaClinica = getValueByKey(consultaData, 'area_clinica_nome');
-        const fisioterapiaConsulta = normalizeText(consultaAreaClinica).includes('fisioterapia');
+        const terapiaFalaConsulta = normalizeText(consultaAreaClinica).includes('fala');
 
-        setIsFisioterapiaConsulta(fisioterapiaConsulta);
-        
-        // Guardar terapeuta responsável (fisioterapeuta da consulta)
+        setIsTerapiaFalaConsulta(terapiaFalaConsulta);
+
+        // Guardar terapeuta responsável
         const nomeTerapeuta = getValueByKey(consultaData, 'terapeuta_nome') || getValueByKey(consultaData, 'terapeutaNome') || 'N/A';
         setTerapeutaResponsavel(nomeTerapeuta);
-        
-        // Guardar estudante de fisioterapia (utilizador atual que criou o formulário)
-        setEstudanteFisioterapia(user?.nome || 'N/A');
+
+        // Estudante da fala será atualizado quando selecionar no dropdown
+        setEstudanteTerapiaFala(null);
 
         setUtente(utenteData);
         setFichas(Array.isArray(fichasData) ? fichasData : []);
+        setAlunos(Array.isArray(alunosData) ? alunosData : []);
 
         const prefilledData = {
           ...emptyForm,
@@ -118,7 +120,7 @@ export function CriarFichaAvaliacao() {
 
   const isProfessor = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('professor');
   const canManageForms = user?.role === 'admin' || isProfessor;
-  const canAccessForm = canManageForms && isFisioterapiaConsulta;
+  const canAccessForm = canManageForms && isTerapiaFalaConsulta;
 
   const isFieldLocked = (fieldName) => Boolean(lockedFields[fieldName]);
 
@@ -136,6 +138,16 @@ export function CriarFichaAvaliacao() {
       return;
     }
     setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // Atualizar nome do estudante em baixo quando seleciona
+    if (name === 'estudante_id') {
+      if (value) {
+        const alunoSelecionado = alunos.find((a) => String(a.id) === String(value));
+        setEstudanteTerapiaFala(alunoSelecionado?.nome || 'N/A');
+      } else {
+        setEstudanteTerapiaFala(null);
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -165,20 +177,18 @@ export function CriarFichaAvaliacao() {
         numero_processo: form.numero_processo,
         data_nascimento: form.data_nascimento || undefined,
         sexo: form.sexo,
-        diagnostico_queixa_principal: form.diagnostico_queixa_principal,
-        tipo_registo: form.tipo_registo,
         avaliacao_subjetiva: form.avaliacao_subjetiva,
-        diagnostico_fisioterapia: form.diagnostico_fisioterapia,
+        avaliacao_objetiva: form.avaliacao_objetiva,
+        diagnostico_terapia_fala: form.diagnostico_terapia_fala,
         objetivos_prognostico: form.objetivos_prognostico,
         plano_terapeutico: form.plano_terapeutico,
         plano_progressao: form.plano_progressao,
-        historia_pessoal: form.historia_pessoal,
-        sinss: form.sinss,
+        estudante_id: form.estudante_id ? Number(form.estudante_id) : undefined,
       };
 
       Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
 
-      await createFichaAvaliacao(payload);
+      await createFichaTerapiaFala(payload);
       setSuccess('Formulário criado com sucesso');
 
       setTimeout(() => {
@@ -204,20 +214,20 @@ export function CriarFichaAvaliacao() {
       <div className="page centered">
         <div className="card">
           <h1>Acesso restrito</h1>
-          <p>Este formulário só pode ser visto e criado por admin ou professor, em consultas de fisioterapia.</p>
+          <p>Este formulário só pode ser visto e criado por admin ou professor, em consultas de terapia da fala.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page criar-ficha-avaliacao">
+    <div className="page criar-ficha-terapia-fala">
       <div className="page-header">
         <div>
           <button className="btn-back" onClick={() => (consultaId ? navigate(`/consultas/${consultaId}/editar`) : navigate('/consultas'))}>
             ← Voltar
           </button>
-          <h1>Adicionar formulário</h1>
+          <h1>Adicionar formulário - Terapia da Fala</h1>
           {utente?.nome && <p>Utente: {utente.nome}</p>}
         </div>
       </div>
@@ -244,8 +254,8 @@ export function CriarFichaAvaliacao() {
                 const fichaId = getFichaValue(ficha, 'id') || `ficha-${index}`;
                 return (
                 <div key={fichaId} style={{ padding: '0.75rem', border: '1px solid #e5e7eb', borderRadius: '0.75rem' }}>
-                  <strong>Avaliação de Fisioterapia</strong>
-                  <div>{getFichaValue(ficha, 'diagnostico_fisioterapia') || 'Sem diagnóstico registado'}</div>
+                  <strong>Avaliação de Terapia da Fala</strong>
+                  <div>{getFichaValue(ficha, 'diagnostico_terapia_fala') || 'Sem diagnóstico registado'}</div>
                   <small>Criado em {formatFichaDate(ficha)}</small>
                   <div style={{ marginTop: '0.5rem' }}>
                     <button
@@ -267,8 +277,8 @@ export function CriarFichaAvaliacao() {
             <h2>Detalhes do formulário anterior</h2>
             <div style={{ display: 'grid', gap: '0.5rem' }}>
               <div><strong>Avaliação Subjetiva:</strong> {getFichaValue(selectedFicha, 'avaliacao_subjetiva') || '-'}</div>
-              <div><strong>Avaliação Objetiva:</strong> {getFichaValue(selectedFicha, 'diagnostico_queixa_principal') || '-'}</div>
-              <div><strong>Diagnóstico em Fisioterapia:</strong> {getFichaValue(selectedFicha, 'diagnostico_fisioterapia') || '-'}</div>
+              <div><strong>Avaliação Objetiva:</strong> {getFichaValue(selectedFicha, 'diagnostico_terapia_fala') || '-'}</div>
+              <div><strong>Diagnóstico em Terapia da Fala:</strong> {getFichaValue(selectedFicha, 'diagnostico_terapia_fala') || '-'}</div>
               <div><strong>Objetivos e Prognósticos:</strong> {getFichaValue(selectedFicha, 'objetivos_prognostico') || '-'}</div>
               <div><strong>Plano Terapêutico:</strong> {getFichaValue(selectedFicha, 'plano_terapeutico') || '-'}</div>
               <div><strong>Plano de Progressão:</strong> {getFichaValue(selectedFicha, 'plano_progressao') || '-'}</div>
@@ -283,7 +293,7 @@ export function CriarFichaAvaliacao() {
         )}
 
         <form onSubmit={handleSubmit} className="card">
-          <h2>Novo formulário - Fisioterapia</h2>
+          <h2>Novo formulário - Terapia da Fala</h2>
 
           {/* Identificação - dados do utente */}
           <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
@@ -317,9 +327,9 @@ export function CriarFichaAvaliacao() {
             </div>
           </fieldset>
 
-          {/* Campos específicos de fisioterapia */}
+          {/* Campos específicos de terapia da fala */}
           <fieldset>
-            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>Avaliação de Fisioterapia</legend>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>Avaliação de Terapia da Fala</legend>
 
             <div className="form-group">
               <label>Avaliação Subjetiva</label>
@@ -328,12 +338,12 @@ export function CriarFichaAvaliacao() {
 
             <div className="form-group">
               <label>Avaliação Objetiva</label>
-              <textarea name="diagnostico_queixa_principal" value={form.diagnostico_queixa_principal} onChange={handleChange} rows="4" placeholder="Descreva os achados da avaliação objetiva..." />
+              <textarea name="avaliacao_objetiva" value={form.avaliacao_objetiva} onChange={handleChange} rows="4" placeholder="Descreva os achados da avaliação objetiva..." />
             </div>
 
             <div className="form-group">
-              <label>Diagnóstico em Fisioterapia</label>
-              <textarea name="diagnostico_fisioterapia" value={form.diagnostico_fisioterapia} onChange={handleChange} rows="4" placeholder="Descreva o diagnóstico em fisioterapia..." />
+              <label>Diagnóstico em Terapia da Fala</label>
+              <textarea name="diagnostico_terapia_fala" value={form.diagnostico_terapia_fala} onChange={handleChange} rows="4" placeholder="Descreva o diagnóstico em terapia da fala..." />
             </div>
 
             <div className="form-group">
@@ -350,6 +360,18 @@ export function CriarFichaAvaliacao() {
               <label>Plano de Progressão</label>
               <textarea name="plano_progressao" value={form.plano_progressao} onChange={handleChange} rows="4" placeholder="Descreva o plano de progressão..." />
             </div>
+
+            <div className="form-group">
+              <label>Estudante de Terapia da Fala</label>
+              <select name="estudante_id" value={form.estudante_id} onChange={handleChange}>
+                <option value="">Selecionar estudante...</option>
+                {alunos.map((aluno) => (
+                  <option key={aluno.id} value={aluno.id}>
+                    {aluno.nome}
+                  </option>
+                ))}
+              </select>
+            </div>
           </fieldset>
 
           {/* Informações de responsáveis */}
@@ -362,10 +384,10 @@ export function CriarFichaAvaliacao() {
           }}>
             <div style={{ display: 'grid', gap: '0.75rem', fontSize: '0.95rem' }}>
               <div>
-                <strong>Fisioterapeuta Responsável:</strong> {terapeutaResponsavel}
+                <strong>Terapeuta da Fala Responsável:</strong> {terapeutaResponsavel}
               </div>
               <div>
-                <strong>Estudante de Fisioterapia:</strong> {estudanteFisioterapia}
+                <strong>Estudante de Terapia da Fala:</strong> {estudanteTerapiaFala || 'N/A'}
               </div>
             </div>
           </div>

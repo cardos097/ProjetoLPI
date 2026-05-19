@@ -158,6 +158,7 @@ CREATE TABLE fichas_avaliacao (
   imc NUMERIC(5,2),
   diagnostico_queixa_principal TEXT,
   tipo_registo VARCHAR(20) DEFAULT 'grupo',
+  avaliacao_subjetiva TEXT,
   diagnostico_fisioterapia TEXT,
   objetivos_prognostico TEXT,
   plano_terapeutico TEXT,
@@ -269,7 +270,29 @@ CREATE INDEX idx_fichas_psicologia_utente ON fichas_psicologia(utente_id);
 CREATE INDEX idx_fichas_psicologia_consulta ON fichas_psicologia(consulta_id);
 CREATE INDEX idx_fichas_psicologia_created_by ON fichas_psicologia(created_by);
 
+CREATE TABLE fichas_terapia_fala (
+  id SERIAL PRIMARY KEY,
+  utente_id INTEGER NOT NULL REFERENCES users(id),
+  consulta_id INTEGER REFERENCES consultas(id),
+  nome_completo VARCHAR(150),
+  numero_processo VARCHAR(50),
+  data_nascimento DATE,
+  sexo VARCHAR(20),
+  avaliacao_subjetiva TEXT,
+  avaliacao_objetiva TEXT,
+  diagnostico_terapia_fala TEXT,
+  objetivos_prognostico TEXT,
+  plano_terapeutico TEXT,
+  plano_progressao TEXT,
+  created_by INTEGER NOT NULL REFERENCES users(id),
+  estudante_id INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+CREATE INDEX idx_fichas_terapia_fala_utente ON fichas_terapia_fala(utente_id);
+CREATE INDEX idx_fichas_terapia_fala_consulta ON fichas_terapia_fala(consulta_id);
+CREATE INDEX idx_fichas_terapia_fala_created_by ON fichas_terapia_fala(created_by);
+CREATE INDEX idx_fichas_terapia_fala_estudante ON fichas_terapia_fala(estudante_id);
 
 CREATE TYPE assiduidade_estado AS ENUM ('P', 'A', 'FJ', 'FI');
 

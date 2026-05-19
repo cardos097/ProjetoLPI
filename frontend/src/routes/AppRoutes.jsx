@@ -18,6 +18,7 @@ import { ListaSalas } from '../pages/ListaSalas.jsx';
 import { VerConsultasSala } from '../pages/VerConsultasSala.jsx';
 import { CriarFichaAvaliacao } from '../pages/CriarFichaAvaliacao.jsx';
 import { CriarFichaPsicologia } from '../pages/CriarFichaPsicologia.jsx';
+import { CriarFichaTerapiaFala } from '../pages/CriarFichaTerapiaFala.jsx';
 import { CompletarPerfilPage } from '../pages/CompletarPerfilPage.jsx';
 import { AtivarContaPage } from '../pages/AtivarContaPage.jsx';
 import { Layout } from '../components/Layout.jsx';
@@ -212,6 +213,16 @@ export function AppRoutes() {
         element={
           isAuthenticated && canAccessFichaAvaliacao ? (
             <Layout><CriarFichaPsicologia /></Layout>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
+      />
+      <Route
+        path="/fichas-terapia-fala/nova"
+        element={
+          isAuthenticated && canAccessFichaAvaliacao ? (
+            <Layout><CriarFichaTerapiaFala /></Layout>
           ) : (
             <Navigate to="/dashboard" replace />
           )

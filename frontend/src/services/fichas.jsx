@@ -55,3 +55,30 @@ export async function deleteFichaPsicologia(fichaId) {
   const { data } = await api.delete(`/fichas-psicologia/${fichaId}`);
   return data;
 }
+
+export async function getFichasTerapiaFala(utenteId) {
+  const { data } = await api.get('/fichas-terapia-fala', {
+    params: utenteId ? { utente_id: utenteId } : undefined,
+  });
+  return data;
+}
+
+export async function getFichaTerapiaFalaById(id) {
+  const { data } = await api.get(`/fichas-terapia-fala/${id}`);
+  return data;
+}
+
+export async function createFichaTerapiaFala(ficha) {
+  const { data } = await api.post('/fichas-terapia-fala', ficha);
+  return data;
+}
+
+export async function updateFichaTerapiaFala(fichaId, ficha) {
+  const { data } = await api.patch(`/fichas-terapia-fala/${fichaId}`, ficha);
+  return data;
+}
+
+export async function deleteFichaTerapiaFala(fichaId) {
+  const { data } = await api.delete(`/fichas-terapia-fala/${fichaId}`);
+  return data;
+}

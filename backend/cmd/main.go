@@ -68,11 +68,11 @@ func main() {
 	}))
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:    allowedOrigins,
-		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:   []string{"Content-Length"},
-		MaxAge:          12 * time.Hour,
+		AllowOrigins:  allowedOrigins,
+		AllowMethods:  []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:  []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders: []string{"Content-Length"},
+		MaxAge:        12 * time.Hour,
 	}))
 
 	r.GET("/health", func(c *gin.Context) {
@@ -124,12 +124,19 @@ func main() {
 		auth.GET("/fichas-avaliacao/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetFichaAvaliacaoByID)
 		auth.POST("/fichas-avaliacao", middleware.RoleMiddleware("admin", "terapeuta"), controllers.CreateFichaAvaliacao)
 		auth.PATCH("/fichas-avaliacao/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaAvaliacao)
+		auth.DELETE("/fichas-avaliacao/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaAvaliacao)
 
 		auth.GET("/fichas-psicologia", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetFichasPsicologia)
 		auth.GET("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetFichaPsicologiaByID)
 		auth.POST("/fichas-psicologia", middleware.RoleMiddleware("admin", "terapeuta"), controllers.CreateFichaPsicologia)
 		auth.PATCH("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaPsicologia)
 		auth.DELETE("/fichas-psicologia/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaPsicologia)
+
+		auth.GET("/fichas-terapia-fala", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetFichasTerapiaFala)
+		auth.GET("/fichas-terapia-fala/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetFichaTerapiaFalaByID)
+		auth.POST("/fichas-terapia-fala", middleware.RoleMiddleware("admin", "terapeuta"), controllers.CreateFichaTerapiaFala)
+		auth.PATCH("/fichas-terapia-fala/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaTerapiaFala)
+		auth.DELETE("/fichas-terapia-fala/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaTerapiaFala)
 
 		auth.GET("/documentos", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetDocumentos)
 		auth.GET("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetAssiduidade)

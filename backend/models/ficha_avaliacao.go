@@ -16,6 +16,7 @@ type FichaAvaliacao struct {
 	IMC                        *float64   `gorm:"column:imc"`
 	DiagnosticoQueixaPrincipal string     `gorm:"column:diagnostico_queixa_principal"`
 	TipoRegisto                string     `gorm:"column:tipo_registo"`
+	AvaliacaoSubjetiva         string     `gorm:"column:avaliacao_subjetiva"`
 	DiagnosticoFisioterapia    string     `gorm:"column:diagnostico_fisioterapia"`
 	ObjetivosPrognostico       string     `gorm:"column:objetivos_prognostico"`
 	PlanoTerapeutico           string     `gorm:"column:plano_terapeutico"`
