@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getUtenteDetails, updateUtente } from '../services/utentes.jsx';
+import { DateInput } from '../components/DateInput.jsx';
 
 export function EditarUtente() {
   const navigate = useNavigate();
@@ -108,8 +109,7 @@ export function EditarUtente() {
 
             <div className="form-group">
               <label>Data de Nascimento</label>
-              <input
-                type="date"
+              <DateInput
                 name="data_nascimento"
                 value={form.data_nascimento}
                 onChange={handleChange}

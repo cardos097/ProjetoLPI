@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { DateInput } from './DateInput.jsx';
 import '../styles/modal.css';
-import { getAreasClinicas, getSalas, getTerapeutas, getTerapeutasByArea, getUtentes, checkDisponibilidade } from '../services/consultas';
+import {
+    getAreasClinicas,
+    getSalas,
+    getTerapeutasByArea,
+    getUtentes,
+    checkDisponibilidade,
+    getHorariosDisponiveis,
+} from '../services/consultas';
 
 export function ModalAgendarConsultaV2({
     isOpen,
@@ -13,7 +21,6 @@ export function ModalAgendarConsultaV2({
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         data: dataSelecionada || '',
-        hora: '09:00',
         tipo: 'consulta_geral',
         area_clinica_id: '',
         sala_id: '',
@@ -23,194 +30,149 @@ export function ModalAgendarConsultaV2({
 
     const [areasClinicas, setAreasClinicas] = useState([]);
     const [salas, setSalas] = useState([]);
-    const [salasFilterradas, setSalasFilterradas] = useState([]);
-    const [terapeutas, setTerapeutas] = useState([]);
     const [terapeutasFiltrados, setTerapeutasFiltrados] = useState([]);
     const [utentes, setUtentes] = useState([]);
-    const [salasIndisponiveis, setSalasIndisponiveis] = useState([]);
-    const [terapeutasIndisponiveis, setTerapeutasIndisponiveis] = useState([]);
+    const [slotsDisponiveis, setSlotsDisponiveis] = useState([]);
+    const [selectedSlot, setSelectedSlot] = useState('');
+    const [salasDisponiveis, setSalasDisponiveis] = useState([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             carregarDados();
             if (user?.role === 'terapeuta') {
-                setFormData((prev) => ({
-                    ...prev,
-                    terapeuta_id: String(user.id),
-                }));
+                setFormData((prev) => ({ ...prev, terapeuta_id: String(user.id) }));
             }
         }
     }, [isOpen]);
 
-    const carregarDados = async () => {
-        try {
-            const areas = await getAreasClinicas();
-            const salasList = await getSalas();
-            const terapeutasList = await getTerapeutas();
-            const utentesList = await getUtentes();
-            setAreasClinicas(areas);
-            setSalas(salasList);
-            setTerapeutas(terapeutasList);
-            setUtentes(utentesList);
-        } catch (erro) {
-        }
-    };
-
     useEffect(() => {
         if (dataSelecionada) {
-            setFormData((prev) => ({
-                ...prev,
-                data: dataSelecionada,
-            }));
+            setFormData((prev) => ({ ...prev, data: dataSelecionada }));
         }
     }, [dataSelecionada]);
 
-    useEffect(() => {
-        // Verificar disponibilidade quando data ou hora mudam
-        if (formData.data && formData.hora) {
-            const verificarDisponibilidade = async () => {
-                try {
-                    // Calcular data_fim (1 hora depois)
-                    const [horaStr, minStr] = formData.hora.split(':');
-                    let horaFim = parseInt(horaStr) + 1;
-                    const minFim = parseInt(minStr);
-                    if (horaFim > 23) horaFim = 0;
+    const carregarDados = async () => {
+        try {
+            const [areas, salasList, utentesList] = await Promise.all([
+                getAreasClinicas(),
+                getSalas(),
+                getUtentes(),
+            ]);
+            setAreasClinicas(areas);
+            setSalas(salasList);
+            setUtentes(utentesList);
+        } catch {}
+    };
 
-                    const dataInicio = `${formData.data} ${formData.hora}:00`;
-                    const dataFim = `${formData.data} ${String(horaFim).padStart(2, '0')}:${String(minFim).padStart(2, '0')}:00`;
-
-                    const resultado = await checkDisponibilidade(dataInicio, dataFim);
-                    setSalasIndisponiveis(resultado.salas_indisponiveis || []);
-                    setTerapeutasIndisponiveis(resultado.terapeutas_indisponiveis || []);
-                } catch (erro) {
-                    setSalasIndisponiveis([]);
-                    setTerapeutasIndisponiveis([]);
-                }
-            };
-            verificarDisponibilidade();
-        }
-    }, [formData.data, formData.hora]);
-
-    // Efeito para filtrar salas quando area_clinica_id muda (apenas carrega salas da área)
+    // When area changes: load terapeutas, reset downstream
     useEffect(() => {
         if (formData.area_clinica_id) {
-            const salasDisponiveis = salas.filter((sala) => {
-                // Filtrar por área clínica
-                if (sala.areas_clinicas && sala.areas_clinicas.length > 0) {
-                    return sala.areas_clinicas.some(
-                        (area) => area.id === parseInt(formData.area_clinica_id)
-                    );
-                }
-                return true;
-            });
-            setSalasFilterradas(salasDisponiveis);
-            setFormData((prev) => ({
-                ...prev,
-                sala_id: '',
-                terapeuta_id: user?.role === 'terapeuta' ? prev.terapeuta_id : '',
-            }));
-        } else {
-            setSalasFilterradas([]);
-        }
-    }, [formData.area_clinica_id, salas]);
-
-    // Efeito separado para remover salas indisponíveis (sem resetar seleção)
-    useEffect(() => {
-        if (formData.area_clinica_id && salasIndisponiveis.length > 0) {
-
-            const salasDisponiveis = salas.filter((sala) => {
-                // Filtrar por área clínica
-                if (sala.areas_clinicas && sala.areas_clinicas.length > 0) {
-                    const temArea = sala.areas_clinicas.some(
-                        (area) => area.id === parseInt(formData.area_clinica_id)
-                    );
-                    if (!temArea) {
-                        return false;
-                    }
-                }
-                // Filtrar salas que não têm consultas no horário
-                const salaId = typeof sala.id === 'string' ? parseInt(sala.id) : sala.id;
-                const indisponivel = salasIndisponiveis.some(id => {
-                    const indisponivelId = typeof id === 'string' ? parseInt(id) : id;
-                    const resultado = salaId === indisponivelId;
-                    return resultado;
-                });
-
-                if (indisponivel) {
-                    return false;
-                } else {
-                    return true;
-                }
-            });
-            setSalasFilterradas(salasDisponiveis);
-        }
-    }, [salasIndisponiveis, formData.area_clinica_id, salas]);
-
-    useEffect(() => {
-        if (formData.area_clinica_id) {
-            // Carregar terapeutas apenas da área selecionada (apenas professores)
-            const carregarTerapeutasArea = async () => {
-                try {
-                    const terapeutasArea = await getTerapeutasByArea(formData.area_clinica_id);
-                    // Filtrar terapeutas que não têm consultas no horário
-                    const terapeutasDisponiveis = terapeutasArea.filter((terapeuta) => {
-                        // Garantir que ambos são números para comparação
-                        const terapeutaId = typeof terapeuta.user_id === 'string' ? parseInt(terapeuta.user_id) : terapeuta.user_id;
-                        const indisponivel = terapeutasIndisponiveis.some(id => {
-                            const indisponivelId = typeof id === 'string' ? parseInt(id) : id;
-                            return terapeutaId === indisponivelId;
-                        });
-                        return !indisponivel;
-                    });
-                    setTerapeutasFiltrados(terapeutasDisponiveis);
-                } catch (erro) {
-                    setTerapeutasFiltrados([]);
-                }
-            };
-            carregarTerapeutasArea();
+            getTerapeutasByArea(formData.area_clinica_id)
+                .then(setTerapeutasFiltrados)
+                .catch(() => setTerapeutasFiltrados([]));
         } else {
             setTerapeutasFiltrados([]);
         }
-    }, [formData.area_clinica_id, terapeutasIndisponiveis]);
+        setFormData((prev) => ({
+            ...prev,
+            terapeuta_id: user?.role === 'terapeuta' ? String(user.id) : '',
+            sala_id: '',
+        }));
+        setSelectedSlot('');
+        setSlotsDisponiveis([]);
+        setSalasDisponiveis([]);
+    }, [formData.area_clinica_id]);
+
+    // When terapeuta or data changes: reset slot and sala
+    useEffect(() => {
+        setSelectedSlot('');
+        setSlotsDisponiveis([]);
+        setSalasDisponiveis([]);
+        setFormData((prev) => ({ ...prev, sala_id: '' }));
+    }, [formData.terapeuta_id, formData.data]);
+
+    // Load available slots when terapeuta + data + area are all set
+    useEffect(() => {
+        if (!formData.terapeuta_id || !formData.data || !formData.area_clinica_id) {
+            setSlotsDisponiveis([]);
+            return;
+        }
+        const fetchSlots = async () => {
+            setLoadingSlots(true);
+            try {
+                const result = await getHorariosDisponiveis(
+                    formData.terapeuta_id,
+                    formData.data,
+                    60,
+                    { areaClinicaId: formData.area_clinica_id }
+                );
+                setSlotsDisponiveis(result?.horarios_disponiveis || []);
+            } catch {
+                setSlotsDisponiveis([]);
+            } finally {
+                setLoadingSlots(false);
+            }
+        };
+        fetchSlots();
+    }, [formData.terapeuta_id, formData.data, formData.area_clinica_id]);
+
+    const handleSlotSelect = async (slot) => {
+        setSelectedSlot(slot);
+        setFormData((prev) => ({ ...prev, sala_id: '' }));
+
+        const [horaStr, minStr] = slot.split(':');
+        const horaFim = (parseInt(horaStr) + 1) % 24;
+        const dataInicio = `${formData.data} ${slot}:00`;
+        const dataFim = `${formData.data} ${String(horaFim).padStart(2, '0')}:${minStr}:00`;
+
+        try {
+            const resultado = await checkDisponibilidade(dataInicio, dataFim);
+            const indisponiveis = resultado.salas_indisponiveis || [];
+            const salasArea = salas.filter((sala) => {
+                const temArea = sala.areas_clinicas?.some(
+                    (a) => a.id === parseInt(formData.area_clinica_id)
+                );
+                if (!temArea) return false;
+                return !indisponiveis.some((id) => parseInt(id) === sala.id);
+            });
+            setSalasDisponiveis(salasArea);
+        } catch {
+            const salasArea = salas.filter((sala) =>
+                sala.areas_clinicas?.some((a) => a.id === parseInt(formData.area_clinica_id))
+            );
+            setSalasDisponiveis(salasArea);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Se é utente, usar o seu ID
         const utenteId = user?.role === 'utente' ? user?.id : formData.utente_id;
 
-        if (!formData.data || !formData.hora || !formData.area_clinica_id || !formData.sala_id || !formData.terapeuta_id || !utenteId) {
+        if (!formData.data || !selectedSlot || !formData.area_clinica_id || !formData.sala_id || !formData.terapeuta_id || !utenteId) {
             alert('Preenche todos os campos obrigatórios');
             return;
         }
 
-        if (new Date(`${formData.data}T${formData.hora}:00`) <= new Date()) {
+        if (new Date(`${formData.data}T${selectedSlot}:00`) <= new Date()) {
             alert('Não é possível marcar consultas no passado. Escolhe uma data e hora futuras.');
             return;
         }
 
-        // Converter formato de data e hora para o esperado pelo backend
-        // Backend espera: "2024-12-01 09:00:00" (com espaço, não T)
-        const dataInicio = `${formData.data} ${formData.hora}:00`;
-
-        // Calcular data_fim (1 hora depois do inicio)
-        const [horaStr, minStr] = formData.hora.split(':');
-        let horaFim = parseInt(horaStr);
-        let minFim = parseInt(minStr);
-        horaFim += 1; // Adiciona 1 hora
-        if (horaFim > 23) horaFim = 0;
-        const dataFim = `${formData.data} ${String(horaFim).padStart(2, '0')}:${String(minFim).padStart(2, '0')}:00`;
+        const dataInicio = `${formData.data} ${selectedSlot}:00`;
+        const [horaStr, minStr] = selectedSlot.split(':');
+        const horaFim = (parseInt(horaStr) + 1) % 24;
+        const dataFim = `${formData.data} ${String(horaFim).padStart(2, '0')}:${minStr}:00`;
 
         onSubmit({
             ...formData,
+            hora: selectedSlot,
             utente_id: utenteId,
             data_inicio: dataInicio,
             data_fim: dataFim,
@@ -218,13 +180,15 @@ export function ModalAgendarConsultaV2({
 
         setFormData({
             data: '',
-            hora: '09:00',
             tipo: 'consulta_geral',
             area_clinica_id: '',
             sala_id: '',
             terapeuta_id: user?.role === 'terapeuta' ? String(user.id) : '',
             utente_id: '',
         });
+        setSelectedSlot('');
+        setSlotsDisponiveis([]);
+        setSalasDisponiveis([]);
     };
 
     if (!isOpen) return null;
@@ -238,64 +202,6 @@ export function ModalAgendarConsultaV2({
                 </div>
 
                 <form onSubmit={handleSubmit} className="modal-form">
-                    <div className="form-group">
-                        <label htmlFor="data">Data *</label>
-                        <input
-                            type="date"
-                            id="data"
-                            name="data"
-                            value={formData.data}
-                            onChange={handleChange}
-                            required
-                            min={new Date().toISOString().split('T')[0]}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="hora">Hora *</label>
-                        <input
-                            type="time"
-                            id="hora"
-                            name="hora"
-                            value={formData.hora}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    {(user?.role === 'administrativo' || user?.role === 'terapeuta') && (
-                        <div className="form-group">
-                            <label htmlFor="utente_id">Utente/Paciente *</label>
-                            <select
-                                id="utente_id"
-                                name="utente_id"
-                                value={formData.utente_id}
-                                onChange={handleChange}
-                                required
-                            >
-                                <option value="">Seleciona um utente</option>
-                                {utentes.map((utente) => (
-                                    <option key={utente.id} value={utente.id}>
-                                        {utente.nome}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}                    <div className="form-group">
-                        <label htmlFor="tipo">Tipo de Consulta</label>
-                        <select
-                            id="tipo"
-                            name="tipo"
-                            value={formData.tipo}
-                            onChange={handleChange}
-                        >
-                            <option value="consulta_geral">Consulta Geral</option>
-                            <option value="consulta_especializada">Consulta Especializada</option>
-                            <option value="seguimento">Seguimento</option>
-                            <option value="avaliacao">Avaliação</option>
-                        </select>
-                    </div>
-
                     <div className="form-group">
                         <label htmlFor="area_clinica_id">Área Clínica *</label>
                         <select
@@ -336,23 +242,102 @@ export function ModalAgendarConsultaV2({
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="sala_id">Sala *</label>
-                        <select
-                            id="sala_id"
-                            name="sala_id"
-                            value={formData.sala_id}
+                        <label htmlFor="data">Data *</label>
+                        <DateInput
+                            id="data"
+                            name="data"
+                            value={formData.data}
                             onChange={handleChange}
                             required
-                            disabled={!formData.area_clinica_id}
+                            disabled={!formData.terapeuta_id}
+                            min={new Date().toISOString().split('T')[0]}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Horário *</label>
+                        {!formData.terapeuta_id || !formData.data ? (
+                            <p className="helper-text" style={{ margin: 0 }}>
+                                Seleciona terapeuta e data para ver os horários disponíveis.
+                            </p>
+                        ) : loadingSlots ? (
+                            <p className="helper-text" style={{ margin: 0 }}>A carregar horários...</p>
+                        ) : slotsDisponiveis.length === 0 ? (
+                            <p className="helper-text" style={{ margin: 0 }}>Sem horários disponíveis para esta data.</p>
+                        ) : (
+                            <div className="slots-grid">
+                                {slotsDisponiveis.map((slot) => (
+                                    <button
+                                        key={slot}
+                                        type="button"
+                                        className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
+                                        onClick={() => handleSlotSelect(slot)}
+                                    >
+                                        {slot}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {selectedSlot && (
+                        <div className="form-group">
+                            <label htmlFor="sala_id">Sala *</label>
+                            {salasDisponiveis.length === 0 ? (
+                                <p className="helper-text" style={{ margin: 0 }}>
+                                    Sem salas disponíveis para este horário.
+                                </p>
+                            ) : (
+                                <select
+                                    id="sala_id"
+                                    name="sala_id"
+                                    value={formData.sala_id}
+                                    onChange={handleChange}
+                                    required
+                                >
+                                    <option value="">Seleciona uma sala</option>
+                                    {salasDisponiveis.map((sala) => (
+                                        <option key={sala.id} value={sala.id}>
+                                            {sala.nome}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                        </div>
+                    )}
+
+                    {(user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && (
+                        <div className="form-group">
+                            <label htmlFor="utente_id">Utente/Paciente *</label>
+                            <select
+                                id="utente_id"
+                                name="utente_id"
+                                value={formData.utente_id}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="">Seleciona um utente</option>
+                                {utentes.map((utente) => (
+                                    <option key={utente.id} value={utente.id}>
+                                        {utente.nome}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
+                    <div className="form-group">
+                        <label htmlFor="tipo">Tipo de Consulta</label>
+                        <select
+                            id="tipo"
+                            name="tipo"
+                            value={formData.tipo}
+                            onChange={handleChange}
                         >
-                            <option value="">
-                                {formData.area_clinica_id ? 'Seleciona uma sala' : 'Seleciona primeiro uma área clínica'}
-                            </option>
-                            {salasFilterradas.map((sala) => (
-                                <option key={sala.id} value={sala.id}>
-                                    {sala.nome}
-                                </option>
-                            ))}
+                            <option value="consulta_geral">Consulta Geral</option>
+                            <option value="consulta_especializada">Consulta Especializada</option>
+                            <option value="seguimento">Seguimento</option>
+                            <option value="avaliacao">Avaliação</option>
                         </select>
                     </div>
 

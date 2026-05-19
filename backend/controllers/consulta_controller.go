@@ -71,7 +71,10 @@ func parseDateTime(value string) (time.Time, error) {
 	for _, layout := range layouts {
 		parsed, err := time.ParseInLocation(layout, value, time.Local)
 		if err == nil {
-			return parsed, nil
+			// Discard timezone: preserve wall-clock hour as UTC so pgx stores the
+			// literal value ("16:00") regardless of DST offset. DST-safe.
+			return time.Date(parsed.Year(), parsed.Month(), parsed.Day(),
+				parsed.Hour(), parsed.Minute(), parsed.Second(), 0, time.UTC), nil
 		}
 	}
 
@@ -92,7 +95,7 @@ func parseHourMinuteOnDate(baseDate time.Time, hhmm string) (time.Time, error) {
 		parsed.Minute(),
 		0,
 		0,
-		time.Local,
+		time.UTC,
 	), nil
 }
 
@@ -245,8 +248,8 @@ func GetConsultaByID(c *gin.Context) {
 		TerapeutaID:     consulta.TerapeutaID,
 		SalaID:          consulta.SalaID,
 		AreaClinicaID:   consulta.AreaClinicaID,
-		DataInicio:      consulta.DataInicio.Format("2006-01-02 15:04:05"),
-		DataFim:         consulta.DataFim.Format("2006-01-02 15:04:05"),
+		DataInicio:      consulta.DataInicio.Format("2006-01-02T15:04:05"),
+		DataFim:         consulta.DataFim.Format("2006-01-02T15:04:05"),
 		Estado:          consulta.Estado,
 		CreatedBy:       consulta.CreatedBy,
 		UtenteNome:      consulta.Utente.Nome,
@@ -984,8 +987,8 @@ func UpdateEstadoConsulta(c *gin.Context) {
 		"novo_estado":  consulta.Estado,
 		"utente_id":    consulta.UtenteID,
 		"terapeuta_id": consulta.TerapeutaID,
-		"data_inicio":  consulta.DataInicio.Format("2006-01-02 15:04:05"),
-		"data_fim":     consulta.DataFim.Format("2006-01-02 15:04:05"),
+		"data_inicio":  consulta.DataInicio.Format("2006-01-02T15:04:05"),
+		"data_fim":     consulta.DataFim.Format("2006-01-02T15:04:05"),
 	})
 }
 
@@ -1098,7 +1101,7 @@ func UploadPdfConsulta(c *gin.Context) {
 		"consulta_id":  consultaID,
 		"arquivo_url":  documento.ArquivoURL,
 		"nome_arquivo": documento.NomeArquivo,
-		"created_at":   documento.CreatedAt.Format("2006-01-02 15:04:05"),
+		"created_at":   documento.CreatedAt.Format("2006-01-02T15:04:05"),
 	})
 }
 

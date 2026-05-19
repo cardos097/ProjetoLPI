@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, PlusLg } from 'react-bootstrap-icons';
+import { DateInput } from './DateInput.jsx';
 import { createUtente } from '../services/utentes.jsx';
 import '../styles/gerir-alunos.css';
 
@@ -139,8 +140,7 @@ export function CriarUtenteModal({ isOpen, onClose, onSuccess }) {
               <div className="form-row">
                 <div className="form-group">
                   <label>Data de Nascimento *</label>
-                  <input
-                    type="date"
+                  <DateInput
                     name="data_nascimento"
                     value={form.data_nascimento}
                     onChange={handleChange}

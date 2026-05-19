@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { DateInput } from '../components/DateInput.jsx';
 import {
     CalendarDate, People, Hospital, Mortarboard, Gear, PlusLg, Book,
     BarChart, Person, PersonFill, ClipboardData, ExclamationCircle,
@@ -256,7 +257,7 @@ export function DashboardStaff() {
                                     </div>
                                     <div className="form-group">
                                         <label>Data</label>
-                                        <input type="date" value={assForm.data} onChange={e => setAssForm(f => ({ ...f, data: e.target.value }))} required />
+                                        <DateInput name="data" value={assForm.data} onChange={e => setAssForm(f => ({ ...f, data: e.target.value }))} required />
                                     </div>
                                     <div className="form-group">
                                         <label>Estado</label>
@@ -284,7 +285,7 @@ export function DashboardStaff() {
                                 <option value="">Todos os utentes</option>
                                 {assUtentes.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
                             </select>
-                            <input type="date" value={assFilter.data} onChange={e => setAssFilter(f => ({ ...f, data: e.target.value }))} />
+                            <DateInput name="data" value={assFilter.data} onChange={e => setAssFilter(f => ({ ...f, data: e.target.value }))} />
                             <button className="btn-secondary" onClick={handleAssFilter}>Filtrar</button>
                         </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { DateInput } from '../components/DateInput.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { claimUtenteAccount } from '../services/auth.jsx';
 import { Eye, EyeSlash } from 'react-bootstrap-icons';
@@ -93,8 +94,7 @@ export function AtivarContaPage() {
 
               <div className="form-group">
                 <label>Data de nascimento</label>
-                <input
-                  type="date"
+                <DateInput
                   name="data_nascimento"
                   value={form.data_nascimento}
                   onChange={handleChange}

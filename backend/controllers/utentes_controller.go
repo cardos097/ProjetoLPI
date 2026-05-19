@@ -271,8 +271,8 @@ func GetConsultasByUtenteID(c *gin.Context) {
 			SalaNome:      consulta.Sala.Nome,
 			AreaClinica:   consulta.AreaClinica.Nome,
 			Estado:        consulta.Estado,
-			DataInicio:    consulta.DataInicio.Format("2006-01-02 15:04:05"),
-			DataFim:       consulta.DataFim.Format("2006-01-02 15:04:05"),
+			DataInicio:    consulta.DataInicio.Format("2006-01-02T15:04:05"),
+			DataFim:       consulta.DataFim.Format("2006-01-02T15:04:05"),
 		})
 	}
 
@@ -344,7 +344,7 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 			AreaClinica: r.AreaClinica.Nome,
 			Conteudo:    r.Conteudo,
 			CriadoPor:   r.CriadoPor.Nome,
-			DataCriacao: r.CreatedAt.Format("2006-01-02 15:04:05"),
+			DataCriacao: r.CreatedAt.Format("2006-01-02T15:04:05"),
 		})
 	}
 
@@ -356,7 +356,7 @@ func GetRegistosClinicosByUtenteID(c *gin.Context) {
 			NomeArquivo: d.NomeArquivo,
 			ArquivoURL:  d.ArquivoURL,
 			CriadoPor:   d.UserUpload.Nome,
-			DataCriacao: d.CreatedAt.Format("2006-01-02 15:04:05"),
+			DataCriacao: d.CreatedAt.Format("2006-01-02T15:04:05"),
 		})
 	}
 

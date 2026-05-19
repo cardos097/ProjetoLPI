@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { DateInput } from '../components/DateInput.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { HourglassSplit, FileText as FileTextIcon } from 'react-bootstrap-icons';
 import {
@@ -432,8 +433,7 @@ export function EditarConsulta() {
           <div className="form-row">
             <div className="form-group">
               <label>Data Início</label>
-              <input
-                type="date"
+              <DateInput
                 name="data_inicio"
                 value={form.data_inicio}
                 onChange={handleChange}
@@ -458,8 +458,7 @@ export function EditarConsulta() {
           <div className="form-row">
             <div className="form-group">
               <label>Data Fim</label>
-              <input
-                type="date"
+              <DateInput
                 name="data_fim"
                 value={form.data_fim}
                 onChange={handleChange}

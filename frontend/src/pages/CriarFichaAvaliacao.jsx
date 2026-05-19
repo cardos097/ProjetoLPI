@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { DateInput } from '../components/DateInput.jsx';
 import { getUtenteDetails } from '../services/utentes.jsx';
 import { createFichaAvaliacao, getFichasAvaliacao } from '../services/fichas.jsx';
 import { getConsultaById } from '../services/consultas.jsx';
@@ -283,7 +284,7 @@ export function CriarFichaAvaliacao() {
           <div className="form-row">
             <div className="form-group">
               <label>Data de nascimento</label>
-              <input type="date" name="data_nascimento" value={form.data_nascimento} onChange={handleChange} disabled={isFieldLocked('data_nascimento')} title={isFieldLocked('data_nascimento') ? 'Campo bloqueado por dados da consulta/utente' : ''} />
+              <DateInput name="data_nascimento" value={form.data_nascimento} onChange={handleChange} disabled={isFieldLocked('data_nascimento')} title={isFieldLocked('data_nascimento') ? 'Campo bloqueado por dados da consulta/utente' : ''} />
             </div>
             <div className="form-group">
               <label>Sexo</label>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DateInput } from '../components/DateInput.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   createConsulta,
@@ -8,6 +9,7 @@ import {
   getTerapeutas,
   getSalas,
   getAreasClinicas,
+  checkDisponibilidade,
 } from '../services/consultas.jsx';
 
 export function AgendarConsulta() {
@@ -23,6 +25,7 @@ export function AgendarConsulta() {
   const [terapeutasFiltrados, setTerapeutasFiltrados] = useState([]);
   const [salas, setSalas] = useState([]);
   const [salasFiltradas, setSalasFiltradas] = useState([]);
+  const [salasParaSlot, setSalasParaSlot] = useState([]);
   const [areasClinicas, setAreasClinicas] = useState([]);
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
   const [loadingHorarios, setLoadingHorarios] = useState(false);
@@ -58,15 +61,12 @@ export function AgendarConsulta() {
     return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
   };
 
-  // Verificar permissões - apenas utentes e administrativos podem marcar consultas
   useEffect(() => {
     if (user && user.role === 'terapeuta') {
-      // Terapeutas não podem marcar consultas, redirecionar para calendário
       navigate('/calendario', { replace: true });
     }
   }, [user, navigate]);
 
-  // Carregar dados iniciais
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -87,7 +87,7 @@ export function AgendarConsulta() {
         setTerapeutas(t || []);
         setSalas(s || []);
         setAreasClinicas(a || []);
-      } catch (err) {
+      } catch {
         setError('Erro ao carregar dados');
       } finally {
         setLoading(false);
@@ -97,7 +97,7 @@ export function AgendarConsulta() {
     fetchData();
   }, [isUtente, user?.email, user?.id, user?.name]);
 
-  // Filtrar terapeutas e salas quando área clínica muda
+  // Filter terapeutas and salas when area changes
   useEffect(() => {
     if (form.area_clinica_id) {
       const terapeutasArea = terapeutas.filter((t) =>
@@ -120,38 +120,42 @@ export function AgendarConsulta() {
         return {
           ...prev,
           terapeuta_id: terapeutaValido ? prev.terapeuta_id : '',
-          sala_id: isUtente ? '' : prev.sala_id,
+          sala_id: '',
           hora_inicio: '',
         };
       });
+      setSalasParaSlot([]);
     } else {
       setTerapeutasFiltrados([]);
       setSalasFiltradas([]);
       setHorariosDisponiveis([]);
+      setSalasParaSlot([]);
     }
-  }, [form.area_clinica_id, isUtente, salas, terapeutas]);
+  }, [form.area_clinica_id, salas, terapeutas]);
 
-  // Carregar horários disponíveis do terapeuta selecionado
+  // Load available slots when terapeuta + date + area are set (no sala required)
   useEffect(() => {
     const fetchHorarios = async () => {
-      if (!form.terapeuta_id || !form.data_inicio || !form.area_clinica_id || (!isUtente && !form.sala_id)) {
+      if (!form.terapeuta_id || !form.data_inicio || !form.area_clinica_id) {
         setHorariosDisponiveis([]);
         return;
       }
 
       try {
         setLoadingHorarios(true);
-        const result = await getHorariosDisponiveis(form.terapeuta_id, form.data_inicio, form.duracao, {
-          areaClinicaId: form.area_clinica_id,
-          salaId: isUtente ? undefined : form.sala_id,
-        });
+        const result = await getHorariosDisponiveis(
+          form.terapeuta_id,
+          form.data_inicio,
+          form.duracao,
+          { areaClinicaId: form.area_clinica_id }
+        );
         const horarios = result?.horarios_disponiveis || [];
         setHorariosDisponiveis(horarios);
 
         if (!horarios.includes(form.hora_inicio)) {
           setForm((prev) => ({ ...prev, hora_inicio: '' }));
         }
-      } catch (err) {
+      } catch {
         setHorariosDisponiveis([]);
       } finally {
         setLoadingHorarios(false);
@@ -159,12 +163,39 @@ export function AgendarConsulta() {
     };
 
     fetchHorarios();
-  }, [form.terapeuta_id, form.data_inicio, form.duracao, form.area_clinica_id, form.sala_id, isUtente]);
+  }, [form.terapeuta_id, form.data_inicio, form.duracao, form.area_clinica_id]);
+
+  // When slot is selected, load available salas for that slot (non-utente only)
+  useEffect(() => {
+    if (!form.hora_inicio || !form.data_inicio || isUtente) {
+      if (!isUtente) setSalasParaSlot([]);
+      return;
+    }
+
+    const [year, month, day] = form.data_inicio.split('-');
+    const [hour, minute] = form.hora_inicio.split(':');
+    const dataInicio = new Date(year, month - 1, day, parseInt(hour), parseInt(minute));
+    const dataFim = new Date(dataInicio.getTime() + parseInt(form.duracao) * 60000);
+
+    setForm((prev) => ({ ...prev, sala_id: '' }));
+
+    checkDisponibilidade(formatLocalDateTime(dataInicio), formatLocalDateTime(dataFim))
+      .then((resultado) => {
+        const indisponiveis = resultado.salas_indisponiveis || [];
+        const available = salasFiltradas.filter(
+          (sala) => !indisponiveis.some((id) => parseInt(id) === sala.id)
+        );
+        setSalasParaSlot(available);
+      })
+      .catch(() => {
+        setSalasParaSlot(salasFiltradas);
+      });
+  }, [form.hora_inicio, form.data_inicio, form.duracao, isUtente]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
-      if (name === 'data_inicio' || name === 'terapeuta_id' || name === 'duracao' || name === 'sala_id') {
+      if (name === 'data_inicio' || name === 'terapeuta_id' || name === 'duracao') {
         return { ...prev, [name]: value, hora_inicio: '' };
       }
       return { ...prev, [name]: value };
@@ -195,7 +226,6 @@ export function AgendarConsulta() {
     setSaving(true);
 
     try {
-      // Calcular data_fim baseado na duração
       const [year, month, day] = form.data_inicio.split('-');
       const [hour, minute] = form.hora_inicio.split(':');
 
@@ -277,23 +307,24 @@ export function AgendarConsulta() {
               <h2>2. Definir Consulta</h2>
 
               <div className="form-row">
-                <div className="form-group">
-                  <label>Utente *</label>
-                  <select
-                    name="utente_id"
-                    value={form.utente_id}
-                    onChange={handleChange}
-                    required
-                    disabled={isUtente}
-                  >
-                    <option value="">Selecionar utente...</option>
-                    {utentes.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.nome}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!isUtente && (
+                  <div className="form-group">
+                    <label>Utente *</label>
+                    <select
+                      name="utente_id"
+                      value={form.utente_id}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Selecionar utente...</option>
+                      {utentes.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>Terapeuta *</label>
@@ -311,34 +342,6 @@ export function AgendarConsulta() {
                     ))}
                   </select>
                 </div>
-              </div>
-
-              <div className="form-row">
-                {!isUtente && (
-                  <div className="form-group">
-                    <label>Sala *</label>
-                    <select
-                      name="sala_id"
-                      value={form.sala_id}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Selecionar sala...</option>
-                      {salasFiltradas.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.nome}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {isUtente && (
-                  <div className="form-group">
-                    <label>Sala</label>
-                    <input value="Atribuída automaticamente conforme disponibilidade" disabled />
-                  </div>
-                )}
 
                 <div className="form-group">
                   <label>Duração (minutos) *</label>
@@ -361,8 +364,7 @@ export function AgendarConsulta() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Data *</label>
-                  <input
-                    type="date"
+                  <DateInput
                     name="data_inicio"
                     value={form.data_inicio}
                     onChange={handleChange}
@@ -373,11 +375,9 @@ export function AgendarConsulta() {
 
               <div className="form-group full-width">
                 <label>Horários disponíveis do terapeuta *</label>
-                {!form.terapeuta_id || !form.data_inicio || !form.area_clinica_id || (!isUtente && !form.sala_id) ? (
+                {!form.terapeuta_id || !form.data_inicio ? (
                   <p className="helper-text">
-                    {isUtente
-                      ? 'Seleciona terapeuta e data para veres os horários disponíveis.'
-                      : 'Seleciona terapeuta, sala e data para veres os horários disponíveis.'}
+                    Seleciona terapeuta e data para veres os horários disponíveis.
                   </p>
                 ) : loadingHorarios ? (
                   <p className="helper-text">A carregar horários...</p>
@@ -399,6 +399,39 @@ export function AgendarConsulta() {
                 )}
               </div>
 
+              {form.hora_inicio && !isUtente && (
+                <>
+                  <h2>4. Sala</h2>
+                  {salasParaSlot.length === 0 ? (
+                    <p className="helper-text">Sem salas disponíveis para este horário.</p>
+                  ) : (
+                    <div className="form-group">
+                      <label>Sala *</label>
+                      <select
+                        name="sala_id"
+                        value={form.sala_id}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Selecionar sala...</option>
+                        {salasParaSlot.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {form.hora_inicio && isUtente && (
+                <div className="form-group">
+                  <label>Sala</label>
+                  <input value="Atribuída automaticamente conforme disponibilidade" disabled />
+                </div>
+              )}
+
               <div className="form-actions">
                 <button
                   type="button"
@@ -411,7 +444,7 @@ export function AgendarConsulta() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={saving || !form.hora_inicio}
+                  disabled={saving || !form.hora_inicio || (!isUtente && !form.sala_id)}
                 >
                   {saving ? 'A agendar...' : 'Agendar Consulta'}
                 </button>

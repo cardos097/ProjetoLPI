@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { DateInput } from '../components/DateInput.jsx';
 import {
   Person as User,
   Envelope as Mail,
@@ -571,7 +572,7 @@ export function UserPage() {
                         </div>
                         <div className="form-group">
                           <label htmlFor="data_nascimento">Data de Nascimento</label>
-                          <input id="data_nascimento" type="date" value={editData?.data_nascimento || ''} onChange={(e) => handleInputChange('data_nascimento', e.target.value)} className="form-input" />
+                          <DateInput id="data_nascimento" name="data_nascimento" value={editData?.data_nascimento || ''} onChange={(e) => handleInputChange('data_nascimento', e.target.value)} className="form-input" />
                         </div>
                         <div className="form-group edit-grid-full">
                           <label htmlFor="morada">Morada</label>

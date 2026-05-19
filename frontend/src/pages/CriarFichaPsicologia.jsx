@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { DateInput } from '../components/DateInput.jsx';
 import { getUtenteDetails } from '../services/utentes.jsx';
 import { createFichaPsicologia, getFichasPsicologia } from '../services/fichas.jsx';
 import { getConsultaById } from '../services/consultas.jsx';
@@ -10,7 +11,7 @@ const emptyForm = {
   nome_completo: '',
   numero_processo: '',
   data_nascimento: '',
-  
+
   // Section I: Identification
   data_contacto: '',
   local_contacto: '',
@@ -20,14 +21,14 @@ const emptyForm = {
   origem_contacto: '',
   entidade_referencia: '',
   enquadramento: '',
-  
+
   // Section II: Reason for seeking help
   motivo_descricao: '',
   inicio_problema: '',
   duracao_evolucao: '',
   eventos_precipitantes: '',
   impacto_funcionamento: '',
-  
+
   // Section III: Community and relational context
   contexto_elementos: '',
   contexto_descricao: '',
@@ -43,34 +44,34 @@ const emptyForm = {
   funcionamento_social: '',
   funcionamento_profissional: '',
   rede_suporte: '',
-  
+
   // Section IV: Expectations
   expectativas_servico: '',
   representacoes_psicologo: '',
-  
+
   // Section V: Risk
   risco_indicadores: '',
   risco_descricao: '',
   risco_acao_adotada: '',
   risco_fundamentacao: '',
-  
+
   // Section VI: Information
   info_esclarecida: '',
   info_observacoes: '',
-  
+
   // Section VII: Decision
   decisao_tecnica: '',
   decisao_justificacao: '',
-  
+
   // Section VIII: Inter-institutional
   articulacao_entidades: '',
   articulacao_consentimento: '',
   articulacao_notas: '',
-  
+
   // Section IX: Impression
   impressao_descritiva: '',
   dimensoes_aprofundar: '',
-  
+
   // Section X: Supervision
   supervisao_discutido: false,
   supervisao_data: '',
@@ -313,7 +314,7 @@ export function CriarFichaPsicologia() {
           <div className="form-row">
             <div className="form-group">
               <label>Data de nascimento</label>
-              <input type="date" name="data_nascimento" value={form.data_nascimento} onChange={handleChange} disabled={isFieldLocked('data_nascimento')} />
+              <DateInput name="data_nascimento" value={form.data_nascimento} onChange={handleChange} disabled={isFieldLocked('data_nascimento')} />
             </div>
           </div>
 
@@ -351,7 +352,7 @@ export function CriarFichaPsicologia() {
                 <div className="form-row">
                   <div className="form-group">
                     <label>Data de contacto</label>
-                    <input type="date" name="data_contacto" value={form.data_contacto} onChange={handleChange} />
+                    <DateInput name="data_contacto" value={form.data_contacto} onChange={handleChange} />
                   </div>
                   <div className="form-group">
                     <label>Local do contacto</label>
@@ -521,7 +522,7 @@ export function CriarFichaPsicologia() {
                 <h3>V. Avaliação Proporcional de Risco e Vulnerabilidade</h3>
                 <div className="form-group">
                   <label>Indicadores de risco identificados</label>
-                  <textarea name="risco_indicadores" value={form.risco_indicadores} onChange={handleChange} rows="4" placeholder="Ex: Risco para си própria pessoa, Risco para terceiros, Violência..." />
+                  <textarea name="risco_indicadores" value={form.risco_indicadores} onChange={handleChange} rows="4" placeholder="Ex: Risco para a própria pessoa, Risco para terceiros, Violência..." />
                 </div>
                 <div className="form-group">
                   <label>Descrição factual</label>
@@ -619,7 +620,7 @@ export function CriarFichaPsicologia() {
                 </div>
                 <div className="form-group">
                   <label>Data de supervisão</label>
-                  <input type="date" name="supervisao_data" value={form.supervisao_data} onChange={handleChange} />
+                  <DateInput name="supervisao_data" value={form.supervisao_data} onChange={handleChange} />
                 </div>
                 <div className="form-group">
                   <label>Síntese da orientação recebida</label>
