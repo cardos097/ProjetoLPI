@@ -243,8 +243,15 @@ func UpdateFichaTerapiaFala(c *gin.Context) {
 func DeleteFichaTerapiaFala(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := config.DB.Delete(&models.FichaTerapiaFala{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// Eliminar a ficha diretamente por ID
+	result := config.DB.Where("id = ?", id).Delete(&models.FichaTerapiaFala{})
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao eliminar ficha: " + result.Error.Error()})
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Ficha não encontrada"})
 		return
 	}
 

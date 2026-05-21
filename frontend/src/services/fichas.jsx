@@ -29,6 +29,16 @@ export async function createFichaAvaliacao(ficha) {
   return data;
 }
 
+export async function updateFichaAvaliacao(fichaId, ficha) {
+  const { data } = await api.patch(`/fichas-avaliacao/${fichaId}`, ficha);
+  return data;
+}
+
+export async function deleteFichaAvaliacao(fichaId) {
+  const { data } = await api.delete(`/fichas-avaliacao/${fichaId}`);
+  return data;
+}
+
 export async function getFichasPsicologia(utenteId) {
   const { data } = await api.get('/fichas-psicologia', {
     params: utenteId ? { utente_id: utenteId } : undefined,

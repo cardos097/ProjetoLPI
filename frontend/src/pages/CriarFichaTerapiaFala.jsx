@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { DateInput } from '../components/DateInput.jsx';
+import { Trash } from 'react-bootstrap-icons';
 import { getUtenteDetails } from '../services/utentes.jsx';
-import { createFichaTerapiaFala, getFichasTerapiaFala } from '../services/fichas.jsx';
+import { createFichaTerapiaFala, getFichasTerapiaFala, deleteFichaTerapiaFala } from '../services/fichas.jsx';
 import { getConsultaById } from '../services/consultas.jsx';
 import { getAlunosDoProfessor } from '../services/terapeutas.jsx';
 
@@ -55,8 +56,10 @@ export function CriarFichaTerapiaFala() {
 
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
     const pascalKey = camelKey.charAt(0).toUpperCase() + camelKey.slice(1);
+    // Para chaves como 'id', também tenta 'ID'
+    const upperKey = key.toUpperCase();
 
-    return data[key] ?? data[camelKey] ?? data[pascalKey];
+    return data[key] ?? data[camelKey] ?? data[pascalKey] ?? data[upperKey];
   };
 
   const getUtenteValue = (data, key) => getValueByKey(data, key);
@@ -206,6 +209,23 @@ export function CriarFichaTerapiaFala() {
     }
   };
 
+  const handleDeleteFicha = async (fichaId, diagnostico) => {
+    if (!window.confirm(`Tem a certeza que deseja apagar esta ficha? (${diagnostico || 'Sem diagnóstico'}) Esta ação não pode ser revertida.`)) {
+      return;
+    }
+
+    try {
+      await deleteFichaTerapiaFala(fichaId);
+      setFichas(fichas.filter(f => getFichaValue(f, 'id') !== fichaId));
+      setSelectedFicha(null);
+      setSuccess('Ficha eliminada com sucesso');
+    } catch (err) {
+      const errorMsg = err?.response?.data?.error || err?.message || 'Erro ao eliminar ficha';
+      setError(errorMsg);
+      console.error('Erro ao eliminar ficha:', err);
+    }
+  };
+
   if (loading) {
     return <div className="page">A carregar formulário...</div>;
   }
@@ -258,13 +278,22 @@ export function CriarFichaTerapiaFala() {
                   <strong>Avaliação de Terapia da Fala</strong>
                   <div>{getFichaValue(ficha, 'diagnostico_terapia_fala') || 'Sem diagnóstico registado'}</div>
                   <small>Criado em {formatFichaDate(ficha)}</small>
-                  <div style={{ marginTop: '0.5rem' }}>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                     <button
                       type="button"
                       className="btn btn-secondary"
                       onClick={() => setSelectedFicha(ficha)}
                     >
                       Ver detalhes
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => handleDeleteFicha(getFichaValue(ficha, 'id'), getFichaValue(ficha, 'diagnostico_terapia_fala'))}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                      title="Apagar ficha"
+                    >
+                      <Trash size={16} /> Apagar
                     </button>
                   </div>
                 </div>

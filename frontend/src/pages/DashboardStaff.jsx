@@ -5,7 +5,7 @@ import {
     CalendarDate, People, Hospital, Mortarboard, Gear, PlusLg, Book,
     BarChart, Person, PersonFill, ClipboardData, ExclamationCircle,
     CheckCircle, XCircle, ClockHistory, FileText, Eye, ToggleOn, ToggleOff,
-    Download,
+    Download, Trash,
 } from 'react-bootstrap-icons';
 import { ListaUtentes } from './ListaUtentes.jsx';
 import { ListaConsultas } from './ListaConsultas.jsx';
@@ -18,7 +18,7 @@ import {
     getAdminStats, getStaffUsers, toggleUserActive, createStaffUser,
     getAssiduidade, createAssiduidade, getDocumentos, downloadDocumento,
 } from '../services/admin.jsx';
-import { getFichasAvaliacao, getFichaAvaliacaoById } from '../services/fichas.jsx';
+import { getFichasAvaliacao, getFichaAvaliacaoById, deleteFichaAvaliacao } from '../services/fichas.jsx';
 import '../styles/dashboard.css';
 
 const ESTADO_LABEL = { P: 'Presente', A: 'Ausente', FJ: 'Falta Justificada', FI: 'Falta Injustificada' };
@@ -170,6 +170,22 @@ export function DashboardStaff() {
             const detalhe = await getFichaAvaliacaoById(id);
             setFichaDetalhe(detalhe);
         } catch { }
+    };
+
+    const handleDeleteFicha = async (id, nome) => {
+        if (!window.confirm(`Tem a certeza que deseja apagar a ficha de avaliação de ${nome}? Esta ação não pode ser revertida.`)) {
+            return;
+        }
+
+        try {
+            await deleteFichaAvaliacao(id);
+            setFichasAvaliacao(fichasAvaliacao.filter(f => f.ID !== id));
+            alert('Ficha de avaliação eliminada com sucesso');
+        } catch (err) {
+            const errorMsg = err?.response?.data?.error || err?.message || 'Erro ao eliminar ficha de avaliação';
+            alert(errorMsg);
+            console.error('Erro ao eliminar ficha:', err);
+        }
     };
 
     const handleDownload = async (doc) => {
@@ -362,7 +378,10 @@ export function DashboardStaff() {
                                                 <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.DiagnosticoQueixaPrincipal || '—'}</td>
                                                 <td>{f.TipoRegisto || '—'}</td>
                                                 <td>{f.CreatedAt ? new Date(f.CreatedAt).toLocaleDateString('pt-PT') : '—'}</td>
-                                                <td><button className="btn-icon" onClick={() => handleVerFicha(f.ID)}><Eye size={16} /></button></td>
+                                                <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <button className="btn-icon" onClick={() => handleVerFicha(f.ID)} title="Ver ficha"><Eye size={16} /></button>
+                                                    <button className="btn-icon" onClick={() => handleDeleteFicha(f.ID, f.NomeCompleto)} style={{ color: '#ef4444' }} title="Apagar ficha"><Trash size={16} /></button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
