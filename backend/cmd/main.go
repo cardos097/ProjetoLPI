@@ -3,6 +3,7 @@ package main
 import (
 	"clinica-backend/config"
 	"clinica-backend/controllers"
+	"clinica-backend/jobs"
 	"clinica-backend/middleware"
 	"clinica-backend/routes"
 	"clinica-backend/utils"
@@ -38,6 +39,10 @@ func main() {
 	if err := utils.InitEmailConfig(); err != nil {
 		log.Printf("Aviso: Falha ao inicializar email config: %v", err)
 	}
+
+	// Iniciar job de limpeza de contas não verificadas
+	jobs.StartUnverifiedUserCleanupJob()
+	log.Println("Job de limpeza de contas não verificadas iniciado (executa a cada 1 hora)")
 
 	r := gin.Default()
 

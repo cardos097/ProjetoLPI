@@ -29,6 +29,15 @@ export function LoginPage() {
       login(session);
       navigate('/dashboard');
     } catch (err) {
+      // Se receber 206 ou if needs_verification, vai direto para verificação
+      if (err?.response?.status === 206 || err?.response?.data?.needs_verification) {
+        setUserId(err.response.data.user_id);
+        setShowVerification(true);
+        setError('');
+        setShowResend(false);
+        return;
+      }
+
       const msg = err?.response?.data?.error || err.message || 'Falha no login';
       setError(msg);
       if (err?.response?.status === 403 && msg.toLowerCase().includes('verif')) {

@@ -150,7 +150,39 @@ func Login(c *gin.Context) {
 
 	// Verificar se o email foi verificado (não aplicar para contas Google)
 	if !user.EmailVerified && user.GoogleSub == nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Por favor verifique o seu email antes de entrar"})
+		// Verificar se o código ainda é válido (dentro das 24h)
+		if user.VerificationCodeExpiresAt != nil && user.VerificationCodeExpiresAt.After(time.Now()) {
+			// Código ainda válido: gerar novo código e reenviar
+			newCode, err := generateVerificationCode()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar código de verificação"})
+				return
+			}
+
+			// Guardar novo código
+			config.DB.Model(&user).Updates(map[string]interface{}{
+				"verification_code":            newCode,
+				"verification_code_expires_at": time.Now().Add(24 * time.Hour),
+			})
+
+			// Enviar email com novo código
+			err = utils.SendVerificationEmail(user.Email, newCode)
+			if err != nil {
+				log.Printf("Aviso: Falha ao reenviar email de verificação para %s: %v", user.Email, err)
+			}
+
+			// Retornar 206 indicando que precisa verificar (com novo código enviado)
+			c.JSON(206, gin.H{
+				"needs_verification": true,
+				"email":              user.Email,
+				"user_id":            user.ID,
+				"message":            "Conta não verificada. Enviámos um novo código para o seu email. Por favor verifique-o para continuar.",
+			})
+			return
+		}
+
+		// Código expirou: conta foi/será apagada
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email ou password inválidos"})
 		return
 	}
 
@@ -389,7 +421,7 @@ func Register(c *gin.Context) {
 	}
 
 	response := RegisterResponse{
-		Message:          "Conta criada com sucesso. Por favor verifique o seu email.",
+		Message:          "Conta criada com sucesso. Por favor verifique o seu email dentro de 24 horas. Após esse período, a conta será eliminada automaticamente e terá de fazer um novo registo.",
 		UserID:           newUser.ID,
 		Role:             newUser.Role,
 		VerificationCode: "", // Vazio por padrão (segurança)
@@ -480,50 +512,11 @@ func VerifyEmail(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// ResendVerification gera e envia um novo código para um email não verificado.
+// ResendVerification foi desabilitada: contas não verificadas são automaticamente eliminadas após 24 horas
 func ResendVerification(c *gin.Context) {
-	var req struct {
-		Email string `json:"email" binding:"required,email"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email obrigatório"})
-		return
-	}
-
-	if !getVerifyEmailLimiter(req.Email).Allow() {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Demasiadas tentativas. Aguarde um momento."})
-		return
-	}
-
-	var user models.User
-	if err := config.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "Se o email existir, um novo código foi enviado."})
-		return
-	}
-
-	if user.EmailVerified {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email já verificado. Pode fazer login normalmente."})
-		return
-	}
-
-	code, err := generateVerificationCode()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar código"})
-		return
-	}
-	expiresAt := time.Now().Add(24 * time.Hour)
-	config.DB.Model(&user).Updates(map[string]interface{}{
-		"verification_code":            code,
-		"verification_code_expires_at": expiresAt,
+	c.JSON(http.StatusForbidden, gin.H{
+		"error": "Reenvio de código desabilitado. O código de verificação é válido por 24 horas. Após expirar, a conta é eliminada automaticamente e é necessário fazer um novo registo.",
 	})
-
-	utils.SendVerificationEmail(user.Email, code)
-
-	resp := gin.H{"message": "Novo código enviado.", "user_id": user.ID}
-	if os.Getenv("ENVIRONMENT") == "development" {
-		resp["verification_code"] = code
-	}
-	c.JSON(http.StatusOK, resp)
 }
 
 // ClaimUtenteAccount permite a um familiar ativar a conta de um utente sem email,

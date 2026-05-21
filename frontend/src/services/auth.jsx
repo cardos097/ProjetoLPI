@@ -67,7 +67,24 @@ export async function loginRequest({ email, password }) {
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const { data } = await api.post('/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password });
+      const { data, status } = response;
+      
+      // Se receber 206, significa que precisa verificar (conta não validada)
+      if (status === 206 || data?.needs_verification) {
+        const err = new Error('Conta não verificada - reenvio automático realizado');
+        err.response = {
+          status: 206,
+          data: {
+            needs_verification: true,
+            email: data.email,
+            user_id: data.user_id,
+            message: data.message
+          }
+        };
+        throw err;
+      }
+      
       return buildSession(data, email);
     } catch (err) {
       if (!shouldRetry(err) || attempt === 1) {
