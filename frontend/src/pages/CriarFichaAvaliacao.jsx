@@ -116,8 +116,9 @@ export function CriarFichaAvaliacao() {
     fetchData();
   }, [consultaId, utenteId]);
 
+  const isAluno = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('aluno');
   const isProfessor = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('professor');
-  const canManageForms = user?.role === 'admin' || isProfessor;
+  const canManageForms = user?.role === 'admin' || isProfessor || isAluno;
   const canAccessForm = canManageForms && isFisioterapiaConsulta;
 
   const isFieldLocked = (fieldName) => Boolean(lockedFields[fieldName]);

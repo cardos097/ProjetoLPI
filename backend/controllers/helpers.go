@@ -48,6 +48,19 @@ func getVisibleTerapeutaIDs(userID uint) []uint {
 	return ids
 }
 
+// alunoIsLinkedToConsulta retorna true se o utilizador é o terapeuta da consulta
+// OU é um aluno cujo supervisor é o terapeuta da consulta.
+func alunoIsLinkedToConsulta(userID uint, consulta *models.Consulta) bool {
+	if consulta.TerapeutaID == userID {
+		return true
+	}
+	var t models.Terapeuta
+	if err := config.DB.Where("user_id = ? AND tipo = 'aluno'", userID).First(&t).Error; err != nil {
+		return false
+	}
+	return t.SupervisorID != nil && *t.SupervisorID == consulta.TerapeutaID
+}
+
 // alunoHasActiveConsulta retorna true se o aluno tem pelo menos uma
 // consulta ativa (dentro de ±2h) com utenteID. Para não-alunos devolve true.
 func alunoHasActiveConsulta(userID uint, utenteID uint) bool {

@@ -21,7 +21,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar, updateTerapeutaUtente } from '../services/utentes.jsx';
 import { getTerapeutas, getConsultas } from '../services/consultas.jsx';
-import { getFichasAvaliacao } from '../services/fichas.jsx';
+import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala } from '../services/fichas.jsx';
 import '../styles/user-profile.css';
 
 // Função para mapear role para nome em português
@@ -152,14 +152,20 @@ export function UserPage() {
             consultasData = await getUtenteConsultas(profileUtenteId).catch(() => []);
           }
 
-          const [registosData, fichasData] = await Promise.all([
+          const [registosData, fichasAval, fichasPsic, fichasFala] = await Promise.all([
             getUtenteRegistos(profileUtenteId).catch(() => []),
             getFichasAvaliacao(profileUtenteId).catch(() => []),
+            getFichasPsicologia(profileUtenteId).catch(() => []),
+            getFichasTerapiaFala(profileUtenteId).catch(() => []),
           ]);
 
           setConsultas(Array.isArray(consultasData) ? normalizeConsultas(consultasData) : []);
           setRegistos(Array.isArray(registosData) ? registosData : []);
-          setFichas(Array.isArray(fichasData) ? fichasData : []);
+          setFichas([
+            ...(fichasAval || []).map(f => ({ ...f, _formTipo: 'Fisioterapia' })),
+            ...(fichasPsic || []).map(f => ({ ...f, _formTipo: 'Psicologia' })),
+            ...(fichasFala || []).map(f => ({ ...f, _formTipo: 'Terapia da Fala' })),
+          ]);
         } catch (err) {
           setConsultas([]);
           setRegistos([]);
@@ -871,7 +877,7 @@ export function UserPage() {
                                 <FileText size={18} />
                               </div>
                               <div className="registo-info">
-                                <p className="registo-title">{getFichaValue(ficha, 'tipo_registo') || 'Formulário'}</p>
+                                <p className="registo-title">{ficha._formTipo || getFichaValue(ficha, 'tipo_registo') || 'Formulário'}</p>
                                 <div className="registo-meta">
                                   <span className="registo-author">Criado por: {getFichaValue(ficha, 'created_by') || '-'}</span>
                                   <span className="registo-date">{getFichaValue(ficha, 'created_at') || '-'}</span>

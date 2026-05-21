@@ -3,6 +3,12 @@ import flatpickr from 'flatpickr';
 import { Portuguese } from 'flatpickr/dist/l10n/pt.js';
 import 'flatpickr/dist/flatpickr.min.css';
 
+const toDate = (yyyymmdd) => {
+    if (!yyyymmdd) return null;
+    const [y, m, d] = yyyymmdd.split('-').map(Number);
+    return Number.isFinite(y) ? new Date(y, m - 1, d) : null;
+};
+
 export function DateInput({ name, value, onChange, required, disabled, min, max, className, style, title, id }) {
     const ref = useRef(null);
     const fp  = useRef(null);
@@ -10,12 +16,10 @@ export function DateInput({ name, value, onChange, required, disabled, min, max,
     useEffect(() => {
         fp.current = flatpickr(ref.current, {
             locale: Portuguese,
-            dateFormat: 'Y-m-d',
-            altInput: true,
-            altFormat: 'd/m/Y',
+            dateFormat: 'd/m/Y',
             allowInput: true,
-            minDate: min || null,
-            maxDate: max || null,
+            minDate: toDate(min),
+            maxDate: toDate(max),
             onChange([date]) {
                 if (!date) return;
                 const y = date.getFullYear();
@@ -28,20 +32,23 @@ export function DateInput({ name, value, onChange, required, disabled, min, max,
     }, []);
 
     useEffect(() => {
-        if (fp.current) fp.current.setDate(value || '', false);
+        if (!fp.current) return;
+        const d = toDate(value);
+        if (d) fp.current.setDate(d, false);
+        else fp.current.clear();
     }, [value]);
 
     useEffect(() => {
         if (fp.current) {
-            fp.current.set('minDate', min || null);
-            fp.current.set('maxDate', max || null);
+            fp.current.set('minDate', toDate(min));
+            fp.current.set('maxDate', toDate(max));
         }
     }, [min, max]);
 
     return (
         <input
             ref={ref}
-            type="date"
+            type="text"
             id={id}
             name={name}
             required={required}

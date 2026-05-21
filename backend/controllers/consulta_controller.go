@@ -227,7 +227,7 @@ func GetConsultaByID(c *gin.Context) {
 		return
 	}
 
-	if userRole == "terapeuta" && consulta.TerapeutaID != userID {
+	if userRole == "terapeuta" && !alunoIsLinkedToConsulta(userID, &consulta) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para aceder a esta consulta"})
 		return
 	}
@@ -658,8 +658,8 @@ func UpdateConsulta(c *gin.Context) {
 		return
 	}
 
-	// Se é terapeuta, verificar que é o responsável pela consulta
-	if isTerapeuta && consulta.TerapeutaID != userID {
+	// Se é terapeuta, verificar que é o responsável ou aluno ligado
+	if isTerapeuta && !alunoIsLinkedToConsulta(userID, &consulta) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Você só pode editar suas próprias consultas"})
 		return
 	}
@@ -948,7 +948,7 @@ func UpdateEstadoConsulta(c *gin.Context) {
 	// Verificar permissões: admin, administrativo ou o terapeuta da consulta
 	if userRole != "admin" && userRole != "administrativo" {
 		if userRole == "terapeuta" {
-			if consulta.TerapeutaID != userID {
+			if !alunoIsLinkedToConsulta(userID, &consulta) {
 				log.Printf("[UpdateEstadoConsulta] Permissão negada: terapeuta %d não é responsável pela consulta (terapeuta_id: %d)", userID, consulta.TerapeutaID)
 				c.JSON(http.StatusForbidden, gin.H{"error": "Você só pode atualizar o estado das suas próprias consultas"})
 				return

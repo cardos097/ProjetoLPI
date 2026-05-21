@@ -205,8 +205,9 @@ export function EditarConsulta() {
     return <div className="page">A carregar...</div>;
   }
 
+  const isAluno = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('aluno');
   const isProfessor = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('professor');
-  const canManageForms = user?.role === 'admin' || isProfessor;
+  const canManageForms = user?.role === 'admin' || isProfessor || isAluno;
   const selectedAreaClinica = areasClinicas.find((area) => area.id === Number(form.area_clinica_id));
   const areaClinicaNome = selectedAreaClinica?.nome || getConsultaValue(consulta, 'area_clinica_nome') || '';
   const isFisioterapiaConsulta = normalizeText(areaClinicaNome).includes('fisioterapia');
@@ -360,6 +361,14 @@ export function EditarConsulta() {
           {getConsultaValue(consulta, 'utente_nome') && <p>Utente: {getConsultaValue(consulta, 'utente_nome')}</p>}
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          {getConsultaValue(consulta, 'utente_id') && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => navigate(`/utentes/${getConsultaValue(consulta, 'utente_id')}/perfil`)}
+            >
+              Ver Utente
+            </button>
+          )}
           {canAddFisioterapiaForm && (
             <button className="btn btn-primary" onClick={handleAddForm}>
               + Ficha Fisioterapia

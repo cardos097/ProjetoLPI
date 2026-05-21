@@ -43,7 +43,10 @@ function ProtectedRoute({ children }) {
 export function AppRoutes() {
   const { isAuthenticated, user } = useAuth();
   const canAccessFichaAvaliacao = user?.role === 'admin'
-    || (user?.role === 'terapeuta' && String(user?.tipo || '').toLowerCase().includes('professor'));
+    || (user?.role === 'terapeuta' && (
+      String(user?.tipo || '').toLowerCase().includes('professor') ||
+      String(user?.tipo || '').toLowerCase().includes('aluno')
+    ));
 
   return (
     <Routes>
