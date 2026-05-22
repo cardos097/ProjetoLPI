@@ -50,14 +50,15 @@ export function VerConsultasSala() {
     };
 
     const formatarData = (dataStr) => {
-        const data = new Date(dataStr);
+        const data = new Date(dataStr + 'Z');
         return data.toLocaleDateString('pt-PT', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZone: 'UTC',
         });
     };
 

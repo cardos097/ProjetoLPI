@@ -80,14 +80,14 @@ export function DetalhesConsulta() {
 
   const formatarData = (dataStr) => {
     if (!dataStr) return '-';
-    const data = new Date(dataStr);
-    return data.toLocaleDateString('pt-PT');
+    const data = new Date(dataStr + 'Z');
+    return data.toLocaleDateString('pt-PT', { timeZone: 'UTC' });
   };
 
   const formatarHora = (dataStr) => {
     if (!dataStr) return '-';
-    const data = new Date(dataStr);
-    return data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    const data = new Date(dataStr + 'Z');
+    return data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   };
 
   if (loading) {

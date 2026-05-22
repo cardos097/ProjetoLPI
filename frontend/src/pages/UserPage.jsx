@@ -20,7 +20,7 @@ import {
 } from 'react-bootstrap-icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar, updateTerapeutaUtente } from '../services/utentes.jsx';
-import { getTerapeutas, getConsultas } from '../services/consultas.jsx';
+import { getTerapeutas, getAreasClinicas, getConsultas } from '../services/consultas.jsx';
 import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala } from '../services/fichas.jsx';
 import '../styles/user-profile.css';
 
@@ -44,6 +44,8 @@ export function UserPage() {
   const [registos, setRegistos] = useState([]);
   const [fichas, setFichas] = useState([]);
   const [terapeutas, setTerapeutas] = useState([]);
+  const [areasClinicas, setAreasClinicas] = useState([]);
+  const [terapeutasEditados, setTerapeutasEditados] = useState({}); // { area_clinica_id: terapeuta_id }
   const [loading, setLoading] = useState(true);
   const [loadingTerapeutas, setLoadingTerapeutas] = useState(false);
   const [error, setError] = useState('');
@@ -183,12 +185,20 @@ export function UserPage() {
     setIsEditMode(true);
     setActiveTab('details');
     
-    // Carregar lista de terapeutas se for admin ou administrativo
+    // Inicializar terapeutasEditados com as atribuições actuais
+    const atribuicoes = {};
+    (userDetails?.terapeutas || []).forEach((t) => {
+      atribuicoes[t.area_clinica_id] = t.terapeuta_id;
+    });
+    setTerapeutasEditados(atribuicoes);
+
+    // Carregar lista de terapeutas e áreas se for staff
     if (user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') {
       try {
         setLoadingTerapeutas(true);
-        const data = await getTerapeutas();
-        setTerapeutas(data);
+        const [ts, areas] = await Promise.all([getTerapeutas(), getAreasClinicas()]);
+        setTerapeutas(ts || []);
+        setAreasClinicas(areas || []);
       } catch (err) {
         setError('Erro ao carregar lista de terapeutas');
       } finally {
@@ -242,10 +252,15 @@ export function UserPage() {
         numero_processo: editData.numero_processo,
       });
 
-      // Se foi alterado o terapeuta e o utilizador tem permissão
-      if ((user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && 
-          editData.terapeuta_id !== userDetails.terapeuta_id) {
-        await updateTerapeutaUtente(editData.id, editData.terapeuta_id);
+      // Guardar atribuições de terapeutas por área (se staff)
+      if (user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') {
+        const original = {};
+        (userDetails?.terapeutas || []).forEach((t) => { original[t.area_clinica_id] = t.terapeuta_id; });
+        for (const [areaId, terapeutaId] of Object.entries(terapeutasEditados)) {
+          if (String(original[areaId]) !== String(terapeutaId)) {
+            await updateTerapeutaUtente(editData.id, Number(terapeutaId), Number(areaId));
+          }
+        }
       }
 
       setUserDetails(editData);
@@ -603,15 +618,33 @@ export function UserPage() {
                             />
                           </div>
                         )}
-                        <div className="form-group">
-                          <label htmlFor="terapeuta_id">Terapeuta</label>
-                          <select id="terapeuta_id" value={editData?.terapeuta_id || ''} onChange={(e) => handleInputChange('terapeuta_id', e.target.value ? parseInt(e.target.value) : null)} className="form-input" disabled={loadingTerapeutas}>
-                            <option value="">Sem terapeuta atribuído</option>
-                            {terapeutas.map((terapeuta) => (
-                              <option key={terapeuta.id} value={terapeuta.id}>{terapeuta.nome}</option>
-                            ))}
-                          </select>
-                        </div>
+                        {areasClinicas.length > 0 && (
+                          <div className="form-group">
+                            <label>Terapeutas por Área</label>
+                            {areasClinicas.map((area) => {
+                              const terapeutasArea = terapeutas.filter(
+                                (t) => t.area_clinica_id === area.id
+                              );
+                              return (
+                                <div key={area.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                  <span style={{ minWidth: 130, fontSize: '0.85rem', color: '#6b7280' }}>{area.nome}</span>
+                                  <select
+                                    value={terapeutasEditados[area.id] || ''}
+                                    onChange={(e) => setTerapeutasEditados((prev) => ({ ...prev, [area.id]: e.target.value ? parseInt(e.target.value) : 0 }))}
+                                    className="form-input"
+                                    disabled={loadingTerapeutas}
+                                    style={{ flex: 1 }}
+                                  >
+                                    <option value="">Sem terapeuta</option>
+                                    {terapeutasArea.map((t) => (
+                                      <option key={t.user_id} value={t.user_id}>{t.nome}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -660,9 +693,20 @@ export function UserPage() {
                           <span className="detail-label">Número de Processo</span>
                           <span className="detail-value">{userDetails?.numero_processo || '-'}</span>
                         </div>
-                        <div className="detail-item">
-                          <span className="detail-label">Terapeuta</span>
-                          <span className="detail-value">{userDetails?.terapeuta_nome || '-'}</span>
+                        <div className="detail-item details-grid-full">
+                          <span className="detail-label">Terapeutas Atribuídos</span>
+                          {userDetails?.terapeutas?.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              {userDetails.terapeutas.map((t) => (
+                                <span key={t.area_clinica_id} className="detail-value">
+                                  <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>{t.area_nome}: </span>
+                                  {t.terapeuta_nome}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="detail-value">-</span>
+                          )}
                         </div>
                         <div className="detail-item details-grid-full">
                           <span className="detail-label">Terapeuta Responsável</span>

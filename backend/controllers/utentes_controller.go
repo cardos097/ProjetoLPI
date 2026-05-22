@@ -26,19 +26,25 @@ type UtenteResponse struct {
 	Morada         string `json:"morada"`
 }
 
+type TerapeutaAreaDTO struct {
+	TerapeutaID   uint   `json:"terapeuta_id"`
+	TerapeutaNome string `json:"terapeuta_nome"`
+	AreaClinicaID uint   `json:"area_clinica_id"`
+	AreaNome      string `json:"area_nome"`
+}
+
 type UtenteDetailResponse struct {
-	ID                       uint    `json:"id"`
-	Nome                     string  `json:"nome"`
-	Email                    string  `json:"email"`
-	NumeroProcesso           string  `json:"numero_processo"`
-	Telefone                 string  `json:"telefone"`
-	Morada                   string  `json:"morada"`
-	DataNascimento           *string `json:"data_nascimento"`
-	FotoURL                  *string `json:"foto_url"`
-	TerapeutaResponsavelID   *uint   `json:"terapeuta_responsavel_id"`
-	TerapeutaResponsavelNome string  `json:"terapeuta_responsavel_nome"`
-	TerapeutaID              *uint   `json:"terapeuta_id"`
-	TerapeutaNome            string  `json:"terapeuta_nome"`
+	ID                       uint               `json:"id"`
+	Nome                     string             `json:"nome"`
+	Email                    string             `json:"email"`
+	NumeroProcesso           string             `json:"numero_processo"`
+	Telefone                 string             `json:"telefone"`
+	Morada                   string             `json:"morada"`
+	DataNascimento           *string            `json:"data_nascimento"`
+	FotoURL                  *string            `json:"foto_url"`
+	TerapeutaResponsavelID   *uint              `json:"terapeuta_responsavel_id"`
+	TerapeutaResponsavelNome string             `json:"terapeuta_responsavel_nome"`
+	Terapeutas               []TerapeutaAreaDTO `json:"terapeutas"`
 }
 
 type UtenteConsultaResponse struct {
@@ -155,7 +161,6 @@ func GetUtenteByID(c *gin.Context) {
 
 	err := config.DB.
 		Preload("User").
-		Preload("Terapeuta").
 		Where("user_id = ?", id).
 		First(&utente).Error
 
@@ -187,6 +192,21 @@ func GetUtenteByID(c *gin.Context) {
 		dataNascimento = &formatted
 	}
 
+	// Carregar terapeutas por área
+	var utTerapeutas []models.UtenteTerapeuta
+	config.DB.Preload("Terapeuta").Preload("AreaClinica").
+		Where("utente_id = ?", id).Find(&utTerapeutas)
+
+	terapeutasDTO := []TerapeutaAreaDTO{}
+	for _, ut := range utTerapeutas {
+		terapeutasDTO = append(terapeutasDTO, TerapeutaAreaDTO{
+			TerapeutaID:   ut.TerapeutaID,
+			TerapeutaNome: ut.Terapeuta.Nome,
+			AreaClinicaID: ut.AreaClinicaID,
+			AreaNome:      ut.AreaClinica.Nome,
+		})
+	}
+
 	response := UtenteDetailResponse{
 		ID:             utente.User.ID,
 		Nome:           utente.User.Nome,
@@ -196,11 +216,7 @@ func GetUtenteByID(c *gin.Context) {
 		Morada:         morada,
 		DataNascimento: dataNascimento,
 		FotoURL:        utente.FotoURL,
-		TerapeutaID:    utente.TerapeutaID,
-	}
-
-	if utente.Terapeuta != nil {
-		response.TerapeutaNome = utente.Terapeuta.Nome
+		Terapeutas:     terapeutasDTO,
 	}
 
 	var processo models.ProcessoClinico
@@ -710,13 +726,14 @@ func UploadAvatar(c *gin.Context) {
 }
 
 type UpdateTerapeutaUtenteRequest struct {
-	TerapeutaID *uint `json:"terapeuta_id"`
+	TerapeutaID   uint `json:"terapeuta_id"`                     // 0 = remover atribuição
+	AreaClinicaID uint `json:"area_clinica_id" binding:"required"`
 }
 
 func UpdateTerapeutaUtente(c *gin.Context) {
 	utenteID := c.Param("id")
 
-	userID, err := getAuthenticatedUserID(c)
+	_, err := getAuthenticatedUserID(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
@@ -734,29 +751,14 @@ func UpdateTerapeutaUtente(c *gin.Context) {
 		return
 	}
 
-	// Verificar permissões: admin, administrativo, ou o terapeuta ligado
-	if userRole != "admin" && userRole != "administrativo" {
-		if userRole == "terapeuta" {
-			// Um terapeuta só pode alterar o seu próprio utente
-			var utente models.Utente
-			if err := config.DB.Where("user_id = ?", utenteID).First(&utente).Error; err != nil {
-				c.JSON(http.StatusNotFound, gin.H{"error": "Utente não encontrado"})
-				return
-			}
-
-			if utente.TerapeutaID != nil && *utente.TerapeutaID != userID {
-				c.JSON(http.StatusForbidden, gin.H{"error": "Só pode alterar utentes do seu responsabilidade"})
-				return
-			}
-		} else {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para alterar o terapeuta"})
-			return
-		}
+	if userRole != "admin" && userRole != "administrativo" && userRole != "terapeuta" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para alterar o terapeuta"})
+		return
 	}
 
 	var req UpdateTerapeutaUtenteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: area_clinica_id é obrigatório"})
 		return
 	}
 
@@ -767,57 +769,34 @@ func UpdateTerapeutaUtente(c *gin.Context) {
 		return
 	}
 
-	// Se está a atribuir um novo terapeuta, verificar se é um terapeuta válido
-	if req.TerapeutaID != nil {
+	if req.TerapeutaID == 0 {
+		// Remover atribuição desta área
+		config.DB.Exec(
+			"DELETE FROM utente_terapeutas WHERE utente_id = ? AND area_clinica_id = ?",
+			utenteID, req.AreaClinicaID,
+		)
+	} else {
+		// Verificar se o terapeuta é válido e pertence à área
 		var terapeuta models.Terapeuta
-		if err := config.DB.Preload("User").Where("user_id = ?", *req.TerapeutaID).First(&terapeuta).Error; err != nil {
+		if err := config.DB.Preload("User").Where("user_id = ?", req.TerapeutaID).First(&terapeuta).Error; err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Terapeuta não encontrado"})
 			return
 		}
-
 		if !terapeuta.User.Active {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Terapeuta inativo"})
 			return
 		}
+
+		// Upsert: substituir ou criar atribuição
+		if err := config.DB.Exec(`
+			INSERT INTO utente_terapeutas (utente_id, terapeuta_id, area_clinica_id)
+			VALUES (?, ?, ?)
+			ON CONFLICT (utente_id, area_clinica_id) DO UPDATE SET terapeuta_id = EXCLUDED.terapeuta_id
+		`, utenteID, req.TerapeutaID, req.AreaClinicaID).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar terapeuta"})
+			return
+		}
 	}
 
-	// Atualizar o terapeuta do utente
-	if err := config.DB.Model(&utente).Update("terapeuta_id", req.TerapeutaID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar terapeuta"})
-		return
-	}
-
-	// Recarregar o utente com o terapeuta atualizado
-	if err := config.DB.Preload("User").Preload("Terapeuta").Where("user_id = ?", utenteID).First(&utente).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	response := UtenteDetailResponse{
-		ID:    utente.User.ID,
-		Nome:  utente.User.Nome,
-		Email: utente.User.Email,
-	}
-
-	if utente.NumeroProcesso != nil {
-		response.NumeroProcesso = *utente.NumeroProcesso
-	}
-	if utente.Telefone != nil {
-		response.Telefone = *utente.Telefone
-	}
-	if utente.Morada != nil {
-		response.Morada = *utente.Morada
-	}
-	if utente.DataNascimento != nil {
-		formatted := utente.DataNascimento.Format("2006-01-02")
-		response.DataNascimento = &formatted
-	}
-
-	response.FotoURL = utente.FotoURL
-	response.TerapeutaID = utente.TerapeutaID
-	if utente.Terapeuta != nil {
-		response.TerapeutaNome = utente.Terapeuta.Nome
-	}
-
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{"message": "Terapeuta atualizado com sucesso"})
 }

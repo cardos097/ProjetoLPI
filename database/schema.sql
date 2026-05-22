@@ -59,7 +59,6 @@ CREATE INDEX idx_terapeutas_supervisor ON terapeutas(supervisor_id);
 
 CREATE TABLE utentes (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  terapeuta_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   data_nascimento DATE,
   nif BYTEA,
   telefone VARCHAR(20),
@@ -69,6 +68,14 @@ CREATE TABLE utentes (
 );
 
 CREATE INDEX idx_utentes_processo ON utentes(numero_processo);
+
+CREATE TABLE utente_terapeutas (
+  utente_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  terapeuta_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  area_clinica_id INTEGER NOT NULL REFERENCES areas_clinicas(id) ON DELETE CASCADE,
+  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (utente_id, area_clinica_id)
+);
 
 CREATE TABLE salas (
   id SERIAL PRIMARY KEY,

@@ -28,13 +28,14 @@ import (
 var consultaMu sync.Mutex
 
 type CreateConsultaRequest struct {
-	UtenteID      uint   `json:"utente_id"`
-	TerapeutaID   uint   `json:"terapeuta_id"`
-	SalaID        uint   `json:"sala_id"`
-	AreaClinicaID uint   `json:"area_clinica_id"`
-	DataInicio    string `json:"data_inicio"`
-	DataFim       string `json:"data_fim"`
-	TipoConsulta  string `json:"tipo_consulta"`
+	UtenteID         uint   `json:"utente_id"`
+	TerapeutaID      uint   `json:"terapeuta_id"`
+	SalaID           uint   `json:"sala_id"`
+	AreaClinicaID    uint   `json:"area_clinica_id"`
+	DataInicio       string `json:"data_inicio"`
+	DataFim          string `json:"data_fim"`
+	TipoConsulta     string `json:"tipo_consulta"`
+	AtribuirTerapeuta bool  `json:"atribuir_terapeuta"`
 }
 
 type RemarcarConsultaRequest struct {
@@ -439,53 +440,38 @@ func CreateConsulta(c *gin.Context) {
 
 	ligarTerapeutaResponsavel(req.UtenteID, req.TerapeutaID)
 
+	if req.AtribuirTerapeuta {
+		config.DB.Exec(`
+			INSERT INTO utente_terapeutas (utente_id, terapeuta_id, area_clinica_id)
+			VALUES (?, ?, ?)
+			ON CONFLICT (utente_id, area_clinica_id) DO NOTHING
+		`, req.UtenteID, req.TerapeutaID, req.AreaClinicaID)
+	}
+
 	c.JSON(http.StatusCreated, consulta)
 }
 
 // ligarTerapeutaResponsavel define o terapeuta responsável no processo clínico
-// do utente na sua primeira consulta. Se o terapeuta for um aluno, liga ao
-// professor supervisor. Não substitui uma ligação já existente.
-// Também liga o utente ao terapeuta na tabela utentes.
+// na primeira consulta. Se o terapeuta for aluno, liga ao supervisor.
 func ligarTerapeutaResponsavel(utenteID, terapeutaID uint) {
-	log.Printf("[DEBUG] ligarTerapeutaResponsavel: utenteID=%d, terapeutaID=%d", utenteID, terapeutaID)
-
 	var processo models.ProcessoClinico
 	if err := config.DB.Where("utente_id = ?", utenteID).First(&processo).Error; err != nil {
-		log.Printf("[DEBUG] Erro ao buscar processo: %v", err)
 		return
 	}
 
 	if processo.TerapeutaResponsavelID != nil {
-		log.Printf("[DEBUG] Terapeuta responsável já atribuído: %d", *processo.TerapeutaResponsavelID)
 		return
 	}
 
 	responsavelID := terapeutaID
-
 	var terapeuta models.Terapeuta
 	if err := config.DB.Where("user_id = ?", terapeutaID).First(&terapeuta).Error; err == nil {
 		if terapeuta.Tipo == "aluno" && terapeuta.SupervisorID != nil {
 			responsavelID = *terapeuta.SupervisorID
-			log.Printf("[DEBUG] Terapeuta é aluno, usando supervisor: %d", responsavelID)
 		}
 	}
 
 	config.DB.Model(&processo).Update("terapeuta_responsavel_id", responsavelID)
-	log.Printf("[DEBUG] Atualizado processo com terapeuta_responsavel_id: %d", responsavelID)
-
-	// Também ligar o utente ao terapeuta na tabela utentes (se for a primeira ligação)
-	var utente models.Utente
-	if err := config.DB.Where("user_id = ?", utenteID).First(&utente).Error; err == nil {
-		log.Printf("[DEBUG] Utente encontrado. TerapeutaID atual: %v", utente.TerapeutaID)
-		if utente.TerapeutaID == nil {
-			result := config.DB.Model(&utente).Update("terapeuta_id", terapeutaID)
-			log.Printf("[DEBUG] Atualizado utente com terapeuta_id: %d (affected rows: %d)", terapeutaID, result.RowsAffected)
-		} else {
-			log.Printf("[DEBUG] Utente já tem terapeuta atribuído: %d", *utente.TerapeutaID)
-		}
-	} else {
-		log.Printf("[DEBUG] Erro ao buscar utente: %v", err)
-	}
 }
 
 func CancelConsulta(c *gin.Context) {

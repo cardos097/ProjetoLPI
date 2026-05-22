@@ -43,9 +43,10 @@ export async function updateUtente(utenteId, utente) {
   return data;
 }
 
-export async function updateTerapeutaUtente(utenteId, terapeutaId) {
+export async function updateTerapeutaUtente(utenteId, terapeutaId, areaClinicaId) {
   const { data } = await api.patch(`/utentes/${utenteId}/terapeuta`, {
     terapeuta_id: terapeutaId,
+    area_clinica_id: areaClinicaId,
   });
   return data;
 }

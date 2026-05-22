@@ -11,6 +11,7 @@ import {
   getAreasClinicas,
   checkDisponibilidade,
 } from '../services/consultas.jsx';
+import { getUtenteDetails } from '../services/utentes.jsx';
 
 export function AgendarConsulta() {
   const navigate = useNavigate();
@@ -39,7 +40,9 @@ export function AgendarConsulta() {
     data_inicio: '',
     hora_inicio: '',
     duracao: '60',
+    atribuir_terapeuta: false,
   });
+  const [utenteDetails, setUtenteDetails] = useState(null);
 
   const dedupeSalasByNome = (listaSalas) => {
     const seen = new Set();
@@ -193,6 +196,13 @@ export function AgendarConsulta() {
       });
   }, [form.hora_inicio, form.data_inicio, form.duracao, isUtente]);
 
+  // Carregar detalhes do utente para saber se já tem terapeuta atribuído nesta área
+  useEffect(() => {
+    const uId = isUtente ? user?.id : form.utente_id;
+    if (!uId) { setUtenteDetails(null); return; }
+    getUtenteDetails(uId).then(setUtenteDetails).catch(() => setUtenteDetails(null));
+  }, [form.utente_id, isUtente, user?.id]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
@@ -249,6 +259,7 @@ export function AgendarConsulta() {
         tipo_consulta: form.tipo_consulta || 'individual',
         data_inicio: formatLocalDateTime(dataInicio),
         data_fim: formatLocalDateTime(dataFim),
+        atribuir_terapeuta: form.atribuir_terapeuta,
       };
 
       await createConsulta(payload);
@@ -412,6 +423,29 @@ export function AgendarConsulta() {
                   </div>
                 )}
               </div>
+
+              {form.hora_inicio && form.terapeuta_id && form.area_clinica_id && (() => {
+                const jaTemTerapeuta = utenteDetails?.terapeutas?.some(
+                  (t) => String(t.area_clinica_id) === String(form.area_clinica_id)
+                );
+                if (jaTemTerapeuta) return null;
+                const terapeutaNome = terapeutasFiltrados.find(
+                  (t) => String(t.user_id) === String(form.terapeuta_id)
+                )?.nome || 'terapeuta selecionado';
+                const areaNome = areasClinicas.find(
+                  (a) => String(a.id) === String(form.area_clinica_id)
+                )?.nome || 'esta área';
+                return (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: '0.5rem 0 1rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.atribuir_terapeuta}
+                      onChange={(e) => setForm((prev) => ({ ...prev, atribuir_terapeuta: e.target.checked }))}
+                    />
+                    Atribuir <strong>{terapeutaNome}</strong> como terapeuta responsável de <strong>{areaNome}</strong>
+                  </label>
+                );
+              })()}
 
               {form.hora_inicio && !isUtente && (
                 <>

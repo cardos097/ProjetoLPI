@@ -66,7 +66,7 @@ export function DashboardUtente() {
                                     <div key={consulta.id} className="consulta-card">
                                         <div className="consulta-info">
                                             <h4>{consulta.tipo}</h4>
-                                            <p>Data: {new Date(consulta.data_inicio).toLocaleDateString('pt-PT')}</p>
+                                            <p>Data: {new Date(consulta.data_inicio + 'Z').toLocaleDateString('pt-PT', { timeZone: 'UTC' })}</p>
                                             <p>Status: {consulta.estado}</p>
                                         </div>
                                         <button
