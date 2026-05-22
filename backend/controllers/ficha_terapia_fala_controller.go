@@ -77,7 +77,10 @@ func GetFichasTerapiaFala(c *gin.Context) {
 
 	userID, _ := getAuthenticatedUserID(c)
 	roleValue, _ := c.Get("userRole")
-	if userRole, _ := roleValue.(string); userRole == "terapeuta" {
+	userRole, _ := roleValue.(string)
+	if userRole == "utente" {
+		query = query.Where("utente_id = ? AND estado = 'aprovada'", userID)
+	} else if userRole == "terapeuta" {
 		query = query.Where("created_by IN ?", getVisibleTerapeutaIDs(userID))
 	}
 
@@ -114,6 +117,15 @@ func GetFichaTerapiaFalaByID(c *gin.Context) {
 		First(&ficha, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Ficha não encontrada"})
 		return
+	}
+
+	userID, _ := getAuthenticatedUserID(c)
+	roleValue, _ := c.Get("userRole")
+	if userRole, _ := roleValue.(string); userRole == "utente" {
+		if ficha.UtenteID != userID || ficha.Estado != "aprovada" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão"})
+			return
+		}
 	}
 
 	if err := fillFichaTerapiaFalaFromUtenteData(&ficha); err != nil {

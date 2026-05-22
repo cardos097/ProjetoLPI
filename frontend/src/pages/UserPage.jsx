@@ -947,6 +947,20 @@ export function UserPage() {
                             <p className="registo-content">
                               <strong>Plano terapêutico:</strong> {getFichaValue(ficha, 'plano_terapeutico') || '-'}
                             </p>
+                            {getFichaValue(ficha, 'id') && (
+                              <div style={{ marginTop: '0.75rem' }}>
+                                <button
+                                  className="btn btn-secondary"
+                                  style={{ fontSize: '0.8rem', padding: '4px 12px' }}
+                                  onClick={() => {
+                                    const tipo = ficha._formTipo === 'Psicologia' ? 'psicologia' : ficha._formTipo === 'Terapia da Fala' ? 'terapia-fala' : 'avaliacao';
+                                    navigate(`/fichas-${tipo}/${getFichaValue(ficha, 'id')}`);
+                                  }}
+                                >
+                                  Ver Ficha Completa
+                                </button>
+                              </div>
+                            )}
                           </motion.div>
                         ))}
                       </>
