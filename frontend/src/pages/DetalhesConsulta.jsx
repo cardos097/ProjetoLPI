@@ -78,15 +78,21 @@ export function DetalhesConsulta() {
     return area?.nome || getConsultaValue(consulta, 'area_clinica_nome') || '-';
   };
 
+  const toUTC = (s) => {
+    if (!s) return new Date(NaN);
+    const str = String(s).replace(' ', 'T');
+    return new Date(/[Zz]$|[+-]\d{2}:?\d{2}$/.test(str) ? str : str + 'Z');
+  };
+
   const formatarData = (dataStr) => {
     if (!dataStr) return '-';
-    const data = new Date(dataStr + 'Z');
+    const data = toUTC(dataStr);
     return data.toLocaleDateString('pt-PT', { timeZone: 'UTC' });
   };
 
   const formatarHora = (dataStr) => {
     if (!dataStr) return '-';
-    const data = new Date(dataStr + 'Z');
+    const data = toUTC(dataStr);
     return data.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   };
 

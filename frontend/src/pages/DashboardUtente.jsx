@@ -66,7 +66,7 @@ export function DashboardUtente() {
                                     <div key={consulta.id} className="consulta-card">
                                         <div className="consulta-info">
                                             <h4>{consulta.tipo}</h4>
-                                            <p>Data: {new Date(consulta.data_inicio + 'Z').toLocaleDateString('pt-PT', { timeZone: 'UTC' })}</p>
+                                            <p>Data: {(() => { const s = String(consulta.data_inicio || '').replace(' ','T'); return new Date(/[Zz]$|[+-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z').toLocaleDateString('pt-PT', { timeZone: 'UTC' }); })()}</p>
                                             <p>Status: {consulta.estado}</p>
                                         </div>
                                         <button

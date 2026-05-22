@@ -49,8 +49,14 @@ export function VerConsultasSala() {
         }
     };
 
+    const toUTC = (s) => {
+        if (!s) return new Date(NaN);
+        const str = String(s).replace(' ', 'T');
+        return new Date(/[Zz]$|[+-]\d{2}:?\d{2}$/.test(str) ? str : str + 'Z');
+    };
+
     const formatarData = (dataStr) => {
-        const data = new Date(dataStr + 'Z');
+        const data = toUTC(dataStr);
         return data.toLocaleDateString('pt-PT', {
             weekday: 'long',
             year: 'numeric',

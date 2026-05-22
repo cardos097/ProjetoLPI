@@ -117,8 +117,14 @@ export function ListaConsultas() {
     navigate(`/consultas/${consultaId}/editar`);
   };
 
+  const toUTC = (s) => {
+    if (!s) return new Date(NaN);
+    const str = String(s).replace(' ', 'T');
+    return new Date(/[Zz]$|[+-]\d{2}:?\d{2}$/.test(str) ? str : str + 'Z');
+  };
+
   const formatDateTime = (dateString) => {
-    const date = new Date(dateString + 'Z');
+    const date = toUTC(dateString);
     return date.toLocaleDateString('pt-PT', {
       day: '2-digit',
       month: '2-digit',
