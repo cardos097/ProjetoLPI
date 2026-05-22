@@ -108,3 +108,8 @@ export async function uploadPdfConsulta(consultaId, file) {
   });
   return data;
 }
+
+export async function validarDocumento(id, acao) {
+  const { data } = await api.patch(`/documentos/${id}/validar`, { acao });
+  return data;
+}

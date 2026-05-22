@@ -35,6 +35,7 @@ export function AgendarConsulta() {
     terapeuta_id: '',
     sala_id: '',
     area_clinica_id: '',
+    tipo_consulta: 'individual',
     data_inicio: '',
     hora_inicio: '',
     duracao: '60',
@@ -245,6 +246,7 @@ export function AgendarConsulta() {
         terapeuta_id: parseInt(form.terapeuta_id),
         ...(isUtente ? {} : { sala_id: parseInt(form.sala_id) }),
         area_clinica_id: parseInt(form.area_clinica_id),
+        tipo_consulta: form.tipo_consulta || 'individual',
         data_inicio: formatLocalDateTime(dataInicio),
         data_fim: formatLocalDateTime(dataFim),
       };
@@ -355,6 +357,18 @@ export function AgendarConsulta() {
                     <option value="60">1 hora</option>
                     <option value="90">1 hora 30 min</option>
                     <option value="120">2 horas</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Tipo de Consulta</label>
+                  <select
+                    name="tipo_consulta"
+                    value={form.tipo_consulta || 'individual'}
+                    onChange={handleChange}
+                  >
+                    <option value="individual">Individual</option>
+                    <option value="grupo">Grupo</option>
                   </select>
                 </div>
               </div>

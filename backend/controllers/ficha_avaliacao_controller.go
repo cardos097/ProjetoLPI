@@ -238,6 +238,7 @@ func CreateFichaAvaliacao(c *gin.Context) {
 		HistMedFamiliar:            req.HistMedFamiliar,
 		SINSS:                      req.SINSS,
 		CreatedBy:                  createdBy,
+		Estado:                     estadoSubmissao(createdBy),
 	}
 
 	if err := fillFichaFromUtenteData(&ficha); err != nil {
@@ -378,4 +379,99 @@ func DeleteFichaAvaliacao(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Ficha eliminada com sucesso"})
+}
+
+func ValidarFichaAvaliacao(c *gin.Context) {
+	validarFicha(c, "avaliacao")
+}
+
+// validarFicha é o handler genérico partilhado pelos três tipos de ficha.
+func validarFicha(c *gin.Context, tipo string) {
+	userID, err := getAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	if isUserAluno(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Alunos não podem validar submissões"})
+		return
+	}
+
+	id := c.Param("id")
+	var body struct {
+		Acao string `json:"acao"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || (body.Acao != "aprovar" && body.Acao != "rejeitar") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "acao deve ser 'aprovar' ou 'rejeitar'"})
+		return
+	}
+
+	roleValue, _ := c.Get("userRole")
+	role, _ := roleValue.(string)
+
+	// Verificar que a ficha pertence a um aluno supervisionado por este professor (ou é admin)
+	var createdBy uint
+	switch tipo {
+	case "avaliacao":
+		var f models.FichaAvaliacao
+		if err := config.DB.Select("id, created_by").Where("id = ? AND estado = 'pendente'", id).First(&f).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Ficha pendente não encontrada"})
+			return
+		}
+		createdBy = f.CreatedBy
+	case "psicologia":
+		var f models.FichaPsicologia
+		if err := config.DB.Select("id, created_by").Where("id = ? AND estado = 'pendente'", id).First(&f).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Ficha pendente não encontrada"})
+			return
+		}
+		createdBy = f.CreatedBy
+	case "terapia-fala":
+		var f models.FichaTerapiaFala
+		if err := config.DB.Select("id, created_by").Where("id = ? AND estado = 'pendente'", id).First(&f).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Ficha pendente não encontrada"})
+			return
+		}
+		createdBy = f.CreatedBy
+	}
+
+	if role != "admin" {
+		var supervisor models.Terapeuta
+		if err := config.DB.Where("user_id = ? AND tipo = 'aluno' AND supervisor_id = ?", createdBy, userID).First(&supervisor).Error; err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para validar esta ficha"})
+			return
+		}
+	}
+
+	if body.Acao == "aprovar" {
+		var dbErr error
+		switch tipo {
+		case "avaliacao":
+			dbErr = config.DB.Model(&models.FichaAvaliacao{}).Where("id = ?", id).Update("estado", "aprovada").Error
+		case "psicologia":
+			dbErr = config.DB.Model(&models.FichaPsicologia{}).Where("id = ?", id).Update("estado", "aprovada").Error
+		case "terapia-fala":
+			dbErr = config.DB.Model(&models.FichaTerapiaFala{}).Where("id = ?", id).Update("estado", "aprovada").Error
+		}
+		if dbErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao aprovar ficha"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Ficha aprovada"})
+	} else {
+		var dbErr error
+		switch tipo {
+		case "avaliacao":
+			dbErr = config.DB.Where("id = ?", id).Delete(&models.FichaAvaliacao{}).Error
+		case "psicologia":
+			dbErr = config.DB.Where("id = ?", id).Delete(&models.FichaPsicologia{}).Error
+		case "terapia-fala":
+			dbErr = config.DB.Where("id = ?", id).Delete(&models.FichaTerapiaFala{}).Error
+		}
+		if dbErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao rejeitar ficha"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Ficha rejeitada e eliminada"})
+	}
 }

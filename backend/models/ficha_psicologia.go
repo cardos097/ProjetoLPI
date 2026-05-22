@@ -76,6 +76,7 @@ type FichaPsicologia struct {
 	SupervisaoSintese   string     `gorm:"column:supervisao_sintese;type:text"`
 
 	CreatedBy uint      `gorm:"column:created_by"`
+	Estado    string    `gorm:"column:estado;default:'aprovada'"`
 	CreatedAt time.Time `gorm:"column:created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at"`
 

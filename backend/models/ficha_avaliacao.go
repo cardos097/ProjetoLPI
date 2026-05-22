@@ -32,6 +32,7 @@ type FichaAvaliacao struct {
 	HistMedFamiliar            string     `gorm:"column:hist_med_familiar"`
 	SINSS                      string     `gorm:"column:sinss"`
 	CreatedBy                  uint       `gorm:"column:created_by"`
+	Estado                     string     `gorm:"column:estado;default:'aprovada'"`
 	CreatedAt                  time.Time  `gorm:"column:created_at"`
 
 	Utente              *Utente             `gorm:"foreignKey:UtenteID;references:UserID"`

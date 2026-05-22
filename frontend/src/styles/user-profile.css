@@ -744,6 +744,11 @@
   border-top: 1px solid var(--border-color);
 }
 
+.form-actions button {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Buttons */
 .btn {
   display: flex;

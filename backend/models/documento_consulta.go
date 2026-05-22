@@ -8,6 +8,7 @@ type DocumentoConsulta struct {
 	ArquivoURL  string    `gorm:"column:arquivo_url"`
 	NomeArquivo string    `gorm:"column:nome_arquivo"`
 	UploadedBy  uint      `gorm:"column:uploaded_by"`
+	Estado      string    `gorm:"column:estado;default:'aprovada'"`
 	CreatedAt   time.Time `gorm:"column:created_at"`
 
 	UserUpload User `gorm:"foreignKey:UploadedBy"`

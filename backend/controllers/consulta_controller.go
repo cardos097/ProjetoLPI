@@ -34,6 +34,7 @@ type CreateConsultaRequest struct {
 	AreaClinicaID uint   `json:"area_clinica_id"`
 	DataInicio    string `json:"data_inicio"`
 	DataFim       string `json:"data_fim"`
+	TipoConsulta  string `json:"tipo_consulta"`
 }
 
 type RemarcarConsultaRequest struct {
@@ -47,6 +48,7 @@ type UpdateConsultaRequest struct {
 	AreaClinicaID *uint   `json:"area_clinica_id"`
 	DataInicio    *string `json:"data_inicio"`
 	DataFim       *string `json:"data_fim"`
+	TipoConsulta  *string `json:"tipo_consulta"`
 }
 
 type ConsultaDetailResponse struct {
@@ -58,6 +60,7 @@ type ConsultaDetailResponse struct {
 	DataInicio      string `json:"data_inicio"`
 	DataFim         string `json:"data_fim"`
 	Estado          string `json:"estado"`
+	TipoConsulta    string `json:"tipo_consulta"`
 	CreatedBy       uint   `json:"created_by"`
 	UtenteNome      string `json:"utente_nome"`
 	TerapeutaNome   string `json:"terapeuta_nome"`
@@ -251,6 +254,7 @@ func GetConsultaByID(c *gin.Context) {
 		DataInicio:      consulta.DataInicio.Format("2006-01-02T15:04:05"),
 		DataFim:         consulta.DataFim.Format("2006-01-02T15:04:05"),
 		Estado:          consulta.Estado,
+		TipoConsulta:    consulta.TipoConsulta,
 		CreatedBy:       consulta.CreatedBy,
 		UtenteNome:      consulta.Utente.Nome,
 		TerapeutaNome:   consulta.Terapeuta.Nome,
@@ -403,6 +407,11 @@ func CreateConsulta(c *gin.Context) {
 		return
 	}
 
+	tipoConsulta := "individual"
+	if req.TipoConsulta == "grupo" {
+		tipoConsulta = "grupo"
+	}
+
 	consulta := models.Consulta{
 		UtenteID:      req.UtenteID,
 		TerapeutaID:   req.TerapeutaID,
@@ -411,6 +420,7 @@ func CreateConsulta(c *gin.Context) {
 		DataInicio:    dataInicio,
 		DataFim:       dataFim,
 		Estado:        "agendada",
+		TipoConsulta:  tipoConsulta,
 		CreatedBy:     createdBy,
 	}
 
@@ -680,6 +690,9 @@ func UpdateConsulta(c *gin.Context) {
 	}
 	if req.AreaClinicaID != nil {
 		consulta.AreaClinicaID = *req.AreaClinicaID
+	}
+	if req.TipoConsulta != nil && (*req.TipoConsulta == "individual" || *req.TipoConsulta == "grupo") {
+		consulta.TipoConsulta = *req.TipoConsulta
 	}
 
 	if req.DataInicio != nil || req.DataFim != nil {
@@ -1082,6 +1095,7 @@ func UploadPdfConsulta(c *gin.Context) {
 		ArquivoURL:  fmt.Sprintf("/uploads/%s", newFilename),
 		NomeArquivo: safeFilename,
 		UploadedBy:  userID.(uint),
+		Estado:      estadoSubmissao(userID.(uint)),
 		CreatedAt:   time.Now(),
 	}
 
@@ -1199,4 +1213,55 @@ func GetDocumentos(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, result)
+}
+
+func ValidarDocumento(c *gin.Context) {
+	userID, err := getAuthenticatedUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	if isUserAluno(userID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Alunos não podem validar submissões"})
+		return
+	}
+
+	id := c.Param("id")
+	var body struct {
+		Acao string `json:"acao"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || (body.Acao != "aprovar" && body.Acao != "rejeitar") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "acao deve ser 'aprovar' ou 'rejeitar'"})
+		return
+	}
+
+	var doc models.DocumentoConsulta
+	if err := config.DB.Where("id = ? AND estado = 'pendente'", id).First(&doc).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Documento pendente não encontrado"})
+		return
+	}
+
+	roleValue, _ := c.Get("userRole")
+	role, _ := roleValue.(string)
+	if role != "admin" {
+		var supervisor models.Terapeuta
+		if err := config.DB.Where("user_id = ? AND tipo = 'aluno' AND supervisor_id = ?", doc.UploadedBy, userID).First(&supervisor).Error; err != nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para validar este documento"})
+			return
+		}
+	}
+
+	if body.Acao == "aprovar" {
+		if err := config.DB.Model(&doc).Update("estado", "aprovada").Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao aprovar documento"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Documento aprovado"})
+	} else {
+		if err := config.DB.Delete(&doc).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao rejeitar documento"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Documento rejeitado e eliminado"})
+	}
 }

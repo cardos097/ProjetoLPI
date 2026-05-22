@@ -92,3 +92,12 @@ export async function deleteFichaTerapiaFala(fichaId) {
   const { data } = await api.delete(`/fichas-terapia-fala/${fichaId}`);
   return data;
 }
+export async function validarFicha(tipo, id, acao) {
+  const { data } = await api.patch(`/fichas-${tipo}/${id}/validar`, { acao });
+  return data;
+}
+
+export async function getPendentes() {
+  const { data } = await api.get("/pendentes");
+  return data;
+}

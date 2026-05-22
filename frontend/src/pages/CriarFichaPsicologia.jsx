@@ -79,18 +79,6 @@ const emptyForm = {
   supervisao_sintese: '',
 };
 
-const sections = [
-  { id: 1, title: 'I. Identificação', label: 'Id', color: '#3b82f6' },
-  { id: 2, title: 'II. Motivo da Procura', label: 'II', color: '#10b981' },
-  { id: 3, title: 'III. Contexto Relacional', label: 'III', color: '#f59e0b' },
-  { id: 4, title: 'IV. Expectativas', label: 'IV', color: '#8b5cf6' },
-  { id: 5, title: 'V. Risco e Vulnerabilidade', label: 'V', color: '#ef4444' },
-  { id: 6, title: 'VI. Informação', label: 'VI', color: '#06b6d4' },
-  { id: 7, title: 'VII. Decisão Técnica', label: 'VII', color: '#6366f1' },
-  { id: 8, title: 'VIII. Articulação', label: 'VIII', color: '#ec4899' },
-  { id: 9, title: 'IX. Impressão Técnica', label: 'IX', color: '#14b8a6' },
-  { id: 10, title: 'X. Supervisão', label: 'X', color: '#f97316' },
-];
 
 export function CriarFichaPsicologia() {
   const navigate = useNavigate();
@@ -111,7 +99,6 @@ export function CriarFichaPsicologia() {
   const [form, setForm] = useState(emptyForm);
   const [lockedFields, setLockedFields] = useState({});
   const [isPsicologiaConsulta, setIsPsicologiaConsulta] = useState(false);
-  const [activeSection, setActiveSection] = useState(1);
 
   const normalizeText = (value) => String(value || '')
     .normalize('NFD')
@@ -229,7 +216,9 @@ export function CriarFichaPsicologia() {
       Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
 
       await createFichaPsicologia(payload);
-      setSuccess('Formulário criado com sucesso');
+      setSuccess(isAluno
+        ? 'Formulário submetido. Aguarda aprovação do supervisor.'
+        : 'Formulário criado com sucesso');
 
       setTimeout(() => {
         if (consultaId) {
@@ -374,37 +363,9 @@ export function CriarFichaPsicologia() {
             </div>
           </div>
 
-          {/* Tabs Navigation */}
-          <div style={{ marginTop: '2rem', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem' }}>
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => setActiveSection(section.id)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    border: 'none',
-                    backgroundColor: activeSection === section.id ? section.color : '#f3f4f6',
-                    color: activeSection === section.id ? 'white' : '#374151',
-                    borderRadius: '0.5rem 0.5rem 0 0',
-                    cursor: 'pointer',
-                    fontWeight: activeSection === section.id ? 'bold' : 'normal',
-                    fontSize: '0.875rem',
-                  }}
-                >
-                  {section.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Section Content */}
-          <div style={{ minHeight: '300px' }}>
-            {/* Section I: Identification */}
-            {activeSection === 1 && (
-              <div>
-                <h3>I. Identificação</h3>
+          {/* Section I: Identification */}
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>I. Identificação</legend>
                 <div className="form-row">
                   <div className="form-group">
                     <label>Data de contacto</label>
@@ -460,13 +421,10 @@ export function CriarFichaPsicologia() {
                     <option value="misto">Misto</option>
                   </select>
                 </div>
-              </div>
-            )}
+          </fieldset>
 
-            {/* Section II: Reason for seeking help */}
-            {activeSection === 2 && (
-              <div>
-                <h3>II. Motivo da Procura</h3>
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>II. Motivo da Procura</legend>
                 <div className="form-group">
                   <label>Descrição da situação conforme relatada pela pessoa</label>
                   <textarea name="motivo_descricao" value={form.motivo_descricao} onChange={handleChange} rows="4" placeholder="Evitar interpretação clínica" />
@@ -487,13 +445,10 @@ export function CriarFichaPsicologia() {
                   <label>Impacto no funcionamento (social, laboral, familiar)</label>
                   <textarea name="impacto_funcionamento" value={form.impacto_funcionamento} onChange={handleChange} rows="4" />
                 </div>
-              </div>
-            )}
+          </fieldset>
 
-            {/* Section III: Community and relational context */}
-            {activeSection === 3 && (
-              <div>
-                <h3>III. Contexto Comunitário e Relacional</h3>
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>III. Contexto Comunitário e Relacional</legend>
                 <div className="form-group">
                   <label>Elementos relevantes identificados no momento</label>
                   <textarea name="contexto_elementos" value={form.contexto_elementos} onChange={handleChange} rows="4" placeholder="Ex: Situação familiar complexa, Conflito relacional, Violência..." />
@@ -554,140 +509,116 @@ export function CriarFichaPsicologia() {
                     <textarea name="rede_suporte" value={form.rede_suporte} onChange={handleChange} rows="2" />
                   </div>
                 </div>
-              </div>
-            )}
+          </fieldset>
 
-            {/* Section IV: Expectations */}
-            {activeSection === 4 && (
-              <div>
-                <h3>IV. Expectativas e Pedido de Apoio</h3>
-                <div className="form-group">
-                  <label>O que a pessoa espera do serviço</label>
-                  <textarea name="expectativas_servico" value={form.expectativas_servico} onChange={handleChange} rows="4" />
-                </div>
-                <div className="form-group">
-                  <label>Representações sobre o papel do psicólogo</label>
-                  <textarea name="representacoes_psicologo" value={form.representacoes_psicologo} onChange={handleChange} rows="4" />
-                </div>
-              </div>
-            )}
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>IV. Expectativas e Pedido de Apoio</legend>
+            <div className="form-group">
+              <label>O que a pessoa espera do serviço</label>
+              <textarea name="expectativas_servico" value={form.expectativas_servico} onChange={handleChange} rows="4" />
+            </div>
+            <div className="form-group">
+              <label>Representações sobre o papel do psicólogo</label>
+              <textarea name="representacoes_psicologo" value={form.representacoes_psicologo} onChange={handleChange} rows="4" />
+            </div>
+          </fieldset>
 
-            {/* Section V: Risk */}
-            {activeSection === 5 && (
-              <div>
-                <h3>V. Avaliação Proporcional de Risco e Vulnerabilidade</h3>
-                <div className="form-group">
-                  <label>Indicadores de risco identificados</label>
-                  <textarea name="risco_indicadores" value={form.risco_indicadores} onChange={handleChange} rows="4" placeholder="Ex: Risco para a própria pessoa, Risco para terceiros, Violência..." />
-                </div>
-                <div className="form-group">
-                  <label>Descrição factual</label>
-                  <textarea name="risco_descricao" value={form.risco_descricao} onChange={handleChange} rows="4" placeholder="Evitar juízos interpretativos" />
-                </div>
-                <div className="form-group">
-                  <label>Se aplicável, ação imediata adotada</label>
-                  <textarea name="risco_acao_adotada" value={form.risco_acao_adotada} onChange={handleChange} rows="3" />
-                </div>
-                <div className="form-group">
-                  <label>Fundamentação técnica da decisão</label>
-                  <textarea name="risco_fundamentacao" value={form.risco_fundamentacao} onChange={handleChange} rows="3" />
-                </div>
-              </div>
-            )}
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>V. Avaliação Proporcional de Risco e Vulnerabilidade</legend>
+            <div className="form-group">
+              <label>Indicadores de risco identificados</label>
+              <textarea name="risco_indicadores" value={form.risco_indicadores} onChange={handleChange} rows="4" placeholder="Ex: Risco para a própria pessoa, Risco para terceiros, Violência..." />
+            </div>
+            <div className="form-group">
+              <label>Descrição factual</label>
+              <textarea name="risco_descricao" value={form.risco_descricao} onChange={handleChange} rows="4" placeholder="Evitar juízos interpretativos" />
+            </div>
+            <div className="form-group">
+              <label>Se aplicável, ação imediata adotada</label>
+              <textarea name="risco_acao_adotada" value={form.risco_acao_adotada} onChange={handleChange} rows="3" />
+            </div>
+            <div className="form-group">
+              <label>Fundamentação técnica da decisão</label>
+              <textarea name="risco_fundamentacao" value={form.risco_fundamentacao} onChange={handleChange} rows="3" />
+            </div>
+          </fieldset>
 
-            {/* Section VI: Information */}
-            {activeSection === 6 && (
-              <div>
-                <h3>VI. Informação Prestada ao Cliente</h3>
-                <div className="form-group">
-                  <label>Foi esclarecido</label>
-                  <textarea name="info_esclarecida" value={form.info_esclarecida} onChange={handleChange} rows="4" placeholder="Ex: Natureza do contacto, Limites da confidencialidade, Funcionamento do serviço..." />
-                </div>
-                <div className="form-group">
-                  <label>Observações</label>
-                  <textarea name="info_observacoes" value={form.info_observacoes} onChange={handleChange} rows="4" />
-                </div>
-              </div>
-            )}
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>VI. Informação Prestada ao Cliente</legend>
+            <div className="form-group">
+              <label>Foi esclarecido</label>
+              <textarea name="info_esclarecida" value={form.info_esclarecida} onChange={handleChange} rows="4" placeholder="Ex: Natureza do contacto, Limites da confidencialidade, Funcionamento do serviço..." />
+            </div>
+            <div className="form-group">
+              <label>Observações</label>
+              <textarea name="info_observacoes" value={form.info_observacoes} onChange={handleChange} rows="4" />
+            </div>
+          </fieldset>
 
-            {/* Section VII: Decision */}
-            {activeSection === 7 && (
-              <div>
-                <h3>VII. Decisão Técnica e Percurso Proposto</h3>
-                <div className="form-group">
-                  <label>Decisão técnica</label>
-                  <textarea name="decisao_tecnica" value={form.decisao_tecnica} onChange={handleChange} rows="4" placeholder="Ex: Agendamento de Consulta, Encaminhamento, Articulação com rede local..." />
-                </div>
-                <div className="form-group">
-                  <label>Justificação da decisão</label>
-                  <textarea name="decisao_justificacao" value={form.decisao_justificacao} onChange={handleChange} rows="4" />
-                </div>
-              </div>
-            )}
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>VII. Decisão Técnica e Percurso Proposto</legend>
+            <div className="form-group">
+              <label>Decisão técnica</label>
+              <textarea name="decisao_tecnica" value={form.decisao_tecnica} onChange={handleChange} rows="4" placeholder="Ex: Agendamento de Consulta, Encaminhamento, Articulação com rede local..." />
+            </div>
+            <div className="form-group">
+              <label>Justificação da decisão</label>
+              <textarea name="decisao_justificacao" value={form.decisao_justificacao} onChange={handleChange} rows="4" />
+            </div>
+          </fieldset>
 
-            {/* Section VIII: Inter-institutional */}
-            {activeSection === 8 && (
-              <div>
-                <h3>VIII. Articulação Interinstitucional</h3>
-                <div className="form-group">
-                  <label>Entidades envolvidas</label>
-                  <textarea name="articulacao_entidades" value={form.articulacao_entidades} onChange={handleChange} rows="3" />
-                </div>
-                <div className="form-group">
-                  <label>Consentimento para partilha de informação</label>
-                  <select name="articulacao_consentimento" value={form.articulacao_consentimento} onChange={handleChange}>
-                    <option value="">Selecionar...</option>
-                    <option value="obtido">Obtido</option>
-                    <option value="nao_aplicavel">Não aplicável</option>
-                    <option value="nao_obtido">Não obtido</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Notas relativas a dever legal de comunicação</label>
-                  <textarea name="articulacao_notas" value={form.articulacao_notas} onChange={handleChange} rows="4" />
-                </div>
-              </div>
-            )}
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>VIII. Articulação Interinstitucional</legend>
+            <div className="form-group">
+              <label>Entidades envolvidas</label>
+              <textarea name="articulacao_entidades" value={form.articulacao_entidades} onChange={handleChange} rows="3" />
+            </div>
+            <div className="form-group">
+              <label>Consentimento para partilha de informação</label>
+              <select name="articulacao_consentimento" value={form.articulacao_consentimento} onChange={handleChange}>
+                <option value="">Selecionar...</option>
+                <option value="obtido">Obtido</option>
+                <option value="nao_aplicavel">Não aplicável</option>
+                <option value="nao_obtido">Não obtido</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Notas relativas a dever legal de comunicação</label>
+              <textarea name="articulacao_notas" value={form.articulacao_notas} onChange={handleChange} rows="4" />
+            </div>
+          </fieldset>
 
-            {/* Section IX: Technical Impression */}
-            {activeSection === 9 && (
-              <div>
-                <h3>IX. Impressão Técnica Preliminar (Uso Interno)</h3>
-                <div className="form-group">
-                  <label>Registo descritivo, não diagnóstico</label>
-                  <textarea name="impressao_descritiva" value={form.impressao_descritiva} onChange={handleChange} rows="4" />
-                </div>
-                <div className="form-group">
-                  <label>Dimensões a aprofundar em consulta posterior</label>
-                  <textarea name="dimensoes_aprofundar" value={form.dimensoes_aprofundar} onChange={handleChange} rows="4" />
-                </div>
-              </div>
-            )}
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>IX. Impressão Técnica Preliminar (Uso Interno)</legend>
+            <div className="form-group">
+              <label>Registo descritivo, não diagnóstico</label>
+              <textarea name="impressao_descritiva" value={form.impressao_descritiva} onChange={handleChange} rows="4" />
+            </div>
+            <div className="form-group">
+              <label>Dimensões a aprofundar em consulta posterior</label>
+              <textarea name="dimensoes_aprofundar" value={form.dimensoes_aprofundar} onChange={handleChange} rows="4" />
+            </div>
+          </fieldset>
 
-            {/* Section X: Supervision */}
-            {activeSection === 10 && (
-              <div>
-                <h3>X. Supervisão</h3>
-                <div className="form-group">
-                  <label>
-                    <input type="checkbox" name="supervisao_discutido" checked={form.supervisao_discutido} onChange={handleChange} />
-                    Caso discutido em supervisão
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label>Data de supervisão</label>
-                  <DateInput name="supervisao_data" value={form.supervisao_data} onChange={handleChange} />
-                </div>
-                <div className="form-group">
-                  <label>Síntese da orientação recebida</label>
-                  <textarea name="supervisao_sintese" value={form.supervisao_sintese} onChange={handleChange} rows="4" />
-                </div>
-              </div>
-            )}
-          </div>
+          <fieldset style={{ marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #e5e7eb' }}>
+            <legend style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>X. Supervisão</legend>
+            <div className="form-group">
+              <label>
+                <input type="checkbox" name="supervisao_discutido" checked={form.supervisao_discutido} onChange={handleChange} />
+                {' '}Caso discutido em supervisão
+              </label>
+            </div>
+            <div className="form-group">
+              <label>Data de supervisão</label>
+              <DateInput name="supervisao_data" value={form.supervisao_data} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>Síntese da orientação recebida</label>
+              <textarea name="supervisao_sintese" value={form.supervisao_sintese} onChange={handleChange} rows="4" />
+            </div>
+          </fieldset>
 
-          {/* Form Actions */}
-          <div className="form-actions" style={{ marginTop: '2rem', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+          <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={() => (consultaId ? navigate(`/consultas/${consultaId}/editar`) : navigate('/consultas'))} disabled={saving}>
               Cancelar
             </button>

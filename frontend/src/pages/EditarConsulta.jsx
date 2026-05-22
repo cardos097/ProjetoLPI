@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DateInput } from '../components/DateInput.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { HourglassSplit, FileText as FileTextIcon } from 'react-bootstrap-icons';
+import { HourglassSplit, FileText as FileTextIcon, LockFill } from 'react-bootstrap-icons';
 import {
   getConsultaById,
   updateConsulta,
@@ -20,6 +20,7 @@ export function EditarConsulta() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [accessDenied, setAccessDenied] = useState(false);
   const [consulta, setConsulta] = useState(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -67,6 +68,7 @@ export function EditarConsulta() {
     terapeuta_id: '',
     sala_id: '',
     area_clinica_id: '',
+    tipo_consulta: 'individual',
     data_inicio: '',
     hora_inicio: '',
     data_fim: '',
@@ -99,6 +101,7 @@ export function EditarConsulta() {
           terapeuta_id: getConsultaValue(consulta, 'terapeuta_id') || '',
           sala_id: getConsultaValue(consulta, 'sala_id') || '',
           area_clinica_id: getConsultaValue(consulta, 'area_clinica_id') || '',
+          tipo_consulta: getConsultaValue(consulta, 'tipo_consulta') || 'individual',
           data_inicio: dataInicio.toISOString().split('T')[0],
           hora_inicio: dataInicio.toTimeString().slice(0, 5),
           data_fim: dataFim.toISOString().split('T')[0],
@@ -109,7 +112,11 @@ export function EditarConsulta() {
         setSalas(dedupeSalasByNome(s || []));
         setAreasClinicas(a || []);
       } catch (err) {
-        setError('Erro ao carregar consulta');
+        if (err?.response?.status === 403) {
+          setAccessDenied(true);
+        } else {
+          setError('Erro ao carregar consulta');
+        }
       } finally {
         setLoading(false);
       }
@@ -143,6 +150,10 @@ export function EditarConsulta() {
 
       if (canEditAreaClinica && form.area_clinica_id) {
         payload.area_clinica_id = parseInt(form.area_clinica_id);
+      }
+
+      if (form.tipo_consulta) {
+        payload.tipo_consulta = form.tipo_consulta;
       }
 
       // Se é terapeuta, não permitir mudanças de data/hora
@@ -203,6 +214,24 @@ export function EditarConsulta() {
 
   if (loading) {
     return <div className="page">A carregar...</div>;
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="card" style={{ textAlign: 'center', maxWidth: 460, padding: '2.5rem 2rem' }}>
+          <LockFill size={48} style={{ color: '#059669', marginBottom: '1rem', display: 'block', margin: '0 auto 1rem' }} />
+          <h2 style={{ marginBottom: '0.75rem' }}>Acesso temporário expirado</h2>
+          <p style={{ color: '#6b7280', marginBottom: '1.75rem', lineHeight: 1.6 }}>
+            Só podes aceder a esta consulta durante o intervalo de{' '}
+            <strong>2 horas antes</strong> e <strong>2 horas depois</strong> do horário marcado.
+          </p>
+          <button className="btn btn-primary" onClick={() => navigate('/consultas')}>
+            ← Voltar às Consultas
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const isAluno = user?.role === 'terapeuta' && normalizeText(user?.tipo).includes('aluno');
@@ -363,7 +392,7 @@ export function EditarConsulta() {
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           {getConsultaValue(consulta, 'utente_id') && (
             <button
-              className="btn btn-secondary"
+              className="btn btn-info"
               onClick={() => navigate(`/utentes/${getConsultaValue(consulta, 'utente_id')}/perfil`)}
             >
               Ver Utente
@@ -468,6 +497,18 @@ export function EditarConsulta() {
             </select>
           </div>
 
+          <div className="form-group">
+            <label>Tipo de Consulta</label>
+            <select
+              name="tipo_consulta"
+              value={form.tipo_consulta || 'individual'}
+              onChange={handleChange}
+            >
+              <option value="individual">Individual</option>
+              <option value="grupo">Grupo</option>
+            </select>
+          </div>
+
           <h2>Data e Hora</h2>
 
           <div className="form-row">
@@ -535,14 +576,19 @@ export function EditarConsulta() {
                     marginBottom: '0.5rem'
                   }}>
                     <FileTextIcon size={20} />
-                    <a 
-                      href={doc.arquivo_url} 
-                      target="_blank" 
+                    <a
+                      href={doc.arquivo_url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       style={{ flex: 1, color: '#0066cc', textDecoration: 'none' }}
                     >
                       {doc.nome_arquivo}
                     </a>
+                    {doc.estado === 'pendente' && (
+                      <span style={{ background: '#f59e0b', color: 'white', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        ⏳ Pendente
+                      </span>
+                    )}
                     <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
                       {new Date(doc.created_at).toLocaleDateString('pt-PT')}
                     </span>

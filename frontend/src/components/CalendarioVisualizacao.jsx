@@ -24,9 +24,12 @@ export function CalendarioVisualizacao({
 
             const eventosFormatados = consultas.map((consulta) => {
                 try {
-                    const dataInicio = new Date(consulta.data_inicio || consulta.data);
-                    const duracao = parseInt(consulta.duracao || 60);
-                    const dataFim = new Date(dataInicio.getTime() + duracao * 60000);
+                    const startStr = consulta.data_inicio || consulta.data || '';
+                    const endStr = consulta.data_fim || (() => {
+                        const d = new Date(startStr + 'Z');
+                        d.setUTCMinutes(d.getUTCMinutes() + parseInt(consulta.duracao || 60));
+                        return d.toISOString().slice(0, 19);
+                    })();
 
                     const coresEstado = {
                         agendada: '#3498db',
@@ -38,8 +41,8 @@ export function CalendarioVisualizacao({
                     return {
                         id: String(consulta.id),
                         title: `${consulta.tipo || 'Consulta'} - ${consulta.utente_nome || 'Cliente'}`,
-                        start: dataInicio.toISOString(),
-                        end: dataFim.toISOString(),
+                        start: startStr,
+                        end: endStr,
                         backgroundColor: coresEstado[consulta.estado] || '#3498db',
                         borderColor: coresEstado[consulta.estado] || '#3498db',
                         display: 'block',
@@ -136,6 +139,7 @@ export function CalendarioVisualizacao({
                     eventClick={handleEventClick}
                     height="100%"
                     contentHeight="auto"
+                    timeZone="UTC"
                     locale="en"
                     editable={false}
                 />

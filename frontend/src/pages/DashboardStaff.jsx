@@ -18,7 +18,8 @@ import {
     getAdminStats, getStaffUsers, toggleUserActive, createStaffUser,
     getAssiduidade, createAssiduidade, getDocumentos, downloadDocumento,
 } from '../services/admin.jsx';
-import { getFichasAvaliacao, getFichaAvaliacaoById, deleteFichaAvaliacao } from '../services/fichas.jsx';
+import { getFichasAvaliacao, getFichaAvaliacaoById, deleteFichaAvaliacao, getPendentes, validarFicha } from '../services/fichas.jsx';
+import { validarDocumento } from '../services/consultas.jsx';
 import '../styles/dashboard.css';
 
 const ESTADO_LABEL = { P: 'Presente', A: 'Ausente', FJ: 'Falta Justificada', FI: 'Falta Injustificada' };
@@ -65,6 +66,10 @@ export function DashboardStaff() {
     const [assLoading, setAssLoading] = useState(false);
     const [showAssForm, setShowAssForm] = useState(false);
 
+    // — Pendentes —
+    const [pendentes, setPendentes] = useState({ fichas_avaliacao: [], fichas_psicologia: [], fichas_terapia_fala: [], documentos: [] });
+    const [loadingPendentes, setLoadingPendentes] = useState(false);
+
     // — Fichas —
     const [fichasTab, setFichasTab] = useState('avaliacao');
     const [fichasAvaliacao, setFichasAvaliacao] = useState([]);
@@ -79,6 +84,7 @@ export function DashboardStaff() {
         if (activeTab === 'admin' && user?.role === 'admin') carregarAdmin();
         if (activeTab === 'assiduidade') carregarAssiduidade();
         if (activeTab === 'fichas') carregarFichas();
+        if (activeTab === 'pendentes') carregarPendentes();
     }, [activeTab]);
 
     const carregarAlunos = async () => {
@@ -100,6 +106,31 @@ export function DashboardStaff() {
             setAssiduidade(ass || []);
             setAssUtentes(uts || []);
         } catch { setAssiduidade([]); }
+    };
+
+    const carregarPendentes = async () => {
+        setLoadingPendentes(true);
+        try {
+            const data = await getPendentes();
+            setPendentes(data || { fichas_avaliacao: [], fichas_psicologia: [], fichas_terapia_fala: [], documentos: [] });
+        } catch { setPendentes({ fichas_avaliacao: [], fichas_psicologia: [], fichas_terapia_fala: [], documentos: [] }); }
+        finally { setLoadingPendentes(false); }
+    };
+
+    const handleValidarFicha = async (tipo, id, acao) => {
+        if (acao === 'rejeitar' && !window.confirm('Tens a certeza que queres rejeitar e eliminar esta submissão?')) return;
+        try {
+            await validarFicha(tipo, id, acao);
+            carregarPendentes();
+        } catch { alert('Erro ao processar validação.'); }
+    };
+
+    const handleValidarDocumento = async (id, acao) => {
+        if (acao === 'rejeitar' && !window.confirm('Tens a certeza que queres rejeitar e eliminar este documento?')) return;
+        try {
+            await validarDocumento(id, acao);
+            carregarPendentes();
+        } catch { alert('Erro ao processar validação.'); }
     };
 
     const carregarFichas = async () => {
@@ -235,6 +266,24 @@ export function DashboardStaff() {
                 {user.tipo === 'professor' && (
                     <button className={`tab-btn ${activeTab === 'alunos' ? 'active' : ''}`} onClick={() => setActiveTab('alunos')}>
                         <Mortarboard size={16} /> Gerir Alunos
+                    </button>
+                )}
+                {(user.tipo === 'professor' || user.role === 'admin') && (
+                    <button className={`tab-btn ${activeTab === 'pendentes' ? 'active' : ''}`} onClick={() => setActiveTab('pendentes')}
+                        style={{ position: 'relative' }}>
+                        <ExclamationCircle size={16} /> Pendentes
+                        {((pendentes.fichas_avaliacao?.length || 0) + (pendentes.fichas_psicologia?.length || 0) +
+                          (pendentes.fichas_terapia_fala?.length || 0) + (pendentes.documentos?.length || 0)) > 0 && (
+                            <span style={{
+                                background: '#ef4444', color: 'white', borderRadius: '50%',
+                                width: 18, height: 18, fontSize: 11, fontWeight: 700,
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                marginLeft: 4,
+                            }}>
+                                {(pendentes.fichas_avaliacao?.length || 0) + (pendentes.fichas_psicologia?.length || 0) +
+                                 (pendentes.fichas_terapia_fala?.length || 0) + (pendentes.documentos?.length || 0)}
+                            </span>
+                        )}
                     </button>
                 )}
                 {user.role === 'admin' && (
@@ -541,6 +590,106 @@ export function DashboardStaff() {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                )}
+
+                {/* ── Pendentes ── */}
+                {activeTab === 'pendentes' && (
+                    <div className="admin-section">
+                        <div className="section-header">
+                            <h2><ExclamationCircle size={20} /> Submissões Pendentes de Alunos</h2>
+                        </div>
+                        {loadingPendentes ? (
+                            <p>A carregar...</p>
+                        ) : (
+                            (() => {
+                                const total = (pendentes.fichas_avaliacao?.length || 0) +
+                                    (pendentes.fichas_psicologia?.length || 0) +
+                                    (pendentes.fichas_terapia_fala?.length || 0) +
+                                    (pendentes.documentos?.length || 0);
+                                if (total === 0) return <p style={{ color: '#6b7280' }}>Sem submissões pendentes.</p>;
+
+                                const fichaRows = [
+                                    ...((pendentes.fichas_avaliacao || []).map(f => ({ ...f, _tipo: 'avaliacao', _label: 'Fisioterapia' }))),
+                                    ...((pendentes.fichas_psicologia || []).map(f => ({ ...f, _tipo: 'psicologia', _label: 'Psicologia' }))),
+                                    ...((pendentes.fichas_terapia_fala || []).map(f => ({ ...f, _tipo: 'terapia-fala', _label: 'Terapia da Fala' }))),
+                                ];
+
+                                return (
+                                    <div>
+                                        {fichaRows.length > 0 && (
+                                            <>
+                                                <h3 style={{ marginBottom: 8, marginTop: 16 }}>Fichas Clínicas</h3>
+                                                <div className="table-container">
+                                                    <table className="data-table">
+                                                        <thead><tr>
+                                                            <th>Tipo</th><th>Utente</th><th>Aluno</th><th>Data</th><th>Ações</th>
+                                                        </tr></thead>
+                                                        <tbody>
+                                                            {fichaRows.map(f => (
+                                                                <tr key={`${f._tipo}-${f.id}`}>
+                                                                    <td><span style={{ background: '#dbeafe', color: '#1e40af', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>{f._label}</span></td>
+                                                                    <td>{f.utente_nome || '—'}</td>
+                                                                    <td>{f.aluno_nome || '—'}</td>
+                                                                    <td>{f.created_at ? new Date(f.created_at).toLocaleDateString('pt-PT') : '—'}</td>
+                                                                    <td style={{ display: 'flex', gap: 6 }}>
+                                                                        <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: 13 }}
+                                                                            onClick={() => handleValidarFicha(f._tipo, f.id, 'aprovar')}>
+                                                                            <CheckCircle size={14} /> Aprovar
+                                                                        </button>
+                                                                        <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 13 }}
+                                                                            onClick={() => handleValidarFicha(f._tipo, f.id, 'rejeitar')}>
+                                                                            <XCircle size={14} /> Rejeitar
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </>
+                                        )}
+                                        {(pendentes.documentos?.length > 0) && (
+                                            <>
+                                                <h3 style={{ marginBottom: 8, marginTop: 24 }}>Documentos PDF</h3>
+                                                <div className="table-container">
+                                                    <table className="data-table">
+                                                        <thead><tr>
+                                                            <th>Ficheiro</th><th>Utente</th><th>Aluno</th><th>Data</th><th>Ações</th>
+                                                        </tr></thead>
+                                                        <tbody>
+                                                            {pendentes.documentos.map(d => (
+                                                                <tr key={d.id}>
+                                                                    <td>
+                                                                        <a href={d.arquivo_url} target="_blank" rel="noopener noreferrer"
+                                                                            style={{ color: '#1e40af', textDecoration: 'none' }}>
+                                                                            <FileText size={14} /> {d.nome_arquivo}
+                                                                        </a>
+                                                                    </td>
+                                                                    <td>{d.utente_nome || '—'}</td>
+                                                                    <td>{d.aluno_nome || '—'}</td>
+                                                                    <td>{d.created_at ? new Date(d.created_at).toLocaleDateString('pt-PT') : '—'}</td>
+                                                                    <td style={{ display: 'flex', gap: 6 }}>
+                                                                        <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: 13 }}
+                                                                            onClick={() => handleValidarDocumento(d.id, 'aprovar')}>
+                                                                            <CheckCircle size={14} /> Aprovar
+                                                                        </button>
+                                                                        <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 13 }}
+                                                                            onClick={() => handleValidarDocumento(d.id, 'rejeitar')}>
+                                                                            <XCircle size={14} /> Rejeitar
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })()
+                        )}
                     </div>
                 )}
             </div>

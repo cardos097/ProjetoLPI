@@ -11,6 +11,7 @@ type DocumentoDTO struct {
 	ID          uint      `json:"id"`
 	ArquivoURL  string    `json:"arquivo_url"`
 	NomeArquivo string    `json:"nome_arquivo"`
+	Estado      string    `json:"estado"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -24,6 +25,7 @@ type ConsultaDTO struct {
 	DataFim       time.Time      `json:"data_fim"`
 	Duracao       int            `json:"duracao"` // em minutos
 	Estado        string         `json:"estado"`
+	TipoConsulta  string         `json:"tipo_consulta"`
 	Tipo          string         `json:"tipo"`
 	Utente        *SimpleEntity  `json:"utente"`
 	Terapeuta     *SimpleEntity  `json:"terapeuta"`
@@ -66,6 +68,7 @@ func (c *Consulta) ConvertToDTO() *ConsultaDTO {
 			ID:          doc.ID,
 			ArquivoURL:  doc.ArquivoURL,
 			NomeArquivo: doc.NomeArquivo,
+			Estado:      doc.Estado,
 			CreatedAt:   doc.CreatedAt,
 		})
 	}
@@ -80,6 +83,7 @@ func (c *Consulta) ConvertToDTO() *ConsultaDTO {
 		DataFim:       c.DataFim,
 		Duracao:       duracao,
 		Estado:        c.Estado,
+		TipoConsulta:  c.TipoConsulta,
 		Tipo:          "Consulta",
 		Utente:        utente,
 		Terapeuta:     terapeuta,

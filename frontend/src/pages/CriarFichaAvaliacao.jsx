@@ -183,7 +183,9 @@ export function CriarFichaAvaliacao() {
       Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
 
       await createFichaAvaliacao(payload);
-      setSuccess('Formulário criado com sucesso');
+      setSuccess(isAluno
+        ? 'Formulário submetido. Aguarda aprovação do supervisor.'
+        : 'Formulário criado com sucesso');
 
       setTimeout(() => {
         if (consultaId) {

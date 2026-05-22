@@ -299,9 +299,15 @@
     padding: 2rem 1rem;
 }
 
-/* Buttons */
-.btn-primary,
-.btn-secondary {
+/* Buttons — scoped to dashboard/consulta contexts to avoid leaking into form pages */
+.consulta-card .btn-primary,
+.dashboard-content .btn-primary,
+.salas-section .btn-primary,
+.sala-consultas-page .btn-primary,
+.consulta-card .btn-secondary,
+.dashboard-content .btn-secondary,
+.salas-section .btn-secondary,
+.sala-consultas-page .btn-secondary {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 4px;
@@ -311,24 +317,36 @@
     font-size: 1rem;
 }
 
-.btn-primary {
+.consulta-card .btn-primary,
+.dashboard-content .btn-primary,
+.salas-section .btn-primary,
+.sala-consultas-page .btn-primary {
     background: var(--ufp-primary);
     color: white;
 }
 
-.btn-primary:hover {
+.consulta-card .btn-primary:hover,
+.dashboard-content .btn-primary:hover,
+.salas-section .btn-primary:hover,
+.sala-consultas-page .btn-primary:hover {
     background: var(--ufp-secondary);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.btn-secondary {
+.consulta-card .btn-secondary,
+.dashboard-content .btn-secondary,
+.salas-section .btn-secondary,
+.sala-consultas-page .btn-secondary {
     background: var(--ufp-light);
     color: var(--ufp-dark);
     border: 1px solid var(--ufp-primary);
 }
 
-.btn-secondary:hover {
+.consulta-card .btn-secondary:hover,
+.dashboard-content .btn-secondary:hover,
+.salas-section .btn-secondary:hover,
+.sala-consultas-page .btn-secondary:hover {
     background: var(--ufp-primary);
     color: white;
 }

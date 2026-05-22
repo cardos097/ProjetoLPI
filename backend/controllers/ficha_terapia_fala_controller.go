@@ -162,6 +162,7 @@ func CreateFichaTerapiaFala(c *gin.Context) {
 		PlanoTerapeutico:       req.PlanoTerapeutico,
 		PlanoProgressao:        req.PlanoProgressao,
 		CreatedBy:              createdBy,
+		Estado:                 estadoSubmissao(createdBy),
 		EstudanteID:            req.EstudanteID,
 	}
 
@@ -256,4 +257,8 @@ func DeleteFichaTerapiaFala(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Ficha eliminada com sucesso"})
+}
+
+func ValidarFichaTerapiaFala(c *gin.Context) {
+	validarFicha(c, "terapia-fala")
 }

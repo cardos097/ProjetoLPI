@@ -144,6 +144,14 @@ func main() {
 		auth.DELETE("/fichas-terapia-fala/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaTerapiaFala)
 
 		auth.GET("/documentos", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetDocumentos)
+		auth.PATCH("/documentos/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarDocumento)
+
+		auth.PATCH("/fichas-avaliacao/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarFichaAvaliacao)
+		auth.PATCH("/fichas-psicologia/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarFichaPsicologia)
+		auth.PATCH("/fichas-terapia-fala/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarFichaTerapiaFala)
+
+		auth.GET("/pendentes", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetPendentes)
+
 		auth.GET("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetAssiduidade)
 		auth.POST("/assiduidade", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CreateAssiduidade)
 

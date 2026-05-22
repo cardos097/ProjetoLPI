@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { FileText as FileTextIcon, ArrowLeft } from 'react-bootstrap-icons';
+import { FileText as FileTextIcon, ArrowLeft, LockFill } from 'react-bootstrap-icons';
 import {
   getConsultaById,
   getTerapeutas,
@@ -15,6 +15,7 @@ export function DetalhesConsulta() {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [accessDenied, setAccessDenied] = useState(false);
   const [consulta, setConsulta] = useState(null);
 
   const [terapeutas, setTerapeutas] = useState([]);
@@ -46,7 +47,11 @@ export function DetalhesConsulta() {
         setSalas(s || []);
         setAreasClinicas(a || []);
       } catch (err) {
-        setError('Erro ao carregar detalhes da consulta');
+        if (err?.response?.status === 403) {
+          setAccessDenied(true);
+        } else {
+          setError('Erro ao carregar detalhes da consulta');
+        }
       } finally {
         setLoading(false);
       }
@@ -87,6 +92,24 @@ export function DetalhesConsulta() {
 
   if (loading) {
     return <div className="page">A carregar...</div>;
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div className="card" style={{ textAlign: 'center', maxWidth: 460, padding: '2.5rem 2rem' }}>
+          <LockFill size={48} style={{ color: '#059669', display: 'block', margin: '0 auto 1rem' }} />
+          <h2 style={{ marginBottom: '0.75rem' }}>Acesso temporário expirado</h2>
+          <p style={{ color: '#6b7280', marginBottom: '1.75rem', lineHeight: 1.6 }}>
+            Só podes aceder a esta consulta durante o intervalo de{' '}
+            <strong>2 horas antes</strong> e <strong>2 horas depois</strong> do horário marcado.
+          </p>
+          <button className="btn btn-primary" onClick={() => navigate('/consultas')}>
+            ← Voltar às Consultas
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
@@ -142,6 +165,20 @@ export function DetalhesConsulta() {
           <div className="form-group">
             <label>Área Clínica</label>
             <div className="detail-value">{getAreaClinicaNome()}</div>
+          </div>
+
+          <div className="form-group">
+            <label>Tipo de Consulta</label>
+            <div className="detail-value" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {getConsultaValue(consulta, 'tipo_consulta') === 'grupo' ? (
+                <>
+                  Grupo
+                  <span style={{ background: '#6ba8d4', color: 'white', borderRadius: 4, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>
+                    Grupo
+                  </span>
+                </>
+              ) : 'Individual'}
+            </div>
           </div>
 
           <h2 style={{ marginTop: '2rem' }}>Data e Hora</h2>

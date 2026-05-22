@@ -11,6 +11,7 @@ type Consulta struct {
 	DataInicio    time.Time `gorm:"column:data_inicio"`
 	DataFim       time.Time `gorm:"column:data_fim"`
 	Estado        string    `gorm:"column:estado"`
+	TipoConsulta  string    `gorm:"column:tipo_consulta;default:'individual'" json:"tipo_consulta"`
 	CreatedBy     uint      `gorm:"column:created_by"`
 	CreatedAt     time.Time `gorm:"column:created_at"`
 

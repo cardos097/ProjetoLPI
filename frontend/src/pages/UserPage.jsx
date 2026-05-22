@@ -877,7 +877,14 @@ export function UserPage() {
                                 <FileText size={18} />
                               </div>
                               <div className="registo-info">
-                                <p className="registo-title">{ficha._formTipo || getFichaValue(ficha, 'tipo_registo') || 'Formulário'}</p>
+                                <p className="registo-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  {ficha._formTipo || getFichaValue(ficha, 'tipo_registo') || 'Formulário'}
+                                  {(ficha.estado || getFichaValue(ficha, 'estado')) === 'pendente' && (
+                                    <span style={{ background: '#f59e0b', color: 'white', borderRadius: 4, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>
+                                      ⏳ Pendente
+                                    </span>
+                                  )}
+                                </p>
                                 <div className="registo-meta">
                                   <span className="registo-author">Criado por: {getFichaValue(ficha, 'created_by') || '-'}</span>
                                   <span className="registo-date">{getFichaValue(ficha, 'created_at') || '-'}</span>

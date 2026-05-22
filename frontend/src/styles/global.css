@@ -677,6 +677,15 @@ table tr:hover {
   background: #d1d5db;
 }
 
+.btn-info {
+  background: var(--ufp-accent);
+  color: white;
+}
+
+.btn-info:hover {
+  background: #5a97c3;
+}
+
 .btn-danger {
   background: #ef4444;
   color: white;
@@ -858,7 +867,8 @@ table tr:hover {
 }
 
 .form-actions button {
-  flex: 1;
+  flex: 1 !important;
+  min-width: 0 !important;
 }
 
 /* Alerts */

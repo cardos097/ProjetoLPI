@@ -7,6 +7,20 @@ import (
 	"clinica-backend/models"
 )
 
+// isUserAluno retorna true se o utilizador é terapeuta do tipo "aluno".
+func isUserAluno(userID uint) bool {
+	var t models.Terapeuta
+	return config.DB.Where("user_id = ? AND tipo = 'aluno'", userID).First(&t).Error == nil
+}
+
+// estadoSubmissao devolve "pendente" se o criador é aluno, caso contrário "aprovada".
+func estadoSubmissao(createdBy uint) string {
+	if isUserAluno(createdBy) {
+		return "pendente"
+	}
+	return "aprovada"
+}
+
 // isAlunoOutsideWindow retorna true se o utilizador é aluno terapeuta
 // e o momento atual está fora da janela [data_inicio-2h, data_fim+2h].
 func isAlunoOutsideWindow(userID uint, consulta *models.Consulta) bool {

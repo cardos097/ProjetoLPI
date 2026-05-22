@@ -104,6 +104,7 @@ CREATE TABLE consultas (
   data_inicio TIMESTAMP NOT NULL,
   data_fim TIMESTAMP NOT NULL,
   estado consulta_estado NOT NULL DEFAULT 'agendada',
+  tipo_consulta VARCHAR(20) NOT NULL DEFAULT 'individual',
   created_by INTEGER NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CHECK (data_fim > data_inicio)
@@ -132,7 +133,7 @@ EXCLUDE USING GIST (
   sala_id WITH =,
   tsrange(data_inicio, data_fim) WITH &&
 )
-WHERE (estado = 'agendada');
+WHERE (estado = 'agendada'::consulta_estado AND tipo_consulta = 'individual');
 
 ALTER TABLE consultas
 ADD CONSTRAINT no_overlap_terapeuta
@@ -140,7 +141,7 @@ EXCLUDE USING GIST (
   terapeuta_id WITH =,
   tsrange(data_inicio, data_fim) WITH &&
 )
-WHERE (estado = 'agendada');
+WHERE (estado = 'agendada'::consulta_estado AND tipo_consulta = 'individual');
 
 
 
@@ -173,6 +174,7 @@ CREATE TABLE fichas_avaliacao (
   hist_med_anterior TEXT,
   hist_med_familiar TEXT,
   sinss TEXT,
+  estado VARCHAR(20) NOT NULL DEFAULT 'aprovada',
   created_by INTEGER NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -260,7 +262,8 @@ CREATE TABLE fichas_psicologia (
   supervisao_discutido BOOLEAN DEFAULT FALSE,
   supervisao_data DATE,
   supervisao_sintese TEXT,
-  
+
+  estado VARCHAR(20) NOT NULL DEFAULT 'aprovada',
   created_by INTEGER NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -284,6 +287,7 @@ CREATE TABLE fichas_terapia_fala (
   objetivos_prognostico TEXT,
   plano_terapeutico TEXT,
   plano_progressao TEXT,
+  estado VARCHAR(20) NOT NULL DEFAULT 'aprovada',
   created_by INTEGER NOT NULL REFERENCES users(id),
   estudante_id INTEGER REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -312,6 +316,7 @@ CREATE TABLE documentos_consulta (
   arquivo_url TEXT NOT NULL,
   nome_arquivo VARCHAR(255) NOT NULL,
   uploaded_by INTEGER NOT NULL REFERENCES users(id),
+  estado VARCHAR(20) NOT NULL DEFAULT 'aprovada',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

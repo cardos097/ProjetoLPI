@@ -281,6 +281,7 @@ func CreateFichaPsicologia(c *gin.Context) {
 		SupervisaoData:            supervisaoData,
 		SupervisaoSintese:         req.SupervisaoSintese,
 		CreatedBy:                 createdBy,
+		Estado:                    estadoSubmissao(createdBy),
 	}
 
 	if err := fillFichaPsicologiaFromUtenteData(&ficha); err != nil {
@@ -488,4 +489,8 @@ func DeleteFichaPsicologia(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Ficha eliminada com sucesso"})
+}
+
+func ValidarFichaPsicologia(c *gin.Context) {
+	validarFicha(c, "psicologia")
 }

@@ -199,7 +199,6 @@
 .btn-primary {
     background: var(--ufp-primary);
     color: white;
-    margin-bottom: 20px;
 }
 
 .btn-primary:hover:not(:disabled) {

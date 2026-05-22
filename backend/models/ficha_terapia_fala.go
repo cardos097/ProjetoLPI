@@ -17,6 +17,7 @@ type FichaTerapiaFala struct {
 	PlanoTerapeutico       string     `gorm:"column:plano_terapeutico"`
 	PlanoProgressao        string     `gorm:"column:plano_progressao"`
 	CreatedBy              uint       `gorm:"column:created_by"`
+	Estado                 string     `gorm:"column:estado;default:'aprovada'"`
 	EstudanteID            *uint      `gorm:"column:estudante_id"`
 	CreatedAt              time.Time  `gorm:"column:created_at"`
 
