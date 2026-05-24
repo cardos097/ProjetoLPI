@@ -203,6 +203,9 @@ export function AgendarConsulta() {
     getUtenteDetails(uId).then(setUtenteDetails).catch(() => setUtenteDetails(null));
   }, [form.utente_id, isUtente, user?.id]);
 
+  const isFisioterapia =
+    areasClinicas.find((a) => String(a.id) === form.area_clinica_id)?.nome?.toLowerCase().includes('fisio') ?? false;
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
@@ -229,7 +232,7 @@ export function AgendarConsulta() {
     e.preventDefault();
     setError('');
 
-    if ((!isUtente && !form.utente_id) || !form.terapeuta_id || (!isUtente && !form.sala_id) || !form.area_clinica_id || !form.data_inicio || !form.hora_inicio) {
+    if ((!isUtente && !form.utente_id) || !form.terapeuta_id || (!isUtente && !isFisioterapia && !form.sala_id) || !form.area_clinica_id || !form.data_inicio || !form.hora_inicio) {
       setError('Todos os campos são obrigatórios');
       return;
     }
@@ -254,7 +257,7 @@ export function AgendarConsulta() {
       const payload = {
         utente_id: utenteId,
         terapeuta_id: parseInt(form.terapeuta_id),
-        ...(isUtente ? {} : { sala_id: parseInt(form.sala_id) }),
+        ...(isUtente ? {} : (form.sala_id ? { sala_id: parseInt(form.sala_id) } : {})),
         area_clinica_id: parseInt(form.area_clinica_id),
         tipo_consulta: form.tipo_consulta || 'individual',
         data_inicio: formatLocalDateTime(dataInicio),
@@ -450,7 +453,9 @@ export function AgendarConsulta() {
               {form.hora_inicio && !isUtente && (
                 <>
                   <h2>4. Sala</h2>
-                  {salasParaSlot.length === 0 ? (
+                  {isFisioterapia ? (
+                    <p className="helper-text">A sala será atribuída no momento da consulta.</p>
+                  ) : salasParaSlot.length === 0 ? (
                     <p className="helper-text">Sem salas disponíveis para este horário.</p>
                   ) : (
                     <div className="form-group">
@@ -492,7 +497,7 @@ export function AgendarConsulta() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={saving || !form.hora_inicio || (!isUtente && !form.sala_id)}
+                  disabled={saving || !form.hora_inicio || (!isUtente && !isFisioterapia && !form.sala_id)}
                 >
                   {saving ? 'A agendar...' : 'Agendar Consulta'}
                 </button>

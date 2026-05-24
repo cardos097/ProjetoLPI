@@ -147,6 +147,11 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
                     <div className="aluno-info">
                       <p className="aluno-nome">{aluno.nome}</p>
                       <p className="aluno-email">{aluno.email}</p>
+                      <p className="aluno-email" style={{ fontSize: '0.78rem', color: '#9ca3af' }}>
+                        Último acesso: {aluno.last_login_at
+                          ? new Date(aluno.last_login_at).toLocaleString('pt-PT')
+                          : 'Nunca'}
+                      </p>
                     </div>
                     <button
                       className="btn-remover"

@@ -243,3 +243,39 @@
     justify-content: space-between;
     align-items: center;
 }
+
+/* ============================================ */
+/* VISTA LISTA (mobile)                         */
+/* ============================================ */
+
+.fc .fc-list-event:hover td {
+    background-color: var(--ufp-light, #e8f5f0);
+    cursor: pointer;
+}
+
+.fc .fc-list-day-cushion {
+    background-color: var(--ufp-light, #e8f5f0);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.fc .fc-list-empty {
+    background-color: #f9fafb;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+.fc .fc-list-event-dot {
+    border-width: 8px;
+}
+
+.fc .fc-list-event-title {
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+}
+
+.fc .fc-list-event-time {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6b7280);
+    white-space: nowrap;
+}

@@ -117,8 +117,11 @@ func main() {
 		auth.GET("/utentes/:id/registos-clinicos", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetRegistosClinicosByUtenteID)
 
 		auth.GET("/salas", controllers.GetSalas)
+		auth.GET("/exports/sala", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.ExportOcupacaoSalas)
 		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetTerapeutas)
 		auth.GET("/terapeutas/area/:area_id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetTerapeutasByArea)
+		auth.GET("/terapeutas/:terapeuta_id/utentes", middleware.RoleMiddleware("admin", "administrativo"), controllers.GetUtentesDeTerapeuta)
+		auth.GET("/alunos", middleware.RoleMiddleware("admin", "administrativo"), controllers.GetAlunos)
 		auth.GET("/alunos-disponiveis", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDisponiveis)
 		auth.GET("/meus-alunos", middleware.RoleMiddleware("terapeuta"), controllers.GetAlunosDoProfessor)
 		auth.POST("/adicionar-aluno", middleware.RoleMiddleware("terapeuta"), controllers.AdicionarAluno)

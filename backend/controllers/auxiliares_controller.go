@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"clinica-backend/config"
 	"clinica-backend/models"
@@ -295,26 +296,56 @@ func RemoverAluno(c *gin.Context) {
 func GetAlunosDoProfessor(c *gin.Context) {
 	professorID := c.GetUint("user_id")
 
-	var alunos []models.Terapeuta
-
-	if err := config.DB.
-		Joins("JOIN users ON terapeutas.user_id = users.id").
-		Where("supervisor_id = ?", professorID).
-		Preload("User").
-		Order("users.nome ASC").
-		Find(&alunos).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	type AlunoItem struct {
+		UserID      uint       `json:"user_id"`
+		Nome        string     `json:"nome"`
+		Email       string     `json:"email"`
+		LastLoginAt *time.Time `json:"last_login_at"`
 	}
 
-	response := make([]gin.H, 0, len(alunos))
-	for _, aluno := range alunos {
-		response = append(response, gin.H{
-			"user_id": aluno.UserID,
-			"nome":    aluno.User.Nome,
-			"email":   aluno.User.Email,
-		})
+	var results []AlunoItem
+	config.DB.Raw(`
+		SELECT t.user_id, u.nome, u.email, u.last_login_at
+		FROM terapeutas t
+		JOIN users u ON u.id = t.user_id
+		WHERE t.supervisor_id = ?
+		ORDER BY u.nome ASC
+	`, professorID).Scan(&results)
+
+	if results == nil {
+		results = []AlunoItem{}
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, results)
+}
+
+func GetAlunos(c *gin.Context) {
+	type AlunoItem struct {
+		UserID         uint       `json:"user_id"`
+		Nome           string     `json:"nome"`
+		Email          string     `json:"email"`
+		AreaClinica    string     `json:"area_clinica"`
+		SupervisorNome string     `json:"supervisor_nome"`
+		LastLoginAt    *time.Time `json:"last_login_at"`
+	}
+
+	var results []AlunoItem
+	config.DB.Raw(`
+		SELECT t.user_id, u.nome, u.email,
+		       COALESCE(a.nome, '') AS area_clinica,
+		       COALESCE(sup.nome, '') AS supervisor_nome,
+		       u.last_login_at
+		FROM terapeutas t
+		JOIN users u ON u.id = t.user_id
+		LEFT JOIN areas_clinicas a ON a.id = t.area_clinica_id
+		LEFT JOIN users sup ON sup.id = t.supervisor_id
+		WHERE t.tipo = 'aluno' AND u.active = true
+		ORDER BY u.nome ASC
+	`).Scan(&results)
+
+	if results == nil {
+		results = []AlunoItem{}
+	}
+
+	c.JSON(http.StatusOK, results)
 }

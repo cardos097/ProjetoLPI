@@ -4,6 +4,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
 import '../styles/calendario.css';
 
 export function CalendarioVisualizacao({
@@ -14,6 +15,8 @@ export function CalendarioVisualizacao({
 }) {
     const [events, setEvents] = useState([]);
     const [error, setError] = useState(null);
+
+    const isMobile = () => window.innerWidth < 768;
 
     useEffect(() => {
         try {
@@ -67,40 +70,36 @@ export function CalendarioVisualizacao({
 
     const handleDateClick = (info) => {
         try {
-            if (onDateClick) {
-                onDateClick(info.dateStr);
-            }
-        } catch (e) {
-        }
-    };
-
-    const handleDateSelect = (info) => {
-        try {
-            if (onDateClick) {
-                onDateClick(info.startStr);
-            }
-        } catch (e) {
-        }
+            if (onDateClick) onDateClick(info.dateStr);
+        } catch (e) {}
     };
 
     const handleEventClick = (info) => {
         try {
-            if (onEventClick) {
-                onEventClick(info.event.extendedProps.consultaId, info.event.extendedProps);
-            }
-        } catch (e) {
-        }
+            if (onEventClick) onEventClick(info.event.extendedProps.consultaId, info.event.extendedProps);
+        } catch (e) {}
     };
 
     const getInitialView = () => {
-        switch (mode) {
-            case 'week':
-                return 'timeGridWeek';
-            case 'day':
-                return 'timeGridDay';
-            default:
-                return 'dayGridMonth';
+        if (isMobile()) return 'listWeek';
+        if (mode === 'week') return 'timeGridWeek';
+        if (mode === 'day') return 'timeGridDay';
+        return 'dayGridMonth';
+    };
+
+    const getHeaderToolbar = () => {
+        if (isMobile()) {
+            return {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'listWeek,dayGridMonth',
+            };
         }
+        return {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay',
+        };
     };
 
     if (error) {
@@ -125,14 +124,17 @@ export function CalendarioVisualizacao({
                 </p>
             </div>
 
-            <div className="fc-wrapper" style={{ position: 'relative', width: '100%', minHeight: '600px' }}>
+            <div className="fc-wrapper" style={{ position: 'relative', width: '100%', minHeight: '400px' }}>
                 <FullCalendar
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
                     initialView={getInitialView()}
-                    headerToolbar={{
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    headerToolbar={getHeaderToolbar()}
+                    buttonText={{
+                        today: 'Hoje',
+                        month: 'Mês',
+                        week: 'Semana',
+                        day: 'Dia',
+                        list: 'Lista',
                     }}
                     events={events}
                     dateClick={handleDateClick}
@@ -140,8 +142,16 @@ export function CalendarioVisualizacao({
                     height="100%"
                     contentHeight="auto"
                     timeZone="UTC"
-                    locale="en"
+                    locale="pt"
                     editable={false}
+                    windowResize={(arg) => {
+                        if (isMobile()) {
+                            arg.view.calendar.changeView('listWeek');
+                        } else if (arg.view.type === 'listWeek') {
+                            arg.view.calendar.changeView('dayGridMonth');
+                        }
+                    }}
+                    noEventsText="Sem consultas neste período"
                 />
             </div>
         </div>

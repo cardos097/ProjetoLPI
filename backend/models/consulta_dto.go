@@ -19,7 +19,7 @@ type ConsultaDTO struct {
 	ID            uint           `json:"id"`
 	UtenteID      uint           `json:"utente_id"`
 	TerapeutaID   uint           `json:"terapeuta_id"`
-	SalaID        uint           `json:"sala_id"`
+	SalaID        *uint          `json:"sala_id"`
 	AreaClinicaID uint           `json:"area_clinica_id"`
 	DataInicio    time.Time      `json:"data_inicio"`
 	DataFim       time.Time      `json:"data_fim"`
@@ -51,9 +51,9 @@ func (c *Consulta) ConvertToDTO() *ConsultaDTO {
 		Nome: c.Terapeuta.Nome,
 	}
 
-	sala := &SimpleEntity{
-		ID:   c.Sala.ID,
-		Nome: c.Sala.Nome,
+	var sala *SimpleEntity
+	if c.SalaID != nil && c.Sala.ID != 0 {
+		sala = &SimpleEntity{ID: c.Sala.ID, Nome: c.Sala.Nome}
 	}
 
 	areaClinica := &SimpleEntity{

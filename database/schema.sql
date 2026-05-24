@@ -106,7 +106,7 @@ CREATE TABLE consultas (
   id SERIAL PRIMARY KEY,
   utente_id INTEGER NOT NULL REFERENCES users(id),
   terapeuta_id INTEGER NOT NULL REFERENCES users(id),
-  sala_id INTEGER NOT NULL REFERENCES salas(id),
+  sala_id INTEGER REFERENCES salas(id),
   area_clinica_id INTEGER NOT NULL REFERENCES areas_clinicas(id),
   data_inicio TIMESTAMP NOT NULL,
   data_fim TIMESTAMP NOT NULL,
@@ -138,14 +138,6 @@ ALTER TABLE consultas
 ADD CONSTRAINT no_overlap_sala
 EXCLUDE USING GIST (
   sala_id WITH =,
-  tsrange(data_inicio, data_fim) WITH &&
-)
-WHERE (estado = 'agendada'::consulta_estado AND tipo_consulta = 'individual');
-
-ALTER TABLE consultas
-ADD CONSTRAINT no_overlap_terapeuta
-EXCLUDE USING GIST (
-  terapeuta_id WITH =,
   tsrange(data_inicio, data_fim) WITH &&
 )
 WHERE (estado = 'agendada'::consulta_estado AND tipo_consulta = 'individual');

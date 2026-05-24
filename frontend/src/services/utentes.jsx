@@ -64,3 +64,8 @@ export async function uploadAvatar(utenteId, file) {
 
   return data;
 }
+
+export async function getUtentesDeTerapeuta(terapeutaId) {
+  const { data } = await api.get(`/terapeutas/${terapeutaId}/utentes`);
+  return data;
+}

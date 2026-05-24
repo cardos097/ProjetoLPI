@@ -800,3 +800,38 @@ func UpdateTerapeutaUtente(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Terapeuta atualizado com sucesso"})
 }
+
+func GetUtentesDeTerapeuta(c *gin.Context) {
+	terapeutaID := c.Param("terapeuta_id")
+
+	type Result struct {
+		UtenteID      uint   `json:"utente_id"`
+		UtenteNome    string `json:"utente_nome"`
+		AreaClinicaID uint   `json:"area_clinica_id"`
+		AreaNome      string `json:"area_nome"`
+	}
+
+	var results []Result
+	config.DB.Raw(`
+		SELECT DISTINCT utente_id, utente_nome, area_clinica_id, area_nome FROM (
+			SELECT c.utente_id, u.nome AS utente_nome, c.area_clinica_id, a.nome AS area_nome
+			FROM consultas c
+			JOIN users u ON u.id = c.utente_id
+			JOIN areas_clinicas a ON a.id = c.area_clinica_id
+			WHERE c.terapeuta_id = ?
+			UNION
+			SELECT ut.utente_id, u.nome AS utente_nome, ut.area_clinica_id, a.nome AS area_nome
+			FROM utente_terapeutas ut
+			JOIN users u ON u.id = ut.utente_id
+			JOIN areas_clinicas a ON a.id = ut.area_clinica_id
+			WHERE ut.terapeuta_id = ?
+		) combined
+		ORDER BY area_nome, utente_nome
+	`, terapeutaID, terapeutaID).Scan(&results)
+
+	if results == nil {
+		results = []Result{}
+	}
+
+	c.JSON(http.StatusOK, results)
+}

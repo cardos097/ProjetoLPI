@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { DateInput } from '../components/DateInput.jsx';
 import {
@@ -18,8 +19,8 @@ import {
     getAdminStats, getStaffUsers, toggleUserActive, createStaffUser,
     getAssiduidade, createAssiduidade, getDocumentos, downloadDocumento,
 } from '../services/admin.jsx';
-import { getFichasAvaliacao, getFichaAvaliacaoById, deleteFichaAvaliacao, getPendentes, validarFicha } from '../services/fichas.jsx';
-import { validarDocumento } from '../services/consultas.jsx';
+import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala, deleteFichaAvaliacao, deleteFichaPsicologia, deleteFichaTerapiaFala, getPendentes, validarFicha } from '../services/fichas.jsx';
+import { validarDocumento, getAlunos } from '../services/consultas.jsx';
 import '../styles/dashboard.css';
 
 const ESTADO_LABEL = { P: 'Presente', A: 'Ausente', FJ: 'Falta Justificada', FI: 'Falta Injustificada' };
@@ -37,6 +38,7 @@ function StatCard({ icon, label, value }) {
 
 export function DashboardStaff() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('consultas');
 
     // — Alunos —
@@ -49,6 +51,10 @@ export function DashboardStaff() {
 
     // — Admin: stats —
     const [stats, setStats] = useState(null);
+
+    // — Alunos (admin/administrativo) —
+    const [todosAlunos, setTodosAlunos] = useState([]);
+    const [loadingTodosAlunos, setLoadingTodosAlunos] = useState(false);
 
     // — Admin: staff users —
     const [staffUsers, setStaffUsers] = useState([]);
@@ -74,13 +80,13 @@ export function DashboardStaff() {
     const [fichasTab, setFichasTab] = useState('avaliacao');
     const [fichasAvaliacao, setFichasAvaliacao] = useState([]);
     const [documentos, setDocumentos] = useState([]);
-    const [fichaDetalhe, setFichaDetalhe] = useState(null);
     const [fichasSearch, setFichasSearch] = useState('');
 
     // ── Effects ──────────────────────────────────────────────────────────────
 
     useEffect(() => {
         if (activeTab === 'alunos' && user?.tipo === 'professor') carregarAlunos();
+        if (activeTab === 'alunos-lista' && (user?.role === 'admin' || user?.role === 'administrativo')) carregarTodosAlunos();
         if (activeTab === 'admin' && user?.role === 'admin') carregarAdmin();
         if (activeTab === 'assiduidade') carregarAssiduidade();
         if (activeTab === 'fichas') carregarFichas();
@@ -90,6 +96,11 @@ export function DashboardStaff() {
     const carregarAlunos = async () => {
         setLoadingAlunos(true);
         try { setMeuAlunos((await getAlunosDoProfessor()) || []); } catch { setMeuAlunos([]); } finally { setLoadingAlunos(false); }
+    };
+
+    const carregarTodosAlunos = async () => {
+        setLoadingTodosAlunos(true);
+        try { setTodosAlunos((await getAlunos()) || []); } catch { setTodosAlunos([]); } finally { setLoadingTodosAlunos(false); }
     };
 
     const carregarAdmin = async () => {
@@ -135,8 +146,18 @@ export function DashboardStaff() {
 
     const carregarFichas = async () => {
         try {
-            const [av, docs] = await Promise.all([getFichasAvaliacao(), getDocumentos()]);
-            setFichasAvaliacao(av || []);
+            const [av, psic, fala, docs] = await Promise.all([
+                getFichasAvaliacao(),
+                getFichasPsicologia(),
+                getFichasTerapiaFala(),
+                getDocumentos(),
+            ]);
+            const todas = [
+                ...(av   || []).map(f => ({ ...f, _formTipo: 'Fisioterapia' })),
+                ...(psic || []).map(f => ({ ...f, _formTipo: 'Psicologia' })),
+                ...(fala || []).map(f => ({ ...f, _formTipo: 'Terapia da Fala' })),
+            ].sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
+            setFichasAvaliacao(todas);
             setDocumentos(docs || []);
         } catch { setFichasAvaliacao([]); setDocumentos([]); }
     };
@@ -196,26 +217,15 @@ export function DashboardStaff() {
         }
     };
 
-    const handleVerFicha = async (id) => {
+    const handleDeleteFicha = async (id, nome, formTipo) => {
+        if (!window.confirm(`Tem a certeza que deseja apagar a ficha de ${nome}? Esta ação não pode ser revertida.`)) return;
         try {
-            const detalhe = await getFichaAvaliacaoById(id);
-            setFichaDetalhe(detalhe);
-        } catch { }
-    };
-
-    const handleDeleteFicha = async (id, nome) => {
-        if (!window.confirm(`Tem a certeza que deseja apagar a ficha de avaliação de ${nome}? Esta ação não pode ser revertida.`)) {
-            return;
-        }
-
-        try {
-            await deleteFichaAvaliacao(id);
+            if (formTipo === 'Psicologia') await deleteFichaPsicologia(id);
+            else if (formTipo === 'Terapia da Fala') await deleteFichaTerapiaFala(id);
+            else await deleteFichaAvaliacao(id);
             setFichasAvaliacao(fichasAvaliacao.filter(f => f.ID !== id));
-            alert('Ficha de avaliação eliminada com sucesso');
         } catch (err) {
-            const errorMsg = err?.response?.data?.error || err?.message || 'Erro ao eliminar ficha de avaliação';
-            alert(errorMsg);
-            console.error('Erro ao eliminar ficha:', err);
+            alert(err?.response?.data?.error || 'Erro ao eliminar ficha');
         }
     };
 
@@ -266,6 +276,11 @@ export function DashboardStaff() {
                 {user.tipo === 'professor' && (
                     <button className={`tab-btn ${activeTab === 'alunos' ? 'active' : ''}`} onClick={() => setActiveTab('alunos')}>
                         <Mortarboard size={16} /> Gerir Alunos
+                    </button>
+                )}
+                {(user.role === 'admin' || user.role === 'administrativo') && (
+                    <button className={`tab-btn ${activeTab === 'alunos-lista' ? 'active' : ''}`} onClick={() => setActiveTab('alunos-lista')}>
+                        <Mortarboard size={16} /> Alunos
                     </button>
                 )}
                 {(user.tipo === 'professor' || user.role === 'admin') && (
@@ -421,15 +436,18 @@ export function DashboardStaff() {
                                                 {fichasSearch ? `Nenhum resultado para "${fichasSearch}"` : 'Nenhuma ficha de avaliação'}
                                             </td></tr>
                                         ) : fichasAvaliacaoFiltradas.map(f => (
-                                            <tr key={f.ID}>
+                                            <tr key={`${f._formTipo}-${f.ID}`}>
                                                 <td>{f.NomeCompleto || '—'}</td>
                                                 <td>{f.NumeroProcesso || '—'}</td>
-                                                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.DiagnosticoQueixaPrincipal || '—'}</td>
-                                                <td>{f.TipoRegisto || '—'}</td>
+                                                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.DiagnosticoQueixaPrincipal || f.MotivoDescricao || f.AvaliacaoSubjetiva || '—'}</td>
+                                                <td>{f._formTipo || '—'}</td>
                                                 <td>{f.CreatedAt ? new Date(f.CreatedAt).toLocaleDateString('pt-PT') : '—'}</td>
                                                 <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                    <button className="btn-icon" onClick={() => handleVerFicha(f.ID)} title="Ver ficha"><Eye size={16} /></button>
-                                                    <button className="btn-icon" onClick={() => handleDeleteFicha(f.ID, f.NomeCompleto)} style={{ color: '#ef4444' }} title="Apagar ficha"><Trash size={16} /></button>
+                                                    <button className="btn-icon" title="Ver ficha" onClick={() => {
+                                                        const tipo = f._formTipo === 'Psicologia' ? 'psicologia' : f._formTipo === 'Terapia da Fala' ? 'terapia-fala' : 'avaliacao';
+                                                        navigate(`/fichas-${tipo}/${f.ID}`);
+                                                    }}><Eye size={16} /></button>
+                                                    <button className="btn-icon" onClick={() => handleDeleteFicha(f.ID, f.NomeCompleto, f._formTipo)} style={{ color: '#ef4444' }} title="Apagar ficha"><Trash size={16} /></button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -489,12 +507,59 @@ export function DashboardStaff() {
                                                 <div className="aluno-avatar"><Mortarboard size={28} /></div>
                                                 <h4>{aluno.nome}</h4>
                                                 <p>{aluno.email}</p>
+                                                <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: 4 }}>
+                                                    Último acesso: {aluno.last_login_at
+                                                        ? new Date(aluno.last_login_at).toLocaleString('pt-PT')
+                                                        : 'Nunca'}
+                                                </p>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* ── Alunos (admin/administrativo) ── */}
+                {activeTab === 'alunos-lista' && (user.role === 'admin' || user.role === 'administrativo') && (
+                    <div className="admin-section">
+                        <h2 style={{ marginBottom: 16 }}><Mortarboard size={20} /> Alunos</h2>
+                        {loadingTodosAlunos ? (
+                            <p style={{ color: '#6b7280' }}>A carregar...</p>
+                        ) : todosAlunos.length === 0 ? (
+                            <p style={{ color: '#6b7280' }}>Nenhum aluno encontrado.</p>
+                        ) : (
+                            <div className="admin-card">
+                                <table className="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Área</th>
+                                            <th>Supervisor</th>
+                                            <th>Último Acesso</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {todosAlunos.map(aluno => (
+                                            <tr key={aluno.user_id}>
+                                                <td>
+                                                    <div>{aluno.nome}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{aluno.email}</div>
+                                                </td>
+                                                <td>{aluno.area_clinica || '—'}</td>
+                                                <td>{aluno.supervisor_nome || '—'}</td>
+                                                <td>
+                                                    {aluno.last_login_at
+                                                        ? new Date(aluno.last_login_at).toLocaleString('pt-PT')
+                                                        : <span style={{ color: '#9ca3af' }}>Nunca</span>}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -693,30 +758,6 @@ export function DashboardStaff() {
                     </div>
                 )}
             </div>
-
-            {/* ── Modal detalhe ficha ── */}
-            {fichaDetalhe && (
-                <div className="modal-overlay" onClick={() => setFichaDetalhe(null)}>
-                    <div className="modal-content" style={{ maxWidth: 700, maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Ficha de Avaliação</h2>
-                            <button className="modal-close" onClick={() => setFichaDetalhe(null)}>✕</button>
-                        </div>
-                        <div className="modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                            {Object.entries(fichaDetalhe)
-                                .filter(([k]) => !['ID', 'UtenteID', 'ConsultaID', 'CreatedBy', 'CreatedAt', 'Utente', 'Consulta', 'User', 'AvaliacoesObjetivas'].includes(k))
-                                .map(([k, v]) => v ? (
-                                    <div key={k} style={{ gridColumn: String(v).length > 60 ? '1/-1' : 'auto' }}>
-                                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#6b7280', marginBottom: 2 }}>
-                                            {k.replace(/([A-Z])/g, ' $1').trim()}
-                                        </div>
-                                        <div style={{ fontSize: 14 }}>{String(v)}</div>
-                                    </div>
-                                ) : null)}
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <GerirAlunosModal
                 isOpen={isAlunosModalOpen}

@@ -24,6 +24,7 @@ import { VerFichaPsicologia } from '../pages/VerFichaPsicologia.jsx';
 import { VerFichaTerapiaFala } from '../pages/VerFichaTerapiaFala.jsx';
 import { CompletarPerfilPage } from '../pages/CompletarPerfilPage.jsx';
 import { AtivarContaPage } from '../pages/AtivarContaPage.jsx';
+import { TransferirUtentes } from '../pages/TransferirUtentes.jsx';
 import { Layout } from '../components/Layout.jsx';
 import { Navbar } from '../components/Navbar.jsx';
 
@@ -138,6 +139,16 @@ export function AppRoutes() {
           <ProtectedRoute>
             <CriarUtente />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/utentes/transferir"
+        element={
+          isAuthenticated && (user?.role === 'admin' || user?.role === 'administrativo') ? (
+            <Layout><TransferirUtentes /></Layout>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
         }
       />
       <Route

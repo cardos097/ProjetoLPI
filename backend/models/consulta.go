@@ -6,7 +6,7 @@ type Consulta struct {
 	ID            uint      `gorm:"column:id;primaryKey"`
 	UtenteID      uint      `gorm:"column:utente_id"`
 	TerapeutaID   uint      `gorm:"column:terapeuta_id"`
-	SalaID        uint      `gorm:"column:sala_id"`
+	SalaID        *uint     `gorm:"column:sala_id"`
 	AreaClinicaID uint      `gorm:"column:area_clinica_id"`
 	DataInicio    time.Time `gorm:"column:data_inicio"`
 	DataFim       time.Time `gorm:"column:data_fim"`

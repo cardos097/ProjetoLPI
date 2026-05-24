@@ -56,7 +56,7 @@ type ConsultaDetailResponse struct {
 	ID              uint   `json:"id"`
 	UtenteID        uint   `json:"utente_id"`
 	TerapeutaID     uint   `json:"terapeuta_id"`
-	SalaID          uint   `json:"sala_id"`
+	SalaID          *uint  `json:"sala_id"`
 	AreaClinicaID   uint   `json:"area_clinica_id"`
 	DataInicio      string `json:"data_inicio"`
 	DataFim         string `json:"data_fim"`
@@ -298,30 +298,23 @@ func CheckDisponibilidade(c *gin.Context) {
 		fim, inicio, "cancelada",
 	).Find(&consultas)
 
-	// Extrair IDs de salas e terapeutas indisponíveis
+	// Extrair apenas IDs de salas indisponíveis (terapeutas podem ter múltiplas consultas simultâneas)
 	salasMap := make(map[uint]bool)
-	terapeutasMap := make(map[uint]bool)
 
 	for _, consulta := range consultas {
-		salasMap[consulta.SalaID] = true
-		terapeutasMap[consulta.TerapeutaID] = true
+		if consulta.SalaID != nil {
+			salasMap[*consulta.SalaID] = true
+		}
 	}
 
-	// Converter para slices
 	var salasIndisponiveis []uint
-	var terapeutasIndisponiveis []uint
-
 	for salaID := range salasMap {
 		salasIndisponiveis = append(salasIndisponiveis, salaID)
 	}
 
-	for terapeutaID := range terapeutasMap {
-		terapeutasIndisponiveis = append(terapeutasIndisponiveis, terapeutaID)
-	}
-
 	c.JSON(http.StatusOK, DisponibilidadeResponse{
 		SalasIndisponiveis:      salasIndisponiveis,
-		TerapeutasIndisponiveis: terapeutasIndisponiveis,
+		TerapeutasIndisponiveis: []uint{},
 	})
 }
 
@@ -396,16 +389,9 @@ func CreateConsulta(c *gin.Context) {
 
 	if userRole == "utente" {
 		randomSalaID, err := getRandomAvailableSalaID(req.AreaClinicaID, dataInicio, dataFim)
-		if err != nil {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-			return
+		if err == nil {
+			req.SalaID = randomSalaID
 		}
-		req.SalaID = randomSalaID
-	}
-
-	if req.SalaID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Sala obrigatória"})
-		return
 	}
 
 	tipoConsulta := "individual"
@@ -413,10 +399,15 @@ func CreateConsulta(c *gin.Context) {
 		tipoConsulta = "grupo"
 	}
 
+	var salaPtr *uint
+	if req.SalaID != 0 {
+		salaPtr = &req.SalaID
+	}
+
 	consulta := models.Consulta{
 		UtenteID:      req.UtenteID,
 		TerapeutaID:   req.TerapeutaID,
-		SalaID:        req.SalaID,
+		SalaID:        salaPtr,
 		AreaClinicaID: req.AreaClinicaID,
 		DataInicio:    dataInicio,
 		DataFim:       dataFim,
@@ -672,7 +663,7 @@ func UpdateConsulta(c *gin.Context) {
 		consulta.TerapeutaID = *req.TerapeutaID
 	}
 	if req.SalaID != nil {
-		consulta.SalaID = *req.SalaID
+		consulta.SalaID = req.SalaID
 	}
 	if req.AreaClinicaID != nil {
 		consulta.AreaClinicaID = *req.AreaClinicaID
@@ -785,23 +776,19 @@ func GetHorariosDisponiveis(c *gin.Context) {
 		salaID = parsedSala
 	}
 
-	dayStart := time.Date(selectedDate.Year(), selectedDate.Month(), selectedDate.Day(), 0, 0, 0, 0, time.UTC)
-	dayEnd := dayStart.Add(24 * time.Hour)
-
-	var consultas []models.Consulta
-	err = config.DB.
-		Where("terapeuta_id = ?", terapeutaID).
-		Where("estado <> ?", "cancelada").
-		Where("data_inicio < ? AND data_fim > ?", dayEnd, dayStart).
-		Find(&consultas).Error
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
 	workStart, _ := parseHourMinuteOnDate(selectedDate, "09:00")
 	workEnd, _ := parseHourMinuteOnDate(selectedDate, "18:00")
+
+	areaHasSalas := false
+	if areaClinicaID > 0 {
+		var totalSalas int64
+		config.DB.Table("salas").
+			Joins("JOIN sala_area_clinica sac ON sac.sala_id = salas.id").
+			Where("salas.ativa = ?", true).
+			Where("sac.area_clinica_id = ?", areaClinicaID).
+			Count(&totalSalas)
+		areaHasSalas = totalSalas > 0
+	}
 
 	hasAvailableSala := func(slotStart time.Time, slotEnd time.Time) (bool, error) {
 		if salaID > 0 {
@@ -818,7 +805,7 @@ func GetHorariosDisponiveis(c *gin.Context) {
 			return count == 0, nil
 		}
 
-		if areaClinicaID <= 0 {
+		if areaClinicaID <= 0 || !areaHasSalas {
 			return true, nil
 		}
 
@@ -844,23 +831,13 @@ func GetHorariosDisponiveis(c *gin.Context) {
 			continue
 		}
 
-		overlapped := false
-		for _, consulta := range consultas {
-			if slotStart.Before(consulta.DataFim) && slotEnd.After(consulta.DataInicio) {
-				overlapped = true
-				break
-			}
+		roomAvailable, roomErr := hasAvailableSala(slotStart, slotEnd)
+		if roomErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": roomErr.Error()})
+			return
 		}
-
-		if !overlapped {
-			roomAvailable, roomErr := hasAvailableSala(slotStart, slotEnd)
-			if roomErr != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": roomErr.Error()})
-				return
-			}
-			if roomAvailable {
-				available = append(available, slotStart.Format("15:04"))
-			}
+		if roomAvailable {
+			available = append(available, slotStart.Format("15:04"))
 		}
 	}
 

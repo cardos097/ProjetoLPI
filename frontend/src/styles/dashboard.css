@@ -840,3 +840,62 @@
     font-size: 12px;
     font-weight: 500;
 }
+
+.export-panel {
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.export-dates {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.export-dates label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #374151;
+    font-weight: 500;
+}
+
+.export-date-input {
+    padding: 5px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #111827;
+    background: white;
+    width: 110px;
+}
+
+.export-shortcuts {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-shortcut {
+    padding: 4px 10px;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-shortcut:hover {
+    background: #e5e7eb;
+}
+
+.export-error {
+    font-size: 12px;
+    color: #dc2626;
+    margin: 0;
+}

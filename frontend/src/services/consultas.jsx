@@ -113,3 +113,23 @@ export async function validarDocumento(id, acao) {
   const { data } = await api.patch(`/documentos/${id}/validar`, { acao });
   return data;
 }
+
+export async function getAlunos() {
+  const { data } = await api.get('/alunos');
+  return data;
+}
+
+export async function exportSalas(from, to) {
+  const response = await api.get('/exports/sala', {
+    params: { from, to },
+    responseType: 'blob',
+  });
+  const url = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `salas-${from}-${to}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

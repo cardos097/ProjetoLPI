@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { CalendarDate, PlusLg } from 'react-bootstrap-icons';
+import { CalendarDate, PlusLg, ArrowLeftRight } from 'react-bootstrap-icons';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -90,6 +90,12 @@ export function Navbar() {
                 </div>
               )}
             </div>
+
+            {(user?.role === 'admin' || user?.role === 'administrativo') && (
+              <button onClick={() => navigate('/utentes/transferir')} className="navbar-link">
+                <ArrowLeftRight size={14} /> Transferir Utentes
+              </button>
+            )}
           </div>
         )}
 
@@ -185,6 +191,12 @@ export function Navbar() {
                   </div>
                 )}
               </div>
+
+              {(user?.role === 'admin' || user?.role === 'administrativo') && (
+                <button onClick={() => { navigate('/utentes/transferir'); setMobileMenuOpen(false); }} className="mobile-menu-link">
+                  <ArrowLeftRight size={14} /> Transferir Utentes
+                </button>
+              )}
 
               <div className="mobile-menu-divider"></div>
 

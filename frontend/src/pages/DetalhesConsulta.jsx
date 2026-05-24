@@ -69,7 +69,7 @@ export function DetalhesConsulta() {
   const getSalaNome = () => {
     const salaId = getConsultaValue(consulta, 'sala_id');
     const sala = salas.find((s) => s.id === salaId);
-    return sala?.nome || getConsultaValue(consulta, 'sala_nome') || '-';
+    return sala?.nome || getConsultaValue(consulta, 'sala_nome') || 'Não atribuída';
   };
 
   const getAreaClinicaNome = () => {

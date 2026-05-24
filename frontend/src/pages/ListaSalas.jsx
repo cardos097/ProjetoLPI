@@ -1,12 +1,37 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getSalas, getConsultas } from '../services/consultas.jsx';
+import { getSalas, getConsultas, exportSalas } from '../services/consultas.jsx';
+import { DateInput } from '../components/DateInput.jsx';
 import '../styles/dashboard.css';
 
 const HORA_INICIO = 9;
 const HORA_FIM = 19;
 const HORAS = Array.from({ length: HORA_FIM - HORA_INICIO }, (_, i) => HORA_INICIO + i);
+
+function toISODate(date) {
+    return date.toISOString().slice(0, 10);
+}
+
+function inicioSemana() {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return toISODate(d);
+}
+
+function inicioMes() {
+    const d = new Date();
+    d.setDate(1);
+    return toISODate(d);
+}
+
+function fimMes() {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1, 0);
+    return toISODate(d);
+}
 
 function formatarData(date) {
     return date.toLocaleDateString('pt-PT', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
@@ -32,6 +57,10 @@ export function ListaSalas() {
         d.setUTCHours(0, 0, 0, 0);
         return d;
     });
+    const [exportFrom, setExportFrom] = useState(inicioSemana);
+    const [exportTo, setExportTo] = useState(() => toISODate(new Date()));
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState('');
 
     useEffect(() => {
         carregarDados();
@@ -112,6 +141,18 @@ export function ListaSalas() {
         setDiaAtual(d);
     };
 
+    const handleExport = async () => {
+        setExportError('');
+        setExporting(true);
+        try {
+            await exportSalas(exportFrom, exportTo);
+        } catch {
+            setExportError('Erro ao exportar. Verifique as datas e tente novamente.');
+        } finally {
+            setExporting(false);
+        }
+    };
+
     if (loading) return <div className="page centered">A carregar salas...</div>;
 
     if (error) return (
@@ -130,6 +171,28 @@ export function ListaSalas() {
                     <h1>Ocupação das Salas</h1>
                     <p>Vista diária das consultas por sala</p>
                 </div>
+                {['admin', 'administrativo', 'terapeuta'].includes(user?.role) && (
+                    <div className="export-panel">
+                        <div className="export-dates">
+                            <label>
+                                De
+                                <DateInput value={exportFrom} onChange={e => setExportFrom(e.target.value)} max={exportTo} className="export-date-input" />
+                            </label>
+                            <label>
+                                Até
+                                <DateInput value={exportTo} onChange={e => setExportTo(e.target.value)} min={exportFrom} className="export-date-input" />
+                            </label>
+                        </div>
+                        <div className="export-shortcuts">
+                            <button className="btn-shortcut" onClick={() => { setExportFrom(inicioSemana()); setExportTo(toISODate(new Date())); }}>Esta semana</button>
+                            <button className="btn-shortcut" onClick={() => { setExportFrom(inicioMes()); setExportTo(fimMes()); }}>Este mês</button>
+                        </div>
+                        <button className="btn-primary" onClick={handleExport} disabled={exporting}>
+                            {exporting ? 'A exportar...' : 'Exportar Excel'}
+                        </button>
+                        {exportError && <p className="export-error">{exportError}</p>}
+                    </div>
+                )}
             </div>
 
             {/* Navegação de dia */}
