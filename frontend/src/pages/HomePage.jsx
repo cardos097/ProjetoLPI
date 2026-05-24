@@ -37,16 +37,18 @@ export function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const e = await getAreasClinicas();
+        setEspecialidades(e || []);
+      } catch {}
+
+      try {
         if (user?.id) {
           const consultasData = await getUtenteConsultas(user.id);
           setConsultas(consultasData?.slice(0, 5) || []);
         }
-        const e = await getAreasClinicas();
-        setEspecialidades(e || []);
-      } catch (err) {
-      } finally {
-        setLoading(false);
-      }
+      } catch {}
+
+      setLoading(false);
     };
 
     fetchData();
@@ -138,35 +140,6 @@ export function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Ações Rápidas */}
-      {user && (
-        <section className="acoes-section">
-          <div className="container">
-            <h2>Ações Rápidas</h2>
-            <div className="acoes-grid">
-              <button
-                className="action-card"
-                onClick={() => navigate('/consultas')}
-              >
-                Minhas Consultas
-              </button>
-              <button
-                className="action-card"
-                onClick={() => navigate('/perfil')}
-              >
-                Registos Clínicos
-              </button>
-              <button
-                className="action-card"
-                onClick={() => navigate('/perfil')}
-              >
-                Editar Perfil
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Contactos */}
       <section className="contactos-section" id="contactos">
