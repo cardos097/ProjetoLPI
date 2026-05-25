@@ -165,11 +165,12 @@ func Login(c *gin.Context) {
 				"verification_code_expires_at": time.Now().Add(24 * time.Hour),
 			})
 
-			// Enviar email com novo código
-			err = utils.SendVerificationEmail(user.Email, newCode)
-			if err != nil {
-				log.Printf("Aviso: Falha ao reenviar email de verificação para %s: %v", user.Email, err)
-			}
+			// Enviar email com novo código (assíncrono para não bloquear a resposta)
+			go func(email, code string) {
+				if err := utils.SendVerificationEmail(email, code); err != nil {
+					log.Printf("Aviso: Falha ao reenviar email de verificação para %s: %v", email, err)
+				}
+			}(user.Email, newCode)
 
 			// Retornar 206 indicando que precisa verificar (com novo código enviado)
 			c.JSON(206, gin.H{
@@ -413,12 +414,12 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Enviar email de verificação
-	err = utils.SendVerificationEmail(newUser.Email, verificationCode)
-	if err != nil {
-		log.Printf("Aviso: Falha ao enviar email de verificação para %s: %v", newUser.Email, err)
-		// Não interromper o fluxo se o email falhar
-	}
+	// Enviar email de verificação (assíncrono para não bloquear a resposta)
+	go func(email, code string) {
+		if err := utils.SendVerificationEmail(email, code); err != nil {
+			log.Printf("Aviso: Falha ao enviar email de verificação para %s: %v", email, err)
+		}
+	}(newUser.Email, verificationCode)
 
 	response := RegisterResponse{
 		Message:          "Conta criada com sucesso. Por favor verifique o seu email dentro de 24 horas. Após esse período, a conta será eliminada automaticamente e terá de fazer um novo registo.",
