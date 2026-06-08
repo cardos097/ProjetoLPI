@@ -85,7 +85,10 @@ func GetUtentes(c *gin.Context) {
 	userRole, _ := roleValue.(string)
 
 	var utentes []models.Utente
-	query := config.DB.Preload("User")
+	query := config.DB.
+		Preload("User").
+		Joins("JOIN users ON users.id = utentes.user_id").
+		Where("users.role = ?", "utente")
 
 	if userRole == "terapeuta" {
 		// Determinar o ID do professor responsável:
@@ -603,6 +606,18 @@ func UpdateUtente(c *gin.Context) {
 
 func DeleteUtente(c *gin.Context) {
 	id := c.Param("id")
+
+	// Eliminar registos dependentes em ordem (respeitar FKs)
+	config.DB.Exec("DELETE FROM avaliacoes_objetivas WHERE ficha_id IN (SELECT id FROM fichas_avaliacao WHERE utente_id = ?)", id)
+	config.DB.Exec("DELETE FROM documentos_consulta WHERE consulta_id IN (SELECT id FROM consultas WHERE utente_id = ?)", id)
+	config.DB.Exec("DELETE FROM registos_clinicos WHERE consulta_id IN (SELECT id FROM consultas WHERE utente_id = ?)", id)
+	config.DB.Exec("DELETE FROM consultas WHERE utente_id = ?", id)
+	config.DB.Exec("DELETE FROM fichas_avaliacao WHERE utente_id = ?", id)
+	config.DB.Exec("DELETE FROM fichas_psicologia WHERE utente_id = ?", id)
+	config.DB.Exec("DELETE FROM fichas_terapia_fala WHERE utente_id = ?", id)
+	config.DB.Exec("DELETE FROM processos_clinicos WHERE utente_id = ?", id)
+	config.DB.Exec("DELETE FROM assiduidade WHERE utente_id = ?", id)
+	config.DB.Exec("DELETE FROM utente_terapeutas WHERE utente_id = ?", id)
 
 	// Eliminar Utente
 	if err := config.DB.Where("user_id = ?", id).Delete(&models.Utente{}).Error; err != nil {

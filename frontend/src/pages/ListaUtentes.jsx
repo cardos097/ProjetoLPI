@@ -48,7 +48,8 @@ export function ListaUtentes() {
       setUtentes(utentes.filter((u) => u.id !== id));
       setDeleteConfirm(null);
     } catch (err) {
-      setError('Erro ao eliminar utente');
+      setDeleteConfirm(null);
+      setError(err?.response?.data?.error || 'Erro ao eliminar utente');
     }
   };
 

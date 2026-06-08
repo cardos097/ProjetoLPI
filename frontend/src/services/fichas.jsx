@@ -92,6 +92,33 @@ export async function deleteFichaTerapiaFala(fichaId) {
   const { data } = await api.delete(`/fichas-terapia-fala/${fichaId}`);
   return data;
 }
+export async function getFichasNutricao(utenteId) {
+  const { data } = await api.get('/fichas-nutricao', {
+    params: utenteId ? { utente_id: utenteId } : undefined,
+  });
+  return data;
+}
+
+export async function getFichaNutricaoById(id) {
+  const { data } = await api.get(`/fichas-nutricao/${id}`);
+  return data;
+}
+
+export async function createFichaNutricao(ficha) {
+  const { data } = await api.post('/fichas-nutricao', ficha);
+  return data;
+}
+
+export async function updateFichaNutricao(fichaId, ficha) {
+  const { data } = await api.patch(`/fichas-nutricao/${fichaId}`, ficha);
+  return data;
+}
+
+export async function deleteFichaNutricao(fichaId) {
+  const { data } = await api.delete(`/fichas-nutricao/${fichaId}`);
+  return data;
+}
+
 export async function validarFicha(tipo, id, acao) {
   const { data } = await api.patch(`/fichas-${tipo}/${id}/validar`, { acao });
   return data;

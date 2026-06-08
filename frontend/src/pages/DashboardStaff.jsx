@@ -1,26 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { ConfirmModal } from '../components/ConfirmModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { DateInput } from '../components/DateInput.jsx';
 import {
     CalendarDate, People, Hospital, Mortarboard, Gear, PlusLg, Book,
     BarChart, Person, PersonFill, ClipboardData, ExclamationCircle,
     CheckCircle, XCircle, ClockHistory, FileText, Eye, ToggleOn, ToggleOff,
-    Download, Trash,
+    Download, Trash, Pencil, CheckLg, XLg,
 } from 'react-bootstrap-icons';
 import { ListaUtentes } from './ListaUtentes.jsx';
 import { ListaConsultas } from './ListaConsultas.jsx';
 import { ListaSalas } from './ListaSalas.jsx';
 import { GerirAlunosModal } from '../components/GerirAlunosModal.jsx';
 import { CriarUtenteModal } from '../components/CriarUtenteModal.jsx';
-import { getAlunosDoProfessor } from '../services/terapeutas.jsx';
+import { getAlunosDoProfessor, updateTerapeutaAreaAdmin } from '../services/terapeutas.jsx';
 import { getUtentes } from '../services/utentes.jsx';
 import {
     getAdminStats, getStaffUsers, toggleUserActive, createStaffUser,
     getAssiduidade, createAssiduidade, getDocumentos, downloadDocumento,
 } from '../services/admin.jsx';
-import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala, deleteFichaAvaliacao, deleteFichaPsicologia, deleteFichaTerapiaFala, getPendentes, validarFicha } from '../services/fichas.jsx';
-import { validarDocumento, getAlunos } from '../services/consultas.jsx';
+import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala, getFichasNutricao, deleteFichaAvaliacao, deleteFichaPsicologia, deleteFichaTerapiaFala, deleteFichaNutricao, getPendentes, validarFicha } from '../services/fichas.jsx';
+import { validarDocumento, getAlunos, getTerapeutas, getAreasClinicas, getTerapeutasStaff, getConsultasPendentes, validarConsulta } from '../services/consultas.jsx';
 import '../styles/dashboard.css';
 
 const ESTADO_LABEL = { P: 'Presente', A: 'Ausente', FJ: 'Falta Justificada', FI: 'Falta Injustificada' };
@@ -55,6 +57,10 @@ export function DashboardStaff() {
     // — Alunos (admin/administrativo) —
     const [todosAlunos, setTodosAlunos] = useState([]);
     const [loadingTodosAlunos, setLoadingTodosAlunos] = useState(false);
+    const [areasClinicas, setAreasClinicas] = useState([]);
+    const [areaEditId, setAreaEditId] = useState(null);
+    const [areaEditValue, setAreaEditValue] = useState('');
+    const [areaEditSaving, setAreaEditSaving] = useState(false);
 
     // — Admin: staff users —
     const [staffUsers, setStaffUsers] = useState([]);
@@ -76,11 +82,18 @@ export function DashboardStaff() {
     const [pendentes, setPendentes] = useState({ fichas_avaliacao: [], fichas_psicologia: [], fichas_terapia_fala: [], documentos: [] });
     const [loadingPendentes, setLoadingPendentes] = useState(false);
 
+    // — Consultas Pendentes (marcações de utentes a aguardar validação da rececão) —
+    const [consultasPendentes, setConsultasPendentes] = useState([]);
+    const [loadingConsultasPendentes, setLoadingConsultasPendentes] = useState(false);
+
     // — Fichas —
     const [fichasTab, setFichasTab] = useState('avaliacao');
     const [fichasAvaliacao, setFichasAvaliacao] = useState([]);
     const [documentos, setDocumentos] = useState([]);
     const [fichasSearch, setFichasSearch] = useState('');
+
+    // — Confirm modal —
+    const [confirmModal, setConfirmModal] = useState({ open: false, title: '', message: '', onConfirm: null, danger: false });
 
     // ── Effects ──────────────────────────────────────────────────────────────
 
@@ -91,6 +104,7 @@ export function DashboardStaff() {
         if (activeTab === 'assiduidade') carregarAssiduidade();
         if (activeTab === 'fichas') carregarFichas();
         if (activeTab === 'pendentes') carregarPendentes();
+        if (activeTab === 'consultas-pendentes') carregarConsultasPendentes();
     }, [activeTab]);
 
     const carregarAlunos = async () => {
@@ -100,7 +114,26 @@ export function DashboardStaff() {
 
     const carregarTodosAlunos = async () => {
         setLoadingTodosAlunos(true);
-        try { setTodosAlunos((await getAlunos()) || []); } catch { setTodosAlunos([]); } finally { setLoadingTodosAlunos(false); }
+        try {
+            const [terapeutas, areas] = await Promise.all([getTerapeutasStaff(), getAreasClinicas()]);
+            setTodosAlunos(terapeutas || []);
+            setAreasClinicas(areas || []);
+        } catch { setTodosAlunos([]); } finally { setLoadingTodosAlunos(false); }
+    };
+
+    const handleSaveArea = async (userId) => {
+        if (!areaEditValue) return;
+        setAreaEditSaving(true);
+        try {
+            await updateTerapeutaAreaAdmin(userId, areaEditValue);
+            const areaNome = areasClinicas.find(a => a.id === Number(areaEditValue))?.nome || '';
+            setTodosAlunos(prev => prev.map(t =>
+                t.user_id === userId
+                    ? { ...t, area_clinica_id: Number(areaEditValue), area_clinica_nome: areaNome }
+                    : t
+            ));
+            setAreaEditId(null);
+        } catch { } finally { setAreaEditSaving(false); }
     };
 
     const carregarAdmin = async () => {
@@ -128,35 +161,84 @@ export function DashboardStaff() {
         finally { setLoadingPendentes(false); }
     };
 
-    const handleValidarFicha = async (tipo, id, acao) => {
-        if (acao === 'rejeitar' && !window.confirm('Tens a certeza que queres rejeitar e eliminar esta submissão?')) return;
-        try {
-            await validarFicha(tipo, id, acao);
-            carregarPendentes();
-        } catch { alert('Erro ao processar validação.'); }
+    const handleValidarFicha = (tipo, id, acao) => {
+        if (acao === 'rejeitar') {
+            setConfirmModal({
+                open: true,
+                title: 'Rejeitar submissão',
+                message: 'Tens a certeza que queres rejeitar e eliminar esta submissão?',
+                danger: true,
+                onConfirm: async () => {
+                    setConfirmModal(m => ({ ...m, open: false }));
+                    try { await validarFicha(tipo, id, acao); carregarPendentes(); }
+                    catch { toast.error('Erro ao processar validação.'); }
+                },
+            });
+            return;
+        }
+        validarFicha(tipo, id, acao).then(carregarPendentes).catch(() => toast.error('Erro ao processar validação.'));
     };
 
-    const handleValidarDocumento = async (id, acao) => {
-        if (acao === 'rejeitar' && !window.confirm('Tens a certeza que queres rejeitar e eliminar este documento?')) return;
+    const handleValidarDocumento = (id, acao) => {
+        if (acao === 'rejeitar') {
+            setConfirmModal({
+                open: true,
+                title: 'Rejeitar documento',
+                message: 'Tens a certeza que queres rejeitar e eliminar este documento?',
+                danger: true,
+                onConfirm: async () => {
+                    setConfirmModal(m => ({ ...m, open: false }));
+                    try { await validarDocumento(id, acao); carregarPendentes(); }
+                    catch { toast.error('Erro ao processar validação.'); }
+                },
+            });
+            return;
+        }
+        validarDocumento(id, acao).then(carregarPendentes).catch(() => toast.error('Erro ao processar validação.'));
+    };
+
+    const carregarConsultasPendentes = async () => {
+        setLoadingConsultasPendentes(true);
         try {
-            await validarDocumento(id, acao);
-            carregarPendentes();
-        } catch { alert('Erro ao processar validação.'); }
+            const data = await getConsultasPendentes();
+            setConsultasPendentes(data || []);
+        } catch { setConsultasPendentes([]); }
+        finally { setLoadingConsultasPendentes(false); }
+    };
+
+    const handleValidarConsulta = (id, acao) => {
+        if (acao === 'rejeitar') {
+            setConfirmModal({
+                open: true,
+                title: 'Rejeitar marcação',
+                message: 'Tens a certeza que queres rejeitar esta marcação? A consulta ficará cancelada.',
+                danger: true,
+                onConfirm: async () => {
+                    setConfirmModal(m => ({ ...m, open: false }));
+                    try { await validarConsulta(id, acao); carregarConsultasPendentes(); }
+                    catch { toast.error('Erro ao processar validação.'); }
+                },
+            });
+            return;
+        }
+        validarConsulta(id, acao).then(carregarConsultasPendentes).catch(() => toast.error('Erro ao processar validação.'));
     };
 
     const carregarFichas = async () => {
         try {
-            const [av, psic, fala, docs] = await Promise.all([
+            const [av, psic, fala, nutri, docs] = await Promise.all([
                 getFichasAvaliacao(),
                 getFichasPsicologia(),
                 getFichasTerapiaFala(),
+                getFichasNutricao(),
                 getDocumentos(),
             ]);
             const todas = [
-                ...(av   || []).map(f => ({ ...f, _formTipo: 'Fisioterapia' })),
-                ...(psic || []).map(f => ({ ...f, _formTipo: 'Psicologia' })),
-                ...(fala || []).map(f => ({ ...f, _formTipo: 'Terapia da Fala' })),
-            ].sort((a, b) => new Date(b.CreatedAt) - new Date(a.CreatedAt));
+                ...(av    || []).map(f => ({ ...f, _formTipo: 'Fisioterapia' })),
+                ...(psic  || []).map(f => ({ ...f, _formTipo: 'Psicologia' })),
+                ...(fala  || []).map(f => ({ ...f, _formTipo: 'Terapia da Fala' })),
+                ...(nutri || []).map(f => ({ ...f, _formTipo: 'Nutrição' })),
+            ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             setFichasAvaliacao(todas);
             setDocumentos(docs || []);
         } catch { setFichasAvaliacao([]); setDocumentos([]); }
@@ -217,16 +299,25 @@ export function DashboardStaff() {
         }
     };
 
-    const handleDeleteFicha = async (id, nome, formTipo) => {
-        if (!window.confirm(`Tem a certeza que deseja apagar a ficha de ${nome}? Esta ação não pode ser revertida.`)) return;
-        try {
-            if (formTipo === 'Psicologia') await deleteFichaPsicologia(id);
-            else if (formTipo === 'Terapia da Fala') await deleteFichaTerapiaFala(id);
-            else await deleteFichaAvaliacao(id);
-            setFichasAvaliacao(fichasAvaliacao.filter(f => f.ID !== id));
-        } catch (err) {
-            alert(err?.response?.data?.error || 'Erro ao eliminar ficha');
-        }
+    const handleDeleteFicha = (id, nome, formTipo) => {
+        setConfirmModal({
+            open: true,
+            title: 'Apagar ficha',
+            message: `Tem a certeza que deseja apagar a ficha de ${nome}? Esta ação não pode ser revertida.`,
+            danger: true,
+            onConfirm: async () => {
+                setConfirmModal(m => ({ ...m, open: false }));
+                try {
+                    if (formTipo === 'Psicologia') await deleteFichaPsicologia(id);
+                    else if (formTipo === 'Terapia da Fala') await deleteFichaTerapiaFala(id);
+                    else if (formTipo === 'Nutrição') await deleteFichaNutricao(id);
+                    else await deleteFichaAvaliacao(id);
+                    setFichasAvaliacao(prev => prev.filter(f => f.id !== id));
+                } catch (err) {
+                    toast.error(err?.response?.data?.error || 'Erro ao eliminar ficha');
+                }
+            },
+        });
     };
 
     const handleDownload = async (doc) => {
@@ -280,7 +371,7 @@ export function DashboardStaff() {
                 )}
                 {(user.role === 'admin' || user.role === 'administrativo') && (
                     <button className={`tab-btn ${activeTab === 'alunos-lista' ? 'active' : ''}`} onClick={() => setActiveTab('alunos-lista')}>
-                        <Mortarboard size={16} /> Alunos
+                        <Mortarboard size={16} /> Terapeutas
                     </button>
                 )}
                 {(user.tipo === 'professor' || user.role === 'admin') && (
@@ -297,6 +388,22 @@ export function DashboardStaff() {
                             }}>
                                 {(pendentes.fichas_avaliacao?.length || 0) + (pendentes.fichas_psicologia?.length || 0) +
                                  (pendentes.fichas_terapia_fala?.length || 0) + (pendentes.documentos?.length || 0)}
+                            </span>
+                        )}
+                    </button>
+                )}
+                {(user.role === 'admin' || user.role === 'administrativo') && (
+                    <button className={`tab-btn ${activeTab === 'consultas-pendentes' ? 'active' : ''}`} onClick={() => setActiveTab('consultas-pendentes')}
+                        style={{ position: 'relative' }}>
+                        <ClockHistory size={16} /> Consultas Pendentes
+                        {consultasPendentes.length > 0 && (
+                            <span style={{
+                                background: '#ef4444', color: 'white', borderRadius: '50%',
+                                width: 18, height: 18, fontSize: 11, fontWeight: 700,
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                marginLeft: 4,
+                            }}>
+                                {consultasPendentes.length}
                             </span>
                         )}
                     </button>
@@ -398,7 +505,7 @@ export function DashboardStaff() {
                 {/* ── Fichas ── */}
                 {activeTab === 'fichas' && (() => {
                     const fichasAvaliacaoFiltradas = fichasAvaliacao.filter(f =>
-                        (f.NomeCompleto || '').toLowerCase().includes(fichasSearch.toLowerCase())
+                        (f.nome_completo || '').toLowerCase().includes(fichasSearch.toLowerCase())
                     );
                     const documentosFiltrados = documentos.filter(d =>
                         (d.utente_nome || '').toLowerCase().includes(fichasSearch.toLowerCase())
@@ -436,18 +543,18 @@ export function DashboardStaff() {
                                                 {fichasSearch ? `Nenhum resultado para "${fichasSearch}"` : 'Nenhuma ficha de avaliação'}
                                             </td></tr>
                                         ) : fichasAvaliacaoFiltradas.map(f => (
-                                            <tr key={`${f._formTipo}-${f.ID}`}>
-                                                <td>{f.NomeCompleto || '—'}</td>
-                                                <td>{f.NumeroProcesso || '—'}</td>
-                                                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.DiagnosticoQueixaPrincipal || f.MotivoDescricao || f.AvaliacaoSubjetiva || '—'}</td>
+                                            <tr key={`${f._formTipo}-${f.id}`}>
+                                                <td>{f.nome_completo || '—'}</td>
+                                                <td>{f.numero_processo || '—'}</td>
+                                                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.diagnostico_queixa_principal || f.motivo_descricao || f.avaliacao_subjetiva || f.motivo_consulta || '—'}</td>
                                                 <td>{f._formTipo || '—'}</td>
-                                                <td>{f.CreatedAt ? new Date(f.CreatedAt).toLocaleDateString('pt-PT') : '—'}</td>
+                                                <td>{f.created_at ? new Date(f.created_at).toLocaleDateString('pt-PT') : '—'}</td>
                                                 <td style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                                                     <button className="btn-icon" title="Ver ficha" onClick={() => {
-                                                        const tipo = f._formTipo === 'Psicologia' ? 'psicologia' : f._formTipo === 'Terapia da Fala' ? 'terapia-fala' : 'avaliacao';
-                                                        navigate(`/fichas-${tipo}/${f.ID}`);
+                                                        const tipo = f._formTipo === 'Psicologia' ? 'psicologia' : f._formTipo === 'Terapia da Fala' ? 'terapia-fala' : f._formTipo === 'Nutrição' ? 'nutricao' : 'avaliacao';
+                                                        navigate(`/fichas-${tipo}/${f.id}`);
                                                     }}><Eye size={16} /></button>
-                                                    <button className="btn-icon" onClick={() => handleDeleteFicha(f.ID, f.NomeCompleto, f._formTipo)} style={{ color: '#ef4444' }} title="Apagar ficha"><Trash size={16} /></button>
+                                                    <button className="btn-icon" onClick={() => handleDeleteFicha(f.id, f.nome_completo, f._formTipo)} style={{ color: '#ef4444' }} title="Apagar ficha"><Trash size={16} /></button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -521,38 +628,72 @@ export function DashboardStaff() {
                     </div>
                 )}
 
-                {/* ── Alunos (admin/administrativo) ── */}
+                {/* ── Terapeutas (admin/administrativo) ── */}
                 {activeTab === 'alunos-lista' && (user.role === 'admin' || user.role === 'administrativo') && (
                     <div className="admin-section">
-                        <h2 style={{ marginBottom: 16 }}><Mortarboard size={20} /> Alunos</h2>
+                        <h2 style={{ marginBottom: 16 }}><Mortarboard size={20} /> Terapeutas</h2>
                         {loadingTodosAlunos ? (
                             <p style={{ color: '#6b7280' }}>A carregar...</p>
                         ) : todosAlunos.length === 0 ? (
-                            <p style={{ color: '#6b7280' }}>Nenhum aluno encontrado.</p>
+                            <p style={{ color: '#6b7280' }}>Nenhum terapeuta encontrado.</p>
                         ) : (
                             <div className="admin-card">
                                 <table className="table">
                                     <thead>
                                         <tr>
                                             <th>Nome</th>
-                                            <th>Área</th>
-                                            <th>Supervisor</th>
-                                            <th>Último Acesso</th>
+                                            <th>Tipo</th>
+                                            <th>Área Clínica</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {todosAlunos.map(aluno => (
-                                            <tr key={aluno.user_id}>
+                                        {todosAlunos.map(t => (
+                                            <tr key={t.user_id}>
                                                 <td>
-                                                    <div>{aluno.nome}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{aluno.email}</div>
+                                                    <div>{t.nome}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{t.email}</div>
                                                 </td>
-                                                <td>{aluno.area_clinica || '—'}</td>
-                                                <td>{aluno.supervisor_nome || '—'}</td>
+                                                <td style={{ textTransform: 'capitalize' }}>{t.tipo || '—'}</td>
                                                 <td>
-                                                    {aluno.last_login_at
-                                                        ? new Date(aluno.last_login_at).toLocaleString('pt-PT')
-                                                        : <span style={{ color: '#9ca3af' }}>Nunca</span>}
+                                                    {areaEditId === t.user_id ? (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                            <select
+                                                                className="form-select"
+                                                                style={{ maxWidth: 200 }}
+                                                                value={areaEditValue}
+                                                                onChange={e => setAreaEditValue(e.target.value)}
+                                                            >
+                                                                <option value="">Selecionar...</option>
+                                                                {areasClinicas.map(a => (
+                                                                    <option key={a.id} value={a.id}>{a.nome}</option>
+                                                                ))}
+                                                            </select>
+                                                            <button
+                                                                className="btn btn-primary btn-sm"
+                                                                disabled={!areaEditValue || areaEditSaving}
+                                                                onClick={() => handleSaveArea(t.user_id)}
+                                                            >
+                                                                <CheckLg size={14} />
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                onClick={() => setAreaEditId(null)}
+                                                            >
+                                                                <XLg size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                            <span>{t.area_clinica_nome || '—'}</span>
+                                                            <button
+                                                                className="btn-icon btn-edit"
+                                                                title="Alterar área"
+                                                                onClick={() => { setAreaEditId(t.user_id); setAreaEditValue(t.area_clinica_id ? String(t.area_clinica_id) : ''); }}
+                                                            >
+                                                                <Pencil size={13} />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}
@@ -757,6 +898,61 @@ export function DashboardStaff() {
                         )}
                     </div>
                 )}
+
+                {/* ── Consultas Pendentes ── */}
+                {activeTab === 'consultas-pendentes' && (
+                    <div className="admin-section">
+                        <div className="section-header">
+                            <h2><ClockHistory size={20} /> Marcações de Utentes Pendentes de Validação</h2>
+                        </div>
+                        {loadingConsultasPendentes ? (
+                            <p>A carregar...</p>
+                        ) : consultasPendentes.length === 0 ? (
+                            <p style={{ color: '#6b7280' }}>Sem marcações pendentes.</p>
+                        ) : (
+                            <div className="table-container">
+                                <table className="data-table">
+                                    <thead><tr>
+                                        <th>Utente</th><th>Terapeuta</th><th>Área Clínica</th><th>Data/Hora</th><th>Conflitos</th><th>Ações</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        {consultasPendentes.map(cp => (
+                                            <tr key={cp.id}>
+                                                <td>{cp.utente || '—'}</td>
+                                                <td>{cp.terapeuta || '—'}</td>
+                                                <td>{cp.area_clinica || '—'}</td>
+                                                <td>
+                                                    {cp.data_inicio ? new Date(cp.data_inicio).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                                                    {' – '}
+                                                    {cp.data_fim ? new Date(cp.data_fim).toLocaleTimeString('pt-PT', { timeStyle: 'short' }) : '—'}
+                                                </td>
+                                                <td>
+                                                    {cp.conflitos_terapeuta > 0 ? (
+                                                        <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>
+                                                            <ExclamationCircle size={12} /> {cp.conflitos_terapeuta} consulta(s) sobreposta(s)
+                                                        </span>
+                                                    ) : (
+                                                        <span style={{ color: '#6b7280', fontSize: 12 }}>Sem conflitos</span>
+                                                    )}
+                                                </td>
+                                                <td style={{ display: 'flex', gap: 6 }}>
+                                                    <button className="btn btn-primary" style={{ padding: '4px 10px', fontSize: 13 }}
+                                                        onClick={() => handleValidarConsulta(cp.id, 'aprovar')}>
+                                                        <CheckCircle size={14} /> Aprovar
+                                                    </button>
+                                                    <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 13 }}
+                                                        onClick={() => handleValidarConsulta(cp.id, 'rejeitar')}>
+                                                        <XCircle size={14} /> Rejeitar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <GerirAlunosModal
@@ -768,6 +964,14 @@ export function DashboardStaff() {
                 isOpen={isUtenteModalOpen}
                 onClose={() => setIsUtenteModalOpen(false)}
                 onSuccess={() => setIsUtenteModalOpen(false)}
+            />
+            <ConfirmModal
+                open={confirmModal.open}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                danger={confirmModal.danger}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
             />
         </div>
     );

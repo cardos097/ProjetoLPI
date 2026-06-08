@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { DateInput } from '../components/DateInput.jsx';
 import { Trash } from 'react-bootstrap-icons';
+import { ConfirmModal } from '../components/ConfirmModal.jsx';
 import { getUtenteDetails } from '../services/utentes.jsx';
 import { createFichaTerapiaFala, getFichasTerapiaFala, deleteFichaTerapiaFala } from '../services/fichas.jsx';
 import { getConsultaById } from '../services/consultas.jsx';
@@ -42,6 +43,7 @@ export function CriarFichaTerapiaFala() {
   const [lockedFields, setLockedFields] = useState({});
   const [isTerapiaFalaConsulta, setIsTerapiaFalaConsulta] = useState(false);
   const [terapeutaResponsavel, setTerapeutaResponsavel] = useState(null);
+  const [confirmPending, setConfirmPending] = useState(null);
   const [estudanteTerapiaFala, setEstudanteTerapiaFala] = useState(null);
   const [alunos, setAlunos] = useState([]);
 
@@ -211,20 +213,22 @@ export function CriarFichaTerapiaFala() {
     }
   };
 
-  const handleDeleteFicha = async (fichaId, diagnostico) => {
-    if (!window.confirm(`Tem a certeza que deseja apagar esta ficha? (${diagnostico || 'Sem diagnóstico'}) Esta ação não pode ser revertida.`)) {
-      return;
-    }
+  const handleDeleteFicha = (fichaId, diagnostico) => {
+    setConfirmPending({ fichaId, label: diagnostico || 'Sem diagnóstico' });
+  };
 
+  const doDeleteFicha = async () => {
+    if (!confirmPending) return;
     try {
-      await deleteFichaTerapiaFala(fichaId);
-      setFichas(fichas.filter(f => getFichaValue(f, 'id') !== fichaId));
+      await deleteFichaTerapiaFala(confirmPending.fichaId);
+      setFichas(fichas.filter(f => getFichaValue(f, 'id') !== confirmPending.fichaId));
       setSelectedFicha(null);
       setSuccess('Ficha eliminada com sucesso');
     } catch (err) {
       const errorMsg = err?.response?.data?.error || err?.message || 'Erro ao eliminar ficha';
       setError(errorMsg);
-      console.error('Erro ao eliminar ficha:', err);
+    } finally {
+      setConfirmPending(null);
     }
   };
 
@@ -434,6 +438,14 @@ export function CriarFichaTerapiaFala() {
           </div>
         </form>
       </div>
+      <ConfirmModal
+        open={!!confirmPending}
+        title="Apagar ficha"
+        message={`Tem a certeza que deseja apagar esta ficha? (${confirmPending?.label}) Esta ação não pode ser revertida.`}
+        danger
+        onConfirm={doDeleteFicha}
+        onCancel={() => setConfirmPending(null)}
+      />
     </div>
   );
 }

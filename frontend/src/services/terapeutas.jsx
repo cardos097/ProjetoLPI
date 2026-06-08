@@ -35,3 +35,10 @@ export async function removerAluno(alunoId) {
     const { data } = await api.delete(`/remover-aluno/${alunoId}`);
     return data;
 }
+
+export async function updateTerapeutaAreaAdmin(userId, areaClinicaId) {
+    const { data } = await api.put(`/terapeutas/${userId}/area-clinica`, {
+        area_clinica_id: Number(areaClinicaId),
+    });
+    return data;
+}

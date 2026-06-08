@@ -183,7 +183,7 @@ export function TransferirUtentes() {
                             >
                               <option value="">Selecionar terapeuta...</option>
                               {disponiveis.map((t) => (
-                                <option key={t.id} value={t.id}>{t.nome}</option>
+                                <option key={t.user_id} value={t.user_id}>{t.nome}</option>
                               ))}
                             </select>
                           </td>

@@ -114,8 +114,23 @@ export async function validarDocumento(id, acao) {
   return data;
 }
 
+export async function getConsultasPendentes() {
+  const { data } = await api.get('/consultas/pendentes');
+  return data;
+}
+
+export async function validarConsulta(id, acao) {
+  const { data } = await api.patch(`/consultas/${id}/validar`, { acao });
+  return data;
+}
+
 export async function getAlunos() {
   const { data } = await api.get('/alunos');
+  return data;
+}
+
+export async function getTerapeutasStaff() {
+  const { data } = await api.get('/terapeutas/lista-staff');
   return data;
 }
 

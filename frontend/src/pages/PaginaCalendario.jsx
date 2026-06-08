@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { getConsultas, createConsulta } from '../services/consultas.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
 import { ModalAgendarConsultaV2 } from '../components/ModalAgendarConsultaV2.jsx';
@@ -58,7 +59,7 @@ export function PaginaCalendario() {
             const data = await getConsultas();
             setConsultas(data || []);
         } catch (err) {
-            alert('Erro ao agendar consulta: ' + err.message);
+            toast.error('Erro ao agendar consulta: ' + (err?.response?.data?.error || err.message));
         }
     };
 

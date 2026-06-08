@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, X, Trash } from 'react-bootstrap-icons';
 import { getAlunosDisponiveis, getAlunosDoProfessor, adicionarAluno, removerAluno } from '../services/terapeutas.jsx';
+import { ConfirmModal } from './ConfirmModal.jsx';
 import '../styles/gerir-alunos.css';
 
 export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
@@ -11,6 +12,7 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [aba, setAba] = useState('disponiveis'); // 'disponiveis' ou 'meus'
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,19 +51,24 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  const handleRemoverAluno = async (alunoId) => {
-    if (!window.confirm('Tem a certeza que deseja remover este aluno?')) return;
+  const handleRemoverAluno = (alunoId) => {
+    setConfirmRemoveId(alunoId);
+  };
 
+  const doRemoverAluno = async () => {
+    if (!confirmRemoveId) return;
     try {
       setError('');
       setSuccess('');
-      await removerAluno(alunoId);
+      await removerAluno(confirmRemoveId);
       setSuccess('Aluno removido com sucesso!');
       carregarAlunos();
       onSuccess?.();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError('Erro ao remover aluno');
+    } finally {
+      setConfirmRemoveId(null);
     }
   };
 
@@ -167,6 +174,14 @@ export function GerirAlunosModal({ isOpen, onClose, onSuccess }) {
           )}
         </div>
       </div>
+      <ConfirmModal
+        open={!!confirmRemoveId}
+        title="Remover aluno"
+        message="Tem a certeza que deseja remover este aluno?"
+        danger
+        onConfirm={doRemoverAluno}
+        onCancel={() => setConfirmRemoveId(null)}
+      />
     </div>
   );
 }

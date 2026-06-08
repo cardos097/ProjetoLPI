@@ -41,17 +41,20 @@ export function CalendarioVisualizacao({
                         faltou: '#95a5a6',
                     };
 
+                    const pendente = consulta.estado_validacao === 'pendente';
+
                     return {
                         id: String(consulta.id),
-                        title: `${consulta.tipo || 'Consulta'} - ${consulta.utente_nome || 'Cliente'}`,
+                        title: `${pendente ? '⏳ ' : ''}${consulta.tipo || 'Consulta'} - ${consulta.utente_nome || 'Cliente'}${pendente ? ' (pendente de aprovação)' : ''}`,
                         start: startStr,
                         end: endStr,
                         backgroundColor: coresEstado[consulta.estado] || '#3498db',
-                        borderColor: coresEstado[consulta.estado] || '#3498db',
+                        borderColor: pendente ? '#f59e0b' : (coresEstado[consulta.estado] || '#3498db'),
                         display: 'block',
                         extendedProps: {
                             consultaId: consulta.id,
                             estado: consulta.estado,
+                            estadoValidacao: consulta.estado_validacao,
                             tipo: consulta.tipo,
                             utente: consulta.utente_nome,
                         }

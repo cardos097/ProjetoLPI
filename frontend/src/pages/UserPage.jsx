@@ -17,11 +17,12 @@ import {
   Camera,
   FilePdf,
   ArrowRepeat,
+  Download,
 } from 'react-bootstrap-icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtenteDetails, getUtenteConsultas, getUtenteRegistos, updateUtente, uploadAvatar, updateTerapeutaUtente } from '../services/utentes.jsx';
 import { getTerapeutas, getAreasClinicas, getConsultas } from '../services/consultas.jsx';
-import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala } from '../services/fichas.jsx';
+import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala, getFichasNutricao } from '../services/fichas.jsx';
 import '../styles/user-profile.css';
 
 // Função para mapear role para nome em português
@@ -154,11 +155,12 @@ export function UserPage() {
             consultasData = await getUtenteConsultas(profileUtenteId).catch(() => []);
           }
 
-          const [registosData, fichasAval, fichasPsic, fichasFala] = await Promise.all([
+          const [registosData, fichasAval, fichasPsic, fichasFala, fichasNutri] = await Promise.all([
             getUtenteRegistos(profileUtenteId).catch(() => []),
             getFichasAvaliacao(profileUtenteId).catch(() => []),
             getFichasPsicologia(profileUtenteId).catch(() => []),
             getFichasTerapiaFala(profileUtenteId).catch(() => []),
+            getFichasNutricao(profileUtenteId).catch(() => []),
           ]);
 
           setConsultas(Array.isArray(consultasData) ? normalizeConsultas(consultasData) : []);
@@ -167,6 +169,7 @@ export function UserPage() {
             ...(fichasAval || []).map(f => ({ ...f, _formTipo: 'Fisioterapia' })),
             ...(fichasPsic || []).map(f => ({ ...f, _formTipo: 'Psicologia' })),
             ...(fichasFala || []).map(f => ({ ...f, _formTipo: 'Terapia da Fala' })),
+            ...(fichasNutri || []).map(f => ({ ...f, _formTipo: 'Nutrição' })),
           ]);
         } catch (err) {
           setConsultas([]);
@@ -874,7 +877,7 @@ export function UserPage() {
                                   onMouseEnter={(e) => e.target.style.backgroundColor = '#d1d5db'}
                                   onMouseLeave={(e) => e.target.style.backgroundColor = '#e5e7eb'}
                                 >
-                                  📥 Descarregar
+                                  <Download size={14} style={{ marginRight: '0.35rem' }} /> Descarregar
                                 </a>
                               </>
                             ) : (
@@ -953,7 +956,7 @@ export function UserPage() {
                                   className="btn btn-secondary"
                                   style={{ fontSize: '0.8rem', padding: '4px 12px' }}
                                   onClick={() => {
-                                    const tipo = ficha._formTipo === 'Psicologia' ? 'psicologia' : ficha._formTipo === 'Terapia da Fala' ? 'terapia-fala' : 'avaliacao';
+                                    const tipo = ficha._formTipo === 'Psicologia' ? 'psicologia' : ficha._formTipo === 'Terapia da Fala' ? 'terapia-fala' : ficha._formTipo === 'Nutrição' ? 'nutricao' : 'avaliacao';
                                     navigate(`/fichas-${tipo}/${getFichaValue(ficha, 'id')}`);
                                   }}
                                 >

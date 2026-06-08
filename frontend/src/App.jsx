@@ -1,4 +1,5 @@
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { Toaster } from 'react-hot-toast';
 import { AppRoutes } from './routes/AppRoutes.jsx';
 import './styles/global.css';
 import './styles/calendario.css';
@@ -13,6 +14,7 @@ export default function App() {
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       <AppRoutes />
     </GoogleOAuthProvider>
   );

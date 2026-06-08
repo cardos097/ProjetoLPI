@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { DateInput } from '../components/DateInput.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import toast from 'react-hot-toast';
 import { HourglassSplit, FileText as FileTextIcon, LockFill } from 'react-bootstrap-icons';
 import {
   getConsultaById,
@@ -242,9 +243,11 @@ export function EditarConsulta() {
   const isFisioterapiaConsulta = normalizeText(areaClinicaNome).includes('fisioterapia');
   const isPsicologiaConsulta = normalizeText(areaClinicaNome).includes('psicologia');
   const isTerapiaFalaConsulta = normalizeText(areaClinicaNome).includes('fala');
+  const isNutricaoConsulta = normalizeText(areaClinicaNome).includes('nutri');
   const canAddFisioterapiaForm = canManageForms && isFisioterapiaConsulta;
   const canAddPsicologiaForm = canManageForms && isPsicologiaConsulta;
   const canAddTerapiaFalaForm = canManageForms && isTerapiaFalaConsulta;
+  const canAddNutricaoForm = canManageForms && isNutricaoConsulta;
 
   // Verificar permissões para editar campos específicos
   const isTerapeuta = user?.role === 'terapeuta';
@@ -326,6 +329,30 @@ export function EditarConsulta() {
     );
   };
 
+  const handleAddNutricaoForm = () => {
+    if (!isNutricaoConsulta) {
+      setError('O formulário de nutrição só está disponível para consultas de nutrição');
+      return;
+    }
+
+    const utenteId = getConsultaValue(consulta, 'utente_id');
+
+    if (!utenteId) {
+      setError('Não foi possível identificar o utente desta consulta');
+      return;
+    }
+
+    navigate(
+      `/fichas-nutricao/nova?utente_id=${utenteId}&consulta_id=${getConsultaValue(consulta, 'id')}`,
+      {
+        state: {
+          utenteId,
+          consultaId: getConsultaValue(consulta, 'id'),
+        },
+      }
+    );
+  };
+
   const handleUploadPdf = async (event) => {
     const file = event.target.files?.[0];
     
@@ -363,7 +390,7 @@ export function EditarConsulta() {
       setConsulta(consultaAtualizada);
       
       setError('');
-      alert('Ficheiro carregado com sucesso!');
+      toast.success('Ficheiro carregado com sucesso!');
     } catch (err) {
       setError(err?.response?.data?.error || 'Erro ao carregar ficheiro');
     } finally {
@@ -411,6 +438,11 @@ export function EditarConsulta() {
           {canAddTerapiaFalaForm && (
             <button className="btn btn-primary" onClick={handleAddTerapiaFalaForm}>
               + Ficha Terapia da Fala
+            </button>
+          )}
+          {canAddNutricaoForm && (
+            <button className="btn btn-primary" onClick={handleAddNutricaoForm}>
+              + Ficha Nutrição
             </button>
           )}
           <button 

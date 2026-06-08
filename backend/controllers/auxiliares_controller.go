@@ -84,6 +84,35 @@ func GetTerapeutas(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func GetTerapeutasStaff(c *gin.Context) {
+	var terapeutas []models.Terapeuta
+	err := config.DB.
+		Preload("User").
+		Preload("AreaClinica").
+		Joins("JOIN users ON users.id = terapeutas.user_id").
+		Where("users.active = ?", true).
+		Order("terapeutas.tipo ASC, users.nome ASC").
+		Find(&terapeutas).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := make([]TerapeutaListItem, 0, len(terapeutas))
+	for _, t := range terapeutas {
+		response = append(response, TerapeutaListItem{
+			UserID:          t.UserID,
+			Nome:            t.User.Nome,
+			Email:           t.User.Email,
+			Tipo:            t.Tipo,
+			AreaClinicaID:   t.AreaClinicaID,
+			AreaClinicaNome: t.AreaClinica.Nome,
+		})
+	}
+	c.JSON(http.StatusOK, response)
+}
+
 func GetTerapeutasByArea(c *gin.Context) {
 	areaID := c.Param("area_id")
 
@@ -223,6 +252,39 @@ func UpdateAreaClinica(c *gin.Context) {
 			"area_clinica_id":   terapeuta.AreaClinicaID,
 			"area_clinica_nome": areaClinica.Nome,
 		},
+	})
+}
+
+func UpdateAreaClinicaAdmin(c *gin.Context) {
+	userID := c.Param("user_id")
+
+	var req UpdateAreaClinicaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "area_clinica_id é obrigatório"})
+		return
+	}
+
+	var terapeuta models.Terapeuta
+	if err := config.DB.Where("user_id = ?", userID).First(&terapeuta).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Terapeuta não encontrado"})
+		return
+	}
+
+	var areaClinica models.AreaClinica
+	if err := config.DB.First(&areaClinica, req.AreaClinicaID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Área clínica não encontrada"})
+		return
+	}
+
+	terapeuta.AreaClinicaID = &req.AreaClinicaID
+	if err := config.DB.Model(&terapeuta).Update("area_clinica_id", terapeuta.AreaClinicaID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar área clínica"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":           "Área clínica atualizada com sucesso",
+		"area_clinica_nome": areaClinica.Nome,
 	})
 }
 

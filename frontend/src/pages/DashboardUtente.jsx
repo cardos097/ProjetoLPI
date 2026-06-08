@@ -68,6 +68,11 @@ export function DashboardUtente() {
                                             <h4>{consulta.tipo}</h4>
                                             <p>Data: {(() => { const s = String(consulta.data_inicio || '').replace(' ','T'); return new Date(/[Zz]$|[+-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z').toLocaleDateString('pt-PT', { timeZone: 'UTC' }); })()}</p>
                                             <p>Status: {consulta.estado}</p>
+                                            {consulta.estado_validacao === 'pendente' && (
+                                                <span style={{ display: 'inline-block', marginTop: 4, background: '#fef3c7', color: '#92400e', borderRadius: 4, padding: '2px 8px', fontSize: 12 }}>
+                                                    Pendente de aprovação
+                                                </span>
+                                            )}
                                         </div>
                                         <button
                                             className="btn-detalhes"

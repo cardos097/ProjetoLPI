@@ -97,12 +97,14 @@ func main() {
 	{
 		auth.GET("/consultas", controllers.GetConsultas)
 		auth.GET("/consultas/disponibilidade/check", controllers.CheckDisponibilidade)
+		auth.GET("/consultas/pendentes", middleware.RoleMiddleware("admin", "administrativo"), controllers.GetConsultasPendentes)
 		auth.GET("/consultas/:id", controllers.GetConsultaByID)
 		auth.GET("/terapeutas/:terapeuta_id/horarios-disponiveis", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetHorariosDisponiveis)
 		auth.POST("/consultas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.CreateConsulta)
 		auth.PATCH("/consultas/:id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UpdateConsulta)
 		auth.PATCH("/consultas/:id/estado", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UpdateEstadoConsulta)
 		auth.PUT("/consultas/:id/cancelar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.CancelConsulta)
+		auth.PATCH("/consultas/:id/validar", middleware.RoleMiddleware("admin", "administrativo"), controllers.ValidarConsulta)
 		auth.PUT("/consultas/:id/remarcar", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.RemarcarConsulta)
 		auth.POST("/consultas/:id/upload-pdf", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.UploadPdfConsulta)
 
@@ -119,6 +121,7 @@ func main() {
 		auth.GET("/salas", controllers.GetSalas)
 		auth.GET("/exports/sala", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.ExportOcupacaoSalas)
 		auth.GET("/terapeutas", middleware.RoleMiddleware("admin", "administrativo", "terapeuta", "utente"), controllers.GetTerapeutas)
+		auth.GET("/terapeutas/lista-staff", middleware.RoleMiddleware("admin", "administrativo"), controllers.GetTerapeutasStaff)
 		auth.GET("/terapeutas/area/:area_id", middleware.RoleMiddleware("admin", "administrativo", "terapeuta"), controllers.GetTerapeutasByArea)
 		auth.GET("/terapeutas/:terapeuta_id/utentes", middleware.RoleMiddleware("admin", "administrativo"), controllers.GetUtentesDeTerapeuta)
 		auth.GET("/alunos", middleware.RoleMiddleware("admin", "administrativo"), controllers.GetAlunos)
@@ -127,6 +130,7 @@ func main() {
 		auth.POST("/adicionar-aluno", middleware.RoleMiddleware("terapeuta"), controllers.AdicionarAluno)
 		auth.DELETE("/remover-aluno/:aluno_id", middleware.RoleMiddleware("terapeuta"), controllers.RemoverAluno)
 		auth.PUT("/terapeutas/area-clinica", middleware.RoleMiddleware("terapeuta"), controllers.UpdateAreaClinica)
+		auth.PUT("/terapeutas/:user_id/area-clinica", middleware.RoleMiddleware("admin", "administrativo"), controllers.UpdateAreaClinicaAdmin)
 
 		auth.GET("/fichas-avaliacao", middleware.RoleMiddleware("admin", "terapeuta", "utente"), controllers.GetFichasAvaliacao)
 		auth.GET("/fichas-avaliacao/:id", middleware.RoleMiddleware("admin", "terapeuta", "utente"), controllers.GetFichaAvaliacaoByID)
@@ -146,12 +150,19 @@ func main() {
 		auth.PATCH("/fichas-terapia-fala/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaTerapiaFala)
 		auth.DELETE("/fichas-terapia-fala/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaTerapiaFala)
 
+		auth.GET("/fichas-nutricao", middleware.RoleMiddleware("admin", "terapeuta", "utente"), controllers.GetFichasNutricao)
+		auth.GET("/fichas-nutricao/:id", middleware.RoleMiddleware("admin", "terapeuta", "utente"), controllers.GetFichaNutricaoByID)
+		auth.POST("/fichas-nutricao", middleware.RoleMiddleware("admin", "terapeuta"), controllers.CreateFichaNutricao)
+		auth.PATCH("/fichas-nutricao/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.UpdateFichaNutricao)
+		auth.DELETE("/fichas-nutricao/:id", middleware.RoleMiddleware("admin", "terapeuta"), controllers.DeleteFichaNutricao)
+
 		auth.GET("/documentos", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetDocumentos)
 		auth.PATCH("/documentos/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarDocumento)
 
 		auth.PATCH("/fichas-avaliacao/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarFichaAvaliacao)
 		auth.PATCH("/fichas-psicologia/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarFichaPsicologia)
 		auth.PATCH("/fichas-terapia-fala/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarFichaTerapiaFala)
+		auth.PATCH("/fichas-nutricao/:id/validar", middleware.RoleMiddleware("admin", "terapeuta"), controllers.ValidarFichaNutricao)
 
 		auth.GET("/pendentes", middleware.RoleMiddleware("admin", "terapeuta"), controllers.GetPendentes)
 

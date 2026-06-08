@@ -19,9 +19,11 @@ import { VerConsultasSala } from '../pages/VerConsultasSala.jsx';
 import { CriarFichaAvaliacao } from '../pages/CriarFichaAvaliacao.jsx';
 import { CriarFichaPsicologia } from '../pages/CriarFichaPsicologia.jsx';
 import { CriarFichaTerapiaFala } from '../pages/CriarFichaTerapiaFala.jsx';
+import { CriarFichaNutricao } from '../pages/CriarFichaNutricao.jsx';
 import { VerFichaAvaliacao } from '../pages/VerFichaAvaliacao.jsx';
 import { VerFichaPsicologia } from '../pages/VerFichaPsicologia.jsx';
 import { VerFichaTerapiaFala } from '../pages/VerFichaTerapiaFala.jsx';
+import { VerFichaNutricao } from '../pages/VerFichaNutricao.jsx';
 import { CompletarPerfilPage } from '../pages/CompletarPerfilPage.jsx';
 import { AtivarContaPage } from '../pages/AtivarContaPage.jsx';
 import { TransferirUtentes } from '../pages/TransferirUtentes.jsx';
@@ -245,9 +247,20 @@ export function AppRoutes() {
           )
         }
       />
+      <Route
+        path="/fichas-nutricao/nova"
+        element={
+          isAuthenticated && canAccessFichaAvaliacao ? (
+            <Layout><CriarFichaNutricao /></Layout>
+          ) : (
+            <Navigate to="/dashboard" replace />
+          )
+        }
+      />
       <Route path="/fichas-avaliacao/:id" element={isAuthenticated ? <Layout><VerFichaAvaliacao /></Layout> : <Navigate to="/" replace />} />
       <Route path="/fichas-psicologia/:id" element={isAuthenticated ? <Layout><VerFichaPsicologia /></Layout> : <Navigate to="/" replace />} />
       <Route path="/fichas-terapia-fala/:id" element={isAuthenticated ? <Layout><VerFichaTerapiaFala /></Layout> : <Navigate to="/" replace />} />
+      <Route path="/fichas-nutricao/:id" element={isAuthenticated ? <Layout><VerFichaNutricao /></Layout> : <Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

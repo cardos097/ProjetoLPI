@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import toast from 'react-hot-toast';
 import { DateInput } from './DateInput.jsx';
 import '../styles/modal.css';
 import {
@@ -156,12 +157,12 @@ export function ModalAgendarConsultaV2({
         const utenteId = user?.role === 'utente' ? user?.id : formData.utente_id;
 
         if (!formData.data || !selectedSlot || !formData.area_clinica_id || !formData.sala_id || !formData.terapeuta_id || !utenteId) {
-            alert('Preenche todos os campos obrigatórios');
+            toast.error('Preenche todos os campos obrigatórios');
             return;
         }
 
         if (new Date(`${formData.data}T${selectedSlot}:00`) <= new Date()) {
-            alert('Não é possível marcar consultas no passado. Escolhe uma data e hora futuras.');
+            toast.error('Não é possível marcar consultas no passado. Escolhe uma data e hora futuras.');
             return;
         }
 

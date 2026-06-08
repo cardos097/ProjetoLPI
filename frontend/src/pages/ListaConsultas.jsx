@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { CalendarDate, ClipboardData, Search, ArrowRepeat, Eye, Pencil, X, Check, ExclamationTriangle } from 'react-bootstrap-icons';
 import { getConsultas, cancelConsulta, createConsulta, updateEstadoConsulta } from '../services/consultas.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -109,7 +110,7 @@ export function ListaConsultas() {
       setDataSelecionada(null);
       await fetchConsultas();
     } catch (err) {
-      alert('Erro ao agendar consulta: ' + err.message);
+      toast.error('Erro ao agendar consulta: ' + (err?.response?.data?.error || err.message));
     }
   };
 
@@ -290,6 +291,11 @@ export function ListaConsultas() {
                       <span className={`status ${consulta.estado || 'agendada'}`}>
                         {(consulta.estado || 'agendada').charAt(0).toUpperCase() + (consulta.estado || 'agendada').slice(1)}
                       </span>
+                      {consulta.estado_validacao === 'pendente' && (
+                        <span style={{ display: 'block', marginTop: 4, background: '#fef3c7', color: '#92400e', borderRadius: 4, padding: '2px 8px', fontSize: 11, whiteSpace: 'nowrap' }}>
+                          Pendente de aprovação
+                        </span>
+                      )}
                     </td>
                     <td className="actions">
                       <button className="btn-icon btn-view" onClick={() => navigate(`/consultas/${consulta.id}/detalhes`)} title="Ver">
@@ -327,6 +333,11 @@ export function ListaConsultas() {
                     {(consulta.estado || 'agendada').charAt(0).toUpperCase() + (consulta.estado || 'agendada').slice(1)}
                   </span>
                 </div>
+                {consulta.estado_validacao === 'pendente' && (
+                  <span style={{ display: 'inline-block', marginTop: 4, background: '#fef3c7', color: '#92400e', borderRadius: 4, padding: '2px 8px', fontSize: 11 }}>
+                    Pendente de aprovação
+                  </span>
+                )}
                 <div className="card-meta">
                   <span>{consulta.terapeuta?.nome || '-'} · {consulta.area_clinica?.nome || '-'}</span>
                   <span>{formatDateTime(consulta.data_inicio)}</span>

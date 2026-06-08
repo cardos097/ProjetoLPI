@@ -112,6 +112,7 @@ CREATE TABLE consultas (
   data_fim TIMESTAMP NOT NULL,
   estado consulta_estado NOT NULL DEFAULT 'agendada',
   tipo_consulta VARCHAR(20) NOT NULL DEFAULT 'individual',
+  estado_validacao VARCHAR(20) NOT NULL DEFAULT 'aprovada',
   created_by INTEGER NOT NULL REFERENCES users(id),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CHECK (data_fim > data_inicio)
@@ -296,6 +297,51 @@ CREATE INDEX idx_fichas_terapia_fala_utente ON fichas_terapia_fala(utente_id);
 CREATE INDEX idx_fichas_terapia_fala_consulta ON fichas_terapia_fala(consulta_id);
 CREATE INDEX idx_fichas_terapia_fala_created_by ON fichas_terapia_fala(created_by);
 CREATE INDEX idx_fichas_terapia_fala_estudante ON fichas_terapia_fala(estudante_id);
+
+CREATE TABLE fichas_nutricao (
+  id SERIAL PRIMARY KEY,
+  utente_id INTEGER NOT NULL REFERENCES users(id),
+  consulta_id INTEGER REFERENCES consultas(id),
+  nome_completo VARCHAR(150),
+  numero_processo VARCHAR(50),
+  data_nascimento DATE,
+  motivo_consulta TEXT,
+  antecedentes_pessoais TEXT,
+  antecedentes_familiares TEXT,
+  medicacao_habitual TEXT,
+  alergias_intolerancias TEXT,
+  atividade_fisica TEXT,
+  habitos_tabagicos TEXT,
+  habitos_alcoolicos TEXT,
+  dados_laboratoriais TEXT,
+  estado_apetite TEXT,
+  estado_mastigacao TEXT,
+  estado_digestao TEXT,
+  estado_funcao_gi TEXT,
+  exame_fisico_nutricao TEXT,
+  ingestao_alimentar_habitual TEXT,
+  ingestao_hidrica TEXT,
+  peso_kg NUMERIC(6,2),
+  altura_m NUMERIC(4,2),
+  imc NUMERIC(5,2),
+  massa_gorda_pct NUMERIC(5,2),
+  massa_muscular_kg NUMERIC(6,2),
+  perimetro_cintura NUMERIC(6,2),
+  perimetro_gluteal NUMERIC(6,2),
+  pregas_cutaneas TEXT,
+  evolucao_peso_min NUMERIC(6,2),
+  evolucao_peso_max NUMERIC(6,2),
+  intervencao_nutricional TEXT,
+  plano_alimentar TEXT,
+  estado VARCHAR(20) NOT NULL DEFAULT 'aprovada',
+  created_by INTEGER NOT NULL REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_fichas_nutricao_utente ON fichas_nutricao(utente_id);
+CREATE INDEX idx_fichas_nutricao_consulta ON fichas_nutricao(consulta_id);
+CREATE INDEX idx_fichas_nutricao_created_by ON fichas_nutricao(created_by);
 
 CREATE TYPE assiduidade_estado AS ENUM ('P', 'A', 'FJ', 'FI');
 

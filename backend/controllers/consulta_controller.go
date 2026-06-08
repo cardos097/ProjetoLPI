@@ -28,14 +28,14 @@ import (
 var consultaMu sync.Mutex
 
 type CreateConsultaRequest struct {
-	UtenteID         uint   `json:"utente_id"`
-	TerapeutaID      uint   `json:"terapeuta_id"`
-	SalaID           uint   `json:"sala_id"`
-	AreaClinicaID    uint   `json:"area_clinica_id"`
-	DataInicio       string `json:"data_inicio"`
-	DataFim          string `json:"data_fim"`
-	TipoConsulta     string `json:"tipo_consulta"`
-	AtribuirTerapeuta bool  `json:"atribuir_terapeuta"`
+	UtenteID          uint   `json:"utente_id"`
+	TerapeutaID       uint   `json:"terapeuta_id"`
+	SalaID            uint   `json:"sala_id"`
+	AreaClinicaID     uint   `json:"area_clinica_id"`
+	DataInicio        string `json:"data_inicio"`
+	DataFim           string `json:"data_fim"`
+	TipoConsulta      string `json:"tipo_consulta"`
+	AtribuirTerapeuta bool   `json:"atribuir_terapeuta"`
 }
 
 type RemarcarConsultaRequest struct {
@@ -399,21 +399,27 @@ func CreateConsulta(c *gin.Context) {
 		tipoConsulta = "grupo"
 	}
 
+	estadoValidacao := "aprovada"
+	if userRole == "utente" {
+		estadoValidacao = "pendente"
+	}
+
 	var salaPtr *uint
 	if req.SalaID != 0 {
 		salaPtr = &req.SalaID
 	}
 
 	consulta := models.Consulta{
-		UtenteID:      req.UtenteID,
-		TerapeutaID:   req.TerapeutaID,
-		SalaID:        salaPtr,
-		AreaClinicaID: req.AreaClinicaID,
-		DataInicio:    dataInicio,
-		DataFim:       dataFim,
-		Estado:        "agendada",
-		TipoConsulta:  tipoConsulta,
-		CreatedBy:     createdBy,
+		UtenteID:        req.UtenteID,
+		TerapeutaID:     req.TerapeutaID,
+		SalaID:          salaPtr,
+		AreaClinicaID:   req.AreaClinicaID,
+		DataInicio:      dataInicio,
+		DataFim:         dataFim,
+		Estado:          "agendada",
+		TipoConsulta:    tipoConsulta,
+		EstadoValidacao: estadoValidacao,
+		CreatedBy:       createdBy,
 	}
 
 	err = config.DB.Create(&consulta).Error
@@ -508,6 +514,94 @@ func CancelConsulta(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Consulta cancelada com sucesso"})
+}
+
+// ConsultaPendenteDTO representa uma marcação de utente à espera de validação
+// pela rececão, incluindo um indicador de possíveis conflitos de agenda do terapeuta.
+type ConsultaPendenteDTO struct {
+	ID                 uint      `json:"id"`
+	Utente             string    `json:"utente"`
+	Terapeuta          string    `json:"terapeuta"`
+	AreaClinica        string    `json:"area_clinica"`
+	DataInicio         time.Time `json:"data_inicio"`
+	DataFim            time.Time `json:"data_fim"`
+	ConflitosTerapeuta int       `json:"conflitos_terapeuta"`
+}
+
+// GetConsultasPendentes devolve as marcações feitas por utentes que aguardam
+// validação da rececão (admin/administrativo), com indicação de conflitos de
+// horário do terapeuta para ajudar na decisão.
+func GetConsultasPendentes(c *gin.Context) {
+	var consultas []models.Consulta
+	if err := config.DB.
+		Preload("Utente").
+		Preload("Terapeuta").
+		Preload("AreaClinica").
+		Where("estado_validacao = ?", "pendente").
+		Order("data_inicio ASC").
+		Find(&consultas).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	result := []ConsultaPendenteDTO{}
+	for _, consulta := range consultas {
+		var conflitos int64
+		config.DB.Model(&models.Consulta{}).
+			Where("terapeuta_id = ? AND id != ? AND estado != ? AND data_inicio < ? AND data_fim > ?",
+				consulta.TerapeutaID, consulta.ID, "cancelada", consulta.DataFim, consulta.DataInicio,
+			).Count(&conflitos)
+
+		result = append(result, ConsultaPendenteDTO{
+			ID:                 consulta.ID,
+			Utente:             consulta.Utente.Nome,
+			Terapeuta:          consulta.Terapeuta.Nome,
+			AreaClinica:        consulta.AreaClinica.Nome,
+			DataInicio:         consulta.DataInicio,
+			DataFim:            consulta.DataFim,
+			ConflitosTerapeuta: int(conflitos),
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// ValidarConsulta permite à rececão (admin/administrativo) aprovar ou rejeitar
+// uma marcação de utente que ficou pendente de validação.
+func ValidarConsulta(c *gin.Context) {
+	id := c.Param("id")
+
+	var body struct {
+		Acao string `json:"acao"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || (body.Acao != "aprovar" && body.Acao != "rejeitar") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "acao deve ser 'aprovar' ou 'rejeitar'"})
+		return
+	}
+
+	var consulta models.Consulta
+	if err := config.DB.Where("id = ? AND estado_validacao = ?", id, "pendente").First(&consulta).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Consulta pendente não encontrada"})
+		return
+	}
+
+	if body.Acao == "aprovar" {
+		consulta.EstadoValidacao = "aprovada"
+		if err := config.DB.Save(&consulta).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao aprovar consulta"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Consulta aprovada"})
+		return
+	}
+
+	consulta.Estado = "cancelada"
+	consulta.EstadoValidacao = "rejeitada"
+	if err := config.DB.Save(&consulta).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao rejeitar consulta"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Consulta rejeitada"})
 }
 
 func RemarcarConsulta(c *gin.Context) {

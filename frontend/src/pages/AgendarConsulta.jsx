@@ -36,7 +36,6 @@ export function AgendarConsulta() {
     terapeuta_id: '',
     sala_id: '',
     area_clinica_id: '',
-    tipo_consulta: 'individual',
     data_inicio: '',
     hora_inicio: '',
     duracao: '60',
@@ -259,7 +258,6 @@ export function AgendarConsulta() {
         terapeuta_id: parseInt(form.terapeuta_id),
         ...(isUtente ? {} : (form.sala_id ? { sala_id: parseInt(form.sala_id) } : {})),
         area_clinica_id: parseInt(form.area_clinica_id),
-        tipo_consulta: form.tipo_consulta || 'individual',
         data_inicio: formatLocalDateTime(dataInicio),
         data_fim: formatLocalDateTime(dataFim),
         atribuir_terapeuta: form.atribuir_terapeuta,
@@ -374,17 +372,6 @@ export function AgendarConsulta() {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Tipo de Consulta</label>
-                  <select
-                    name="tipo_consulta"
-                    value={form.tipo_consulta || 'individual'}
-                    onChange={handleChange}
-                  >
-                    <option value="individual">Individual</option>
-                    <option value="grupo">Grupo</option>
-                  </select>
-                </div>
               </div>
 
               <h2>3. Data e Horário</h2>
@@ -427,7 +414,7 @@ export function AgendarConsulta() {
                 )}
               </div>
 
-              {form.hora_inicio && form.terapeuta_id && form.area_clinica_id && (() => {
+              {!isUtente && form.hora_inicio && form.terapeuta_id && form.area_clinica_id && (() => {
                 const jaTemTerapeuta = utenteDetails?.terapeutas?.some(
                   (t) => String(t.area_clinica_id) === String(form.area_clinica_id)
                 );

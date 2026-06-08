@@ -16,22 +16,23 @@ type DocumentoDTO struct {
 }
 
 type ConsultaDTO struct {
-	ID            uint           `json:"id"`
-	UtenteID      uint           `json:"utente_id"`
-	TerapeutaID   uint           `json:"terapeuta_id"`
-	SalaID        *uint          `json:"sala_id"`
-	AreaClinicaID uint           `json:"area_clinica_id"`
-	DataInicio    time.Time      `json:"data_inicio"`
-	DataFim       time.Time      `json:"data_fim"`
-	Duracao       int            `json:"duracao"` // em minutos
-	Estado        string         `json:"estado"`
-	TipoConsulta  string         `json:"tipo_consulta"`
-	Tipo          string         `json:"tipo"`
-	Utente        *SimpleEntity  `json:"utente"`
-	Terapeuta     *SimpleEntity  `json:"terapeuta"`
-	Sala          *SimpleEntity  `json:"sala"`
-	AreaClinica   *SimpleEntity  `json:"area_clinica"`
-	Documentos    []DocumentoDTO `json:"documentos,omitempty"`
+	ID              uint           `json:"id"`
+	UtenteID        uint           `json:"utente_id"`
+	TerapeutaID     uint           `json:"terapeuta_id"`
+	SalaID          *uint          `json:"sala_id"`
+	AreaClinicaID   uint           `json:"area_clinica_id"`
+	DataInicio      time.Time      `json:"data_inicio"`
+	DataFim         time.Time      `json:"data_fim"`
+	Duracao         int            `json:"duracao"` // em minutos
+	Estado          string         `json:"estado"`
+	TipoConsulta    string         `json:"tipo_consulta"`
+	EstadoValidacao string         `json:"estado_validacao"`
+	Tipo            string         `json:"tipo"`
+	Utente          *SimpleEntity  `json:"utente"`
+	Terapeuta       *SimpleEntity  `json:"terapeuta"`
+	Sala            *SimpleEntity  `json:"sala"`
+	AreaClinica     *SimpleEntity  `json:"area_clinica"`
+	Documentos      []DocumentoDTO `json:"documentos,omitempty"`
 }
 
 // ConvertToDTO converte uma Consulta para ConsultaDTO
@@ -74,21 +75,22 @@ func (c *Consulta) ConvertToDTO() *ConsultaDTO {
 	}
 
 	return &ConsultaDTO{
-		ID:            c.ID,
-		UtenteID:      c.UtenteID,
-		TerapeutaID:   c.TerapeutaID,
-		SalaID:        c.SalaID,
-		AreaClinicaID: c.AreaClinicaID,
-		DataInicio:    c.DataInicio,
-		DataFim:       c.DataFim,
-		Duracao:       duracao,
-		Estado:        c.Estado,
-		TipoConsulta:  c.TipoConsulta,
-		Tipo:          "Consulta",
-		Utente:        utente,
-		Terapeuta:     terapeuta,
-		Sala:          sala,
-		AreaClinica:   areaClinica,
-		Documentos:    documentos,
+		ID:              c.ID,
+		UtenteID:        c.UtenteID,
+		TerapeutaID:     c.TerapeutaID,
+		SalaID:          c.SalaID,
+		AreaClinicaID:   c.AreaClinicaID,
+		DataInicio:      c.DataInicio,
+		DataFim:         c.DataFim,
+		Duracao:         duracao,
+		Estado:          c.Estado,
+		TipoConsulta:    c.TipoConsulta,
+		EstadoValidacao: c.EstadoValidacao,
+		Tipo:            "Consulta",
+		Utente:          utente,
+		Terapeuta:       terapeuta,
+		Sala:            sala,
+		AreaClinica:     areaClinica,
+		Documentos:      documentos,
 	}
 }
