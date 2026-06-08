@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { registerRequest, verifyEmailRequest } from '../services/auth.jsx';
 import { Eye, EyeSlash } from 'react-bootstrap-icons';
+import '../styles/login.css';
 
 export function CriarContaPage() {
   const navigate = useNavigate();

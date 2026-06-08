@@ -605,7 +605,7 @@ export function UserPage() {
                       </div>
                     </div>
 
-                    {(user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && (
+                    {(user?.role === 'admin' || user?.role === 'administrativo' || user?.role === 'terapeuta') && !isOwnProfile && (
                       <div className="profile-section">
                         <p className="profile-section-title"><FileText size={12} /> Informação Clínica</p>
                         {(user?.role === 'admin' || user?.role === 'administrativo') && (

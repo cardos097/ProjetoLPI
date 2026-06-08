@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import '../styles/footer.css';
 
 const links = [
   { title: 'Especialidades', href: '#especialidades' },

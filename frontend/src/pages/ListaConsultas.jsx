@@ -6,6 +6,7 @@ import { getConsultas, cancelConsulta, createConsulta, updateEstadoConsulta } fr
 import { useAuth } from '../context/AuthContext.jsx';
 import { CalendarioVisualizacao } from '../components/CalendarioVisualizacao.jsx';
 import { ModalAgendarConsultaV2 } from '../components/ModalAgendarConsultaV2.jsx';
+import '../styles/consultas.css';
 
 export function ListaConsultas() {
   const navigate = useNavigate();

@@ -13,6 +13,14 @@ import {
   getAreasClinicas,
   uploadPdfConsulta,
 } from '../services/consultas.jsx';
+import { getUtenteDetails } from '../services/utentes.jsx';
+import {
+  getFichasAvaliacao,
+  getFichasPsicologia,
+  getFichasTerapiaFala,
+  getFichasNutricao,
+} from '../services/fichas.jsx';
+import '../styles/consultas.css';
 
 export function EditarConsulta() {
   const navigate = useNavigate();
@@ -24,6 +32,9 @@ export function EditarConsulta() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [consulta, setConsulta] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [utenteInfo, setUtenteInfo] = useState(null);
+  const [fichasConsulta, setFichasConsulta] = useState([]);
+  const [fichaRoute, setFichaRoute] = useState('');
   const fileInputRef = useRef(null);
 
   const [terapeutas, setTerapeutas] = useState([]);
@@ -98,6 +109,14 @@ export function EditarConsulta() {
 
         setConsulta(consulta);
 
+        // Fetch utente contact info for display (staff only)
+        const utenteId = getConsultaValue(consulta, 'utente_id');
+        if (utenteId && ['admin', 'administrativo', 'terapeuta'].includes(user?.role)) {
+          getUtenteDetails(utenteId)
+            .then((u) => setUtenteInfo({ nome: u.nome, email: u.email, telefone: u.telefone, morada: u.morada }))
+            .catch(() => {});
+        }
+
         setForm({
           terapeuta_id: getConsultaValue(consulta, 'terapeuta_id') || '',
           sala_id: getConsultaValue(consulta, 'sala_id') || '',
@@ -112,6 +131,29 @@ export function EditarConsulta() {
         setTerapeutas(t || []);
         setSalas(dedupeSalasByNome(s || []));
         setAreasClinicas(a || []);
+
+        // Carregar fichas desta consulta
+        const areaNome = (a || []).find(x => x.id === Number(getConsultaValue(consulta, 'area_clinica_id')))?.nome
+          || getConsultaValue(consulta, 'area_clinica_nome') || '';
+        const normArea = areaNome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        const uId = getConsultaValue(consulta, 'utente_id');
+        const cId = Number(getConsultaValue(consulta, 'id'));
+        const canLoad = ['admin', 'administrativo', 'terapeuta'].includes(user?.role);
+
+        if (uId && canLoad) {
+          let fetchFichas = null;
+          let route = '';
+          if (normArea.includes('fisio'))  { fetchFichas = getFichasAvaliacao;   route = 'fichas-avaliacao'; }
+          if (normArea.includes('psicol')) { fetchFichas = getFichasPsicologia;  route = 'fichas-psicologia'; }
+          if (normArea.includes('fala'))   { fetchFichas = getFichasTerapiaFala; route = 'fichas-terapia-fala'; }
+          if (normArea.includes('nutri'))  { fetchFichas = getFichasNutricao;    route = 'fichas-nutricao'; }
+
+          if (fetchFichas) {
+            const todas = await fetchFichas(uId).catch(() => []);
+            setFichasConsulta((todas || []).filter(f => Number(f.consulta_id) === cId));
+            setFichaRoute(route);
+          }
+        }
       } catch (err) {
         if (err?.response?.status === 403) {
           setAccessDenied(true);
@@ -462,6 +504,56 @@ export function EditarConsulta() {
           />
         </div>
       </div>
+
+      {utenteInfo && (
+        <div className="form-container" style={{ marginBottom: '12px' }}>
+          <div className="utente-info-panel" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+            <div className="utente-info-row">
+              <span className="utente-info-label">Nome</span>
+              <span className="utente-info-value">{utenteInfo.nome || '—'}</span>
+            </div>
+            <div className="utente-info-row">
+              <span className="utente-info-label">Email</span>
+              <span className="utente-info-value">{utenteInfo.email || '—'}</span>
+            </div>
+            <div className="utente-info-row">
+              <span className="utente-info-label">Telefone</span>
+              <span className="utente-info-value">{utenteInfo.telefone || '—'}</span>
+            </div>
+            <div className="utente-info-row">
+              <span className="utente-info-label">Morada</span>
+              <span className="utente-info-value">{utenteInfo.morada || '—'}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {fichasConsulta.length > 0 && (
+        <div className="form-container" style={{ marginBottom: 12 }}>
+          <h3 style={{ marginBottom: 12, fontSize: '1rem', fontWeight: 600 }}>
+            Fichas desta consulta ({fichasConsulta.length})
+          </h3>
+          {fichasConsulta.map(f => (
+            <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: 8, marginBottom: 8, background: 'white' }}>
+              <div>
+                <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                  Ficha de {new Date(f.created_at).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {f.motivo_descricao && (
+                  <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#6b7280', maxWidth: 400,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {f.motivo_descricao}
+                  </p>
+                )}
+              </div>
+              <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/${fichaRoute}/${f.id}`)}>
+                Ver detalhes
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="form-container">
         {error && (

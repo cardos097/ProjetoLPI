@@ -206,6 +206,181 @@
     color: white;
 }
 
+/* Two-column scheduling modal */
+.modal-content.modal-wide {
+    max-width: 860px;
+    width: 95%;
+    max-height: 90vh;
+}
+
+.modal-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+.modal-col {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.modal-col + .modal-col {
+    border-left: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 0 0 8px 0;
+}
+
+.modal-col-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin: 0 0 4px;
+}
+
+/* Mini calendar */
+.mini-calendar {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px;
+    user-select: none;
+}
+
+.mini-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.mini-cal-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+.mini-cal-nav {
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.mini-cal-nav:hover {
+    background: #f3f4f6;
+}
+
+.mini-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.mini-cal-dow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #9ca3af;
+    text-align: center;
+    padding: 4px 0;
+}
+
+.mini-cal-day {
+    aspect-ratio: 1;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: #374151;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0;
+}
+
+.mini-cal-day:hover:not(.disabled):not(.selected) {
+    background: #e5e7eb;
+}
+
+.mini-cal-day.selected {
+    background: #1f2937;
+    color: white;
+    font-weight: 600;
+}
+
+.mini-cal-day.disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+
+/* Utente info panel */
+.utente-info-panel {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.utente-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.utente-info-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    text-transform: uppercase;
+}
+
+.utente-info-value {
+    font-size: 0.9rem;
+    color: #1f2937;
+    font-weight: 500;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.utente-info-empty {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    padding: 8px 0;
+}
+
+/* Modal two-col responsive */
+@media (max-width: 680px) {
+    .modal-two-col {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-col + .modal-col {
+        border-left: none;
+        border-top: 1px solid #e5e7eb;
+        border-radius: 0 0 8px 8px;
+    }
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .modal-content {

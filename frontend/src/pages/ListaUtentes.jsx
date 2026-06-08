@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getUtentes, deleteUtente } from '../services/utentes.jsx';
 import { Search, Eye, Pencil, Trash } from 'react-bootstrap-icons';
+import '../styles/utentes.css';
 
 export function ListaUtentes() {
   const navigate = useNavigate();

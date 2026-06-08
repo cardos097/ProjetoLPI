@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import '../styles/hero.css';
 
 // Icon component for contact details
 const InfoIcon = ({ type }) => {

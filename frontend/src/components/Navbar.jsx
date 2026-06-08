@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { CalendarDate, PlusLg, ArrowLeftRight } from 'react-bootstrap-icons';
+import '../styles/navbar.css';
 
 export function Navbar() {
   const navigate = useNavigate();

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { loginRequest, loginWithGoogle, resendVerificationRequest, verifyEmailRequest } from '../services/auth.jsx';
 import { GoogleLogin } from '@react-oauth/google';
 import { Eye, EyeSlash, PersonBadgeFill, PersonFill } from 'react-bootstrap-icons';
+import '../styles/login.css';
 
 export function LoginPage() {
   const navigate = useNavigate();

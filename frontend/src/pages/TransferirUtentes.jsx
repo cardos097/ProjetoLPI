@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getTerapeutas } from '../services/consultas.jsx';
 import { getUtentesDeTerapeuta, updateTerapeutaUtente } from '../services/utentes.jsx';
 import { ArrowLeftRight, CheckLg } from 'react-bootstrap-icons';
+import '../styles/consultas.css';
 
 export function TransferirUtentes() {
   const navigate = useNavigate();
@@ -87,7 +88,7 @@ export function TransferirUtentes() {
   };
 
   return (
-    <div className="page">
+    <div className="page transferir-utentes">
       <div className="page-header">
         <div>
           <h1><ArrowLeftRight size={22} /> Transferir Utentes</h1>
@@ -95,13 +96,12 @@ export function TransferirUtentes() {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
+      <div className="agendar-step-card">
         <label className="form-label">Terapeuta de origem</label>
         <select
           className="form-select"
           value={terapeutaOrigem}
           onChange={(e) => setTerapeutaOrigem(e.target.value)}
-          style={{ maxWidth: 360 }}
         >
           <option value="">Selecionar terapeuta...</option>
           {terapeutas.map((t) => (
@@ -132,7 +132,7 @@ export function TransferirUtentes() {
             const areaKey = String(areaId);
 
             return (
-              <div key={areaId} className="card" style={{ marginBottom: '1.5rem', overflow: 'hidden' }}>
+              <div key={areaId} className="agendar-step-card" style={{ overflow: 'hidden', padding: 0 }}>
                 <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                   <strong>{areaNome}</strong>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>

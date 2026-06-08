@@ -6,6 +6,7 @@ import { Footer } from '../components/Footer.jsx';
 import { getUtenteConsultas } from '../services/utentes.jsx';
 import { getAreasClinicas } from '../services/consultas.jsx';
 import { Activity, HeartPulse, MicFill, Egg, HospitalFill } from 'react-bootstrap-icons';
+import '../styles/home.css';
 
 const AREA_CONFIG = {
   fisioterapia: { icon: Activity,     desc: 'Reabilitação física e tratamento de lesões musculoesqueléticas.' },

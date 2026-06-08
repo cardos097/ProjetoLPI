@@ -19,10 +19,10 @@ import { getAlunosDoProfessor, updateTerapeutaAreaAdmin } from '../services/tera
 import { getUtentes } from '../services/utentes.jsx';
 import {
     getAdminStats, getStaffUsers, toggleUserActive, createStaffUser,
-    getAssiduidade, createAssiduidade, getDocumentos, downloadDocumento,
+    getDocumentos, downloadDocumento,
 } from '../services/admin.jsx';
 import { getFichasAvaliacao, getFichasPsicologia, getFichasTerapiaFala, getFichasNutricao, deleteFichaAvaliacao, deleteFichaPsicologia, deleteFichaTerapiaFala, deleteFichaNutricao, getPendentes, validarFicha } from '../services/fichas.jsx';
-import { validarDocumento, getAlunos, getTerapeutas, getAreasClinicas, getTerapeutasStaff, getConsultasPendentes, validarConsulta } from '../services/consultas.jsx';
+import { validarDocumento, getAlunos, getTerapeutas, getAreasClinicas, getTerapeutasStaff, getConsultasPendentes, validarConsulta, getConsultas, updateEstadoConsulta } from '../services/consultas.jsx';
 import '../styles/dashboard.css';
 
 const ESTADO_LABEL = { P: 'Presente', A: 'Ausente', FJ: 'Falta Justificada', FI: 'Falta Injustificada' };
@@ -69,14 +69,11 @@ export function DashboardStaff() {
     const [staffError, setStaffError] = useState('');
     const [staffLoading, setStaffLoading] = useState(false);
 
-    // — Assiduidade —
-    const [assiduidade, setAssiduidade] = useState([]);
-    const [assUtentes, setAssUtentes] = useState([]);
-    const [assFilter, setAssFilter] = useState({ utente_id: '', data: '' });
-    const [assForm, setAssForm] = useState({ utente_id: '', data: '', estado: 'P', observacao: '' });
-    const [assError, setAssError] = useState('');
-    const [assLoading, setAssLoading] = useState(false);
-    const [showAssForm, setShowAssForm] = useState(false);
+    // — Presenças —
+    const [consultasPresenca, setConsultasPresenca] = useState([]);
+    const [presencaData, setPresencaData] = useState(new Date().toISOString().split('T')[0]);
+    const [loadingPresencas, setLoadingPresencas] = useState(false);
+    const [marcandoPresenca, setMarcandoPresenca] = useState({});
 
     // — Pendentes —
     const [pendentes, setPendentes] = useState({ fichas_avaliacao: [], fichas_psicologia: [], fichas_terapia_fala: [], documentos: [] });
@@ -101,7 +98,7 @@ export function DashboardStaff() {
         if (activeTab === 'alunos' && user?.tipo === 'professor') carregarAlunos();
         if (activeTab === 'alunos-lista' && (user?.role === 'admin' || user?.role === 'administrativo')) carregarTodosAlunos();
         if (activeTab === 'admin' && user?.role === 'admin') carregarAdmin();
-        if (activeTab === 'assiduidade') carregarAssiduidade();
+        if (activeTab === 'assiduidade') carregarPresencas(presencaData);
         if (activeTab === 'fichas') carregarFichas();
         if (activeTab === 'pendentes') carregarPendentes();
         if (activeTab === 'consultas-pendentes') carregarConsultasPendentes();
@@ -144,12 +141,29 @@ export function DashboardStaff() {
         } catch { setStats(null); }
     };
 
-    const carregarAssiduidade = async () => {
+    const carregarPresencas = async (data) => {
+        setLoadingPresencas(true);
         try {
-            const [ass, uts] = await Promise.all([getAssiduidade(assFilter), getUtentes()]);
-            setAssiduidade(ass || []);
-            setAssUtentes(uts || []);
-        } catch { setAssiduidade([]); }
+            const todas = await getConsultas();
+            const filtradas = (todas || []).filter(c => {
+                const d = new Date(c.data_inicio).toISOString().split('T')[0];
+                return d === data;
+            });
+            setConsultasPresenca(filtradas);
+        } catch { setConsultasPresenca([]); }
+        finally { setLoadingPresencas(false); }
+    };
+
+    const handleMarcarEstado = async (consultaId, estado) => {
+        setMarcandoPresenca(prev => ({ ...prev, [consultaId]: true }));
+        try {
+            await updateEstadoConsulta(consultaId, estado);
+            setConsultasPresenca(prev => prev.map(c =>
+                c.id === consultaId ? { ...c, estado } : c
+            ));
+            toast.success('Estado atualizado');
+        } catch { toast.error('Erro ao atualizar estado'); }
+        finally { setMarcandoPresenca(prev => ({ ...prev, [consultaId]: false })); }
     };
 
     const carregarPendentes = async () => {
@@ -269,35 +283,6 @@ export function DashboardStaff() {
         }
     };
 
-    const handleAssFilter = async () => {
-        try {
-            const params = {};
-            if (assFilter.utente_id) params.utente_id = assFilter.utente_id;
-            if (assFilter.data) params.data = assFilter.data;
-            setAssiduidade((await getAssiduidade(params)) || []);
-        } catch { }
-    };
-
-    const handleCreateAss = async (e) => {
-        e.preventDefault();
-        setAssError('');
-        setAssLoading(true);
-        try {
-            const novo = await createAssiduidade({
-                utente_id: parseInt(assForm.utente_id),
-                data: assForm.data,
-                estado: assForm.estado,
-                observacao: assForm.observacao,
-            });
-            setAssiduidade(prev => [novo, ...prev]);
-            setShowAssForm(false);
-            setAssForm({ utente_id: '', data: '', estado: 'P', observacao: '' });
-        } catch (err) {
-            setAssError(err?.response?.data?.error || 'Erro ao registar assiduidade');
-        } finally {
-            setAssLoading(false);
-        }
-    };
 
     const handleDeleteFicha = (id, nome, formTipo) => {
         setConfirmModal({
@@ -346,7 +331,7 @@ export function DashboardStaff() {
                     <CalendarDate size={16} /> Agenda
                 </button>
                 <button className={`tab-btn ${activeTab === 'utentes' ? 'active' : ''}`} onClick={() => setActiveTab('utentes')}>
-                    <People size={16} /> Clientes/Pacientes
+                    <People size={16} /> Utentes
                 </button>
                 <button className={`tab-btn ${activeTab === 'salas' ? 'active' : ''}`} onClick={() => setActiveTab('salas')}>
                     <Hospital size={16} /> Salas
@@ -356,7 +341,7 @@ export function DashboardStaff() {
                 </button>
                 {(user.role === 'admin' || user.role === 'administrativo') && (
                     <button className={`tab-btn ${activeTab === 'assiduidade' ? 'active' : ''}`} onClick={() => setActiveTab('assiduidade')}>
-                        <ClockHistory size={16} /> Assiduidade
+                        <ClockHistory size={16} /> Presenças
                     </button>
                 )}
                 {(user.role === 'admin' || user.role === 'terapeuta') && (
@@ -420,85 +405,110 @@ export function DashboardStaff() {
                 {activeTab === 'utentes' && <ListaUtentes />}
                 {activeTab === 'salas' && <ListaSalas />}
 
-                {/* ── Assiduidade ── */}
+                {/* ── Presenças ── */}
                 {activeTab === 'assiduidade' && (
                     <div className="admin-section">
                         <div className="section-header">
-                            <h2><ClockHistory size={20} /> Assiduidade</h2>
-                            <button className="btn-primary" onClick={() => setShowAssForm(!showAssForm)}>
-                                <PlusLg size={14} /> Registar presença
-                            </button>
+                            <h2><ClockHistory size={20} /> Presenças</h2>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <DateInput
+                                    name="presenca_data"
+                                    value={presencaData}
+                                    onChange={e => {
+                                        setPresencaData(e.target.value);
+                                        carregarPresencas(e.target.value);
+                                    }}
+                                />
+                            </div>
                         </div>
 
-                        {showAssForm && (
-                            <div className="admin-card" style={{ marginBottom: 20 }}>
-                                <h3>Novo registo de assiduidade</h3>
-                                {assError && <p className="alert alert-error">{assError}</p>}
-                                <form onSubmit={handleCreateAss} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                    <div className="form-group">
-                                        <label>Utente</label>
-                                        <select value={assForm.utente_id} onChange={e => setAssForm(f => ({ ...f, utente_id: e.target.value }))} required>
-                                            <option value="">Selecionar utente</option>
-                                            {assUtentes.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Data</label>
-                                        <DateInput name="data" value={assForm.data} onChange={e => setAssForm(f => ({ ...f, data: e.target.value }))} required />
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Estado</label>
-                                        <select value={assForm.estado} onChange={e => setAssForm(f => ({ ...f, estado: e.target.value }))}>
-                                            <option value="P">Presente</option>
-                                            <option value="A">Ausente</option>
-                                            <option value="FJ">Falta Justificada</option>
-                                            <option value="FI">Falta Injustificada</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label>Observação</label>
-                                        <input type="text" value={assForm.observacao} onChange={e => setAssForm(f => ({ ...f, observacao: e.target.value }))} placeholder="Opcional" />
-                                    </div>
-                                    <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8 }}>
-                                        <button type="submit" className="btn-primary" disabled={assLoading}>{assLoading ? 'A guardar...' : 'Guardar'}</button>
-                                        <button type="button" className="btn-secondary" onClick={() => setShowAssForm(false)}>Cancelar</button>
-                                    </div>
-                                </form>
+                        {loadingPresencas ? (
+                            <p style={{ color: '#6b7280' }}>A carregar consultas...</p>
+                        ) : (
+                            <div className="table-container">
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Hora</th>
+                                            <th>Utente</th>
+                                            <th>Terapeuta</th>
+                                            <th>Área Clínica</th>
+                                            <th>Estado</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {consultasPresenca.length === 0 ? (
+                                            <tr><td colSpan={6} style={{ textAlign: 'center', color: '#6b7280' }}>Sem consultas para este dia</td></tr>
+                                        ) : consultasPresenca
+                                            .slice().sort((a, b) => new Date(a.data_inicio) - new Date(b.data_inicio))
+                                            .map(c => {
+                                                const hora = new Date(c.data_inicio).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+                                                const loading = marcandoPresenca[c.id];
+                                                const estadoColors = {
+                                                    agendada: { bg: '#e0f2fe', color: '#0369a1' },
+                                                    realizada: { bg: '#dcfce7', color: '#15803d' },
+                                                    faltou_justificada: { bg: '#fef9c3', color: '#a16207' },
+                                                    faltou_injustificada: { bg: '#fee2e2', color: '#b91c1c' },
+                                                    cancelada: { bg: '#f3f4f6', color: '#6b7280' },
+                                                };
+                                                const estadoLabels = {
+                                                    agendada: 'Agendada',
+                                                    realizada: 'Realizada',
+                                                    faltou_justificada: 'Faltou (justif.)',
+                                                    faltou_injustificada: 'Faltou (injustif.)',
+                                                    cancelada: 'Cancelada',
+                                                };
+                                                const sc = estadoColors[c.estado] || { bg: '#f3f4f6', color: '#374151' };
+                                                return (
+                                                    <tr key={c.id}>
+                                                        <td style={{ fontWeight: 600 }}>{hora}</td>
+                                                        <td>{c.utente_nome || c.utente?.nome || '—'}</td>
+                                                        <td>{c.terapeuta_nome || c.terapeuta?.nome || '—'}</td>
+                                                        <td>{c.area_clinica?.nome || '—'}</td>
+                                                        <td>
+                                                            <span style={{ background: sc.bg, color: sc.color, padding: '2px 10px', borderRadius: 12, fontSize: '0.82rem', fontWeight: 600 }}>
+                                                                {estadoLabels[c.estado] || c.estado}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            {c.estado === 'agendada' ? (
+                                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                                    <button
+                                                                        className="btn btn-primary btn-sm"
+                                                                        disabled={loading}
+                                                                        onClick={() => handleMarcarEstado(c.id, 'realizada')}
+                                                                    >
+                                                                        <CheckLg size={13} /> Presente
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        disabled={loading}
+                                                                        onClick={() => handleMarcarEstado(c.id, 'faltou_justificada')}
+                                                                        title="Falta Justificada"
+                                                                    >
+                                                                        FJ
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        disabled={loading}
+                                                                        onClick={() => handleMarcarEstado(c.id, 'faltou_injustificada')}
+                                                                        title="Falta Injustificada"
+                                                                    >
+                                                                        FI
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>—</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
-
-                        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-                            <select value={assFilter.utente_id} onChange={e => setAssFilter(f => ({ ...f, utente_id: e.target.value }))} style={{ flex: 1 }}>
-                                <option value="">Todos os utentes</option>
-                                {assUtentes.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
-                            </select>
-                            <DateInput name="data" value={assFilter.data} onChange={e => setAssFilter(f => ({ ...f, data: e.target.value }))} />
-                            <button className="btn-secondary" onClick={handleAssFilter}>Filtrar</button>
-                        </div>
-
-                        <div className="table-container">
-                            <table className="data-table">
-                                <thead>
-                                    <tr><th>Utente</th><th>Data</th><th>Estado</th><th>Observação</th></tr>
-                                </thead>
-                                <tbody>
-                                    {assiduidade.length === 0 ? (
-                                        <tr><td colSpan={4} style={{ textAlign: 'center', color: '#6b7280' }}>Nenhum registo encontrado</td></tr>
-                                    ) : assiduidade.map(reg => (
-                                        <tr key={reg.ID}>
-                                            <td>{assUtentes.find(u => u.id === reg.UtenteID)?.nome || `Utente ${reg.UtenteID}`}</td>
-                                            <td>{new Date(reg.Data).toLocaleDateString('pt-PT')}</td>
-                                            <td>
-                                                <span style={{ color: ESTADO_COLOR[reg.Estado], fontWeight: 600 }}>
-                                                    {ESTADO_LABEL[reg.Estado] || reg.Estado}
-                                                </span>
-                                            </td>
-                                            <td>{reg.Observacao || '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 )}
 

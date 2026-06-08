@@ -12,6 +12,7 @@ import {
   checkDisponibilidade,
 } from '../services/consultas.jsx';
 import { getUtenteDetails } from '../services/utentes.jsx';
+import '../styles/consultas.css';
 
 export function AgendarConsulta() {
   const navigate = useNavigate();
@@ -285,7 +286,7 @@ export function AgendarConsulta() {
         <h1>Agendar Nova Consulta</h1>
       </div>
 
-      <div className="form-container">
+      <div>
         {error && (
           <div className="alert alert-error">
             {error}
@@ -293,7 +294,7 @@ export function AgendarConsulta() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="card agendar-step-card">
+        <form onSubmit={handleSubmit} className="agendar-step-card">
           <h2>1. Escolher Área Clínica</h2>
 
           <div className="area-cards-grid">
@@ -320,58 +321,91 @@ export function AgendarConsulta() {
             <>
               <h2>2. Definir Consulta</h2>
 
-              <div className="form-row">
-                {!isUtente && (
+              <div className="agendar-definir-cols">
+                <div className="agendar-definir-left">
+                  {!isUtente && (
+                    <div className="form-group">
+                      <label>Utente *</label>
+                      <select
+                        name="utente_id"
+                        value={form.utente_id}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Selecionar utente...</option>
+                        {utentes.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.nome}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="form-group">
-                    <label>Utente *</label>
+                    <label>Terapeuta *</label>
                     <select
-                      name="utente_id"
-                      value={form.utente_id}
+                      name="terapeuta_id"
+                      value={form.terapeuta_id}
                       onChange={handleChange}
                       required
                     >
-                      <option value="">Selecionar utente...</option>
-                      {utentes.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.nome}
+                      <option value="">Selecionar terapeuta...</option>
+                      {terapeutasFiltrados.map((t) => (
+                        <option key={t.user_id} value={t.user_id}>
+                          {t.nome}
                         </option>
                       ))}
                     </select>
                   </div>
-                )}
 
-                <div className="form-group">
-                  <label>Terapeuta *</label>
-                  <select
-                    name="terapeuta_id"
-                    value={form.terapeuta_id}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Selecionar terapeuta...</option>
-                    {terapeutasFiltrados.map((t) => (
-                      <option key={t.user_id} value={t.user_id}>
-                        {t.nome}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="form-group">
+                    <label>Duração (minutos) *</label>
+                    <select
+                      name="duracao"
+                      value={form.duracao}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="30">30 minutos</option>
+                      <option value="60">1 hora</option>
+                      <option value="90">1 hora 30 min</option>
+                      <option value="120">2 horas</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Duração (minutos) *</label>
-                  <select
-                    name="duracao"
-                    value={form.duracao}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="30">30 minutos</option>
-                    <option value="60">1 hora</option>
-                    <option value="90">1 hora 30 min</option>
-                    <option value="120">2 horas</option>
-                  </select>
+                <div className="agendar-definir-right">
+                  <p className="utente-info-label" style={{ margin: 0 }}>Dados do Utente</p>
+                  {utenteDetails ? (
+                    <div className="utente-info-panel">
+                      <div className="utente-info-row">
+                        <span className="utente-info-label">Nome</span>
+                        <span className="utente-info-value">{utenteDetails.nome || '—'}</span>
+                      </div>
+                      <div className="utente-info-row">
+                        <span className="utente-info-label">Email</span>
+                        <span className="utente-info-value">{utenteDetails.email || '—'}</span>
+                      </div>
+                      <div className="utente-info-row">
+                        <span className="utente-info-label">Telefone</span>
+                        <span className="utente-info-value">{utenteDetails.telefone || '—'}</span>
+                      </div>
+                      <div className="utente-info-row">
+                        <span className="utente-info-label">Morada</span>
+                        <span className="utente-info-value">{utenteDetails.morada || '—'}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="utente-info-panel">
+                      <p className="utente-info-empty">
+                        {isUtente
+                          ? 'Informações de contacto não disponíveis.'
+                          : 'Seleciona um utente para ver os dados de contacto.'}
+                      </p>
+                    </div>
+                  )}
                 </div>
-
               </div>
 
               <h2>3. Data e Horário</h2>
