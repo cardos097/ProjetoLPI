@@ -445,6 +445,13 @@ func validarFicha(c *gin.Context, tipo string) {
 			return
 		}
 		createdBy = f.CreatedBy
+	case "nutricao":
+		var f models.FichaNutricao
+		if err := config.DB.Select("id, created_by").Where("id = ? AND estado = 'pendente'", id).First(&f).Error; err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Ficha pendente não encontrada"})
+			return
+		}
+		createdBy = f.CreatedBy
 	}
 
 	if role != "admin" {
@@ -464,6 +471,8 @@ func validarFicha(c *gin.Context, tipo string) {
 			dbErr = config.DB.Model(&models.FichaPsicologia{}).Where("id = ?", id).Update("estado", "aprovada").Error
 		case "terapia-fala":
 			dbErr = config.DB.Model(&models.FichaTerapiaFala{}).Where("id = ?", id).Update("estado", "aprovada").Error
+		case "nutricao":
+			dbErr = config.DB.Model(&models.FichaNutricao{}).Where("id = ?", id).Update("estado", "aprovada").Error
 		}
 		if dbErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao aprovar ficha"})
@@ -479,6 +488,8 @@ func validarFicha(c *gin.Context, tipo string) {
 			dbErr = config.DB.Where("id = ?", id).Delete(&models.FichaPsicologia{}).Error
 		case "terapia-fala":
 			dbErr = config.DB.Where("id = ?", id).Delete(&models.FichaTerapiaFala{}).Error
+		case "nutricao":
+			dbErr = config.DB.Where("id = ?", id).Delete(&models.FichaNutricao{}).Error
 		}
 		if dbErr != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao rejeitar ficha"})

@@ -76,7 +76,7 @@ export function DashboardStaff() {
     const [marcandoPresenca, setMarcandoPresenca] = useState({});
 
     // — Pendentes —
-    const [pendentes, setPendentes] = useState({ fichas_avaliacao: [], fichas_psicologia: [], fichas_terapia_fala: [], documentos: [] });
+    const [pendentes, setPendentes] = useState({ fichas_avaliacao: [], fichas_psicologia: [], fichas_terapia_fala: [], fichas_nutricao: [], documentos: [] });
     const [loadingPendentes, setLoadingPendentes] = useState(false);
 
     // — Consultas Pendentes (marcações de utentes a aguardar validação da rececão) —
@@ -364,7 +364,7 @@ export function DashboardStaff() {
                         style={{ position: 'relative' }}>
                         <ExclamationCircle size={16} /> Pendentes
                         {((pendentes.fichas_avaliacao?.length || 0) + (pendentes.fichas_psicologia?.length || 0) +
-                          (pendentes.fichas_terapia_fala?.length || 0) + (pendentes.documentos?.length || 0)) > 0 && (
+                          (pendentes.fichas_terapia_fala?.length || 0) + (pendentes.fichas_nutricao?.length || 0) + (pendentes.documentos?.length || 0)) > 0 && (
                             <span style={{
                                 background: '#ef4444', color: 'white', borderRadius: '50%',
                                 width: 18, height: 18, fontSize: 11, fontWeight: 700,
@@ -372,7 +372,7 @@ export function DashboardStaff() {
                                 marginLeft: 4,
                             }}>
                                 {(pendentes.fichas_avaliacao?.length || 0) + (pendentes.fichas_psicologia?.length || 0) +
-                                 (pendentes.fichas_terapia_fala?.length || 0) + (pendentes.documentos?.length || 0)}
+                                 (pendentes.fichas_terapia_fala?.length || 0) + (pendentes.fichas_nutricao?.length || 0) + (pendentes.documentos?.length || 0)}
                             </span>
                         )}
                     </button>
@@ -822,6 +822,7 @@ export function DashboardStaff() {
                                 const total = (pendentes.fichas_avaliacao?.length || 0) +
                                     (pendentes.fichas_psicologia?.length || 0) +
                                     (pendentes.fichas_terapia_fala?.length || 0) +
+                                    (pendentes.fichas_nutricao?.length || 0) +
                                     (pendentes.documentos?.length || 0);
                                 if (total === 0) return <p style={{ color: '#6b7280' }}>Sem submissões pendentes.</p>;
 
@@ -829,6 +830,7 @@ export function DashboardStaff() {
                                     ...((pendentes.fichas_avaliacao || []).map(f => ({ ...f, _tipo: 'avaliacao', _label: 'Fisioterapia' }))),
                                     ...((pendentes.fichas_psicologia || []).map(f => ({ ...f, _tipo: 'psicologia', _label: 'Psicologia' }))),
                                     ...((pendentes.fichas_terapia_fala || []).map(f => ({ ...f, _tipo: 'terapia-fala', _label: 'Terapia da Fala' }))),
+                                    ...((pendentes.fichas_nutricao || []).map(f => ({ ...f, _tipo: 'nutricao', _label: 'Nutrição' }))),
                                 ];
 
                                 return (

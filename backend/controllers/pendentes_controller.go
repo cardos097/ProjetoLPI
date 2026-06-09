@@ -63,10 +63,11 @@ func GetPendentes(c *gin.Context) {
 	}
 
 	empty := gin.H{
-		"fichas_avaliacao":   []PendenteFicha{},
-		"fichas_psicologia":  []PendenteFicha{},
+		"fichas_avaliacao":    []PendenteFicha{},
+		"fichas_psicologia":   []PendenteFicha{},
 		"fichas_terapia_fala": []PendenteFicha{},
-		"documentos":         []PendenteDocumento{},
+		"fichas_nutricao":     []PendenteFicha{},
+		"documentos":          []PendenteDocumento{},
 	}
 	if len(alunoIDs) == 0 {
 		c.JSON(http.StatusOK, empty)
@@ -141,6 +142,23 @@ func GetPendentes(c *gin.Context) {
 		})
 	}
 
+	// Fichas Nutrição pendentes
+	var fichasNutri []models.FichaNutricao
+	config.DB.Where("estado = 'pendente' AND created_by IN ?", alunoIDs).Find(&fichasNutri)
+	fichasNutriResp := make([]PendenteFicha, 0, len(fichasNutri))
+	for _, f := range fichasNutri {
+		fichasNutriResp = append(fichasNutriResp, PendenteFicha{
+			ID:         f.ID,
+			Tipo:       "Nutrição",
+			UtenteID:   f.UtenteID,
+			UtenteNome: nomeUtente(f.UtenteID),
+			AlunoID:    f.CreatedBy,
+			AlunoNome:  userNames[f.CreatedBy],
+			ConsultaID: f.ConsultaID,
+			CreatedAt:  f.CreatedAt,
+		})
+	}
+
 	// Documentos pendentes
 	var docs []models.DocumentoConsulta
 	config.DB.Where("estado = 'pendente' AND uploaded_by IN ?", alunoIDs).Find(&docs)
@@ -167,6 +185,7 @@ func GetPendentes(c *gin.Context) {
 		"fichas_avaliacao":    fichasAvResp,
 		"fichas_psicologia":   fichasPsicResp,
 		"fichas_terapia_fala": fichasFalaResp,
+		"fichas_nutricao":     fichasNutriResp,
 		"documentos":          docsResp,
 	})
 }
