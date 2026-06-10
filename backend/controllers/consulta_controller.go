@@ -1,10 +1,8 @@
 package controllers
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -321,18 +319,10 @@ func CheckDisponibilidade(c *gin.Context) {
 func CreateConsulta(c *gin.Context) {
 	var req CreateConsultaRequest
 
-	// Ler o body e fazer log
-	bodyBytes, _ := io.ReadAll(c.Request.Body)
-	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("❌ Erro ao fazer bind JSON: %v", err)
-		log.Printf("📋 Body recebido: %s", string(bodyBytes))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
 		return
 	}
-
-	log.Printf("✅ Consulta recebida: %+v", req)
 
 	createdBy, err := getAuthenticatedUserID(c)
 	if err != nil {
@@ -949,38 +939,30 @@ type UpdateEstadoConsultaRequest struct {
 
 func UpdateEstadoConsulta(c *gin.Context) {
 	consultaID := c.Param("id")
-	log.Printf("[UpdateEstadoConsulta] Iniciando atualização de consulta ID: %s", consultaID)
 
 	userID, err := getAuthenticatedUserID(c)
 	if err != nil {
-		log.Printf("[UpdateEstadoConsulta] Erro ao obter userID: %v", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	log.Printf("[UpdateEstadoConsulta] UserID obtido: %d", userID)
 
 	roleValue, exists := c.Get("userRole")
 	if !exists {
-		log.Printf("[UpdateEstadoConsulta] Role não encontrada no contexto")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role não encontrada no contexto"})
 		return
 	}
 
 	userRole, ok := roleValue.(string)
 	if !ok || userRole == "" {
-		log.Printf("[UpdateEstadoConsulta] Role inválida no contexto: %v", roleValue)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Role inválida no contexto"})
 		return
 	}
-	log.Printf("[UpdateEstadoConsulta] UserRole obtido: %s", userRole)
 
 	var req UpdateEstadoConsultaRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("[UpdateEstadoConsulta] Erro ao fazer bind do request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Estado é obrigatório"})
 		return
 	}
-	log.Printf("[UpdateEstadoConsulta] Novo estado solicitado: %s", req.Estado)
 
 	// Validar estado
 	estadosValidos := map[string]bool{
@@ -991,24 +973,19 @@ func UpdateEstadoConsulta(c *gin.Context) {
 	}
 
 	if !estadosValidos[req.Estado] {
-		log.Printf("[UpdateEstadoConsulta] Estado inválido: %s", req.Estado)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Estado inválido. Valores permitidos: realizada, cancelada, faltou_injustificada, faltou_justificada"})
 		return
 	}
-	log.Printf("[UpdateEstadoConsulta] Estado validado com sucesso")
 
 	var consulta models.Consulta
 	if err := config.DB.First(&consulta, consultaID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			log.Printf("[UpdateEstadoConsulta] Consulta não encontrada: %s", consultaID)
 			c.JSON(http.StatusNotFound, gin.H{"error": "Consulta não encontrada"})
 			return
 		}
-		log.Printf("[UpdateEstadoConsulta] Erro ao buscar consulta: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	log.Printf("[UpdateEstadoConsulta] Consulta encontrada. ID: %d, TerapeutaID: %d, Estado atual: %s", consulta.ID, consulta.TerapeutaID, consulta.Estado)
 
 	if isAlunoOutsideWindow(userID, &consulta) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso só disponível 2h antes e 2h após a consulta"})
@@ -1019,37 +996,28 @@ func UpdateEstadoConsulta(c *gin.Context) {
 	if userRole != "admin" && userRole != "administrativo" {
 		if userRole == "terapeuta" {
 			if !alunoIsLinkedToConsulta(userID, &consulta) {
-				log.Printf("[UpdateEstadoConsulta] Permissão negada: terapeuta %d não é responsável pela consulta (terapeuta_id: %d)", userID, consulta.TerapeutaID)
 				c.JSON(http.StatusForbidden, gin.H{"error": "Você só pode atualizar o estado das suas próprias consultas"})
 				return
 			}
-			log.Printf("[UpdateEstadoConsulta] Permissão de terapeuta validada")
 		} else {
-			log.Printf("[UpdateEstadoConsulta] Permissão negada: role %s não tem permissão", userRole)
 			c.JSON(http.StatusForbidden, gin.H{"error": "Sem permissão para atualizar o estado da consulta"})
 			return
 		}
-	} else {
-		log.Printf("[UpdateEstadoConsulta] Permissão concedida: role %s", userRole)
 	}
 
 	// Não permitir atualizar se já está cancelada
 	if consulta.Estado == "cancelada" && req.Estado != "cancelada" {
-		log.Printf("[UpdateEstadoConsulta] Erro: tentativa de atualizar consulta cancelada")
 		c.JSON(http.StatusConflict, gin.H{"error": "Não é possível atualizar uma consulta já cancelada"})
 		return
 	}
 
 	// Atualizar estado
 	consulta.Estado = req.Estado
-	log.Printf("[UpdateEstadoConsulta] Atualizando estado de %s para %s", consulta.Estado, req.Estado)
 
 	if err := config.DB.Save(&consulta).Error; err != nil {
-		log.Printf("[UpdateEstadoConsulta] Erro ao guardar consulta: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	log.Printf("[UpdateEstadoConsulta] Consulta atualizada com sucesso! ID: %d, novo estado: %s", consulta.ID, consulta.Estado)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":      "Estado da consulta atualizado com sucesso",

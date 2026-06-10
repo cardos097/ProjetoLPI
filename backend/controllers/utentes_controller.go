@@ -3,6 +3,7 @@ package controllers
 import (
 	"crypto/rand"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -488,9 +489,7 @@ func CreateUtente(c *gin.Context) {
 		UtenteID: user.ID,
 	}
 	if err := config.DB.Create(&processo).Error; err != nil {
-		fmt.Printf("[ERROR] Ao criar ProcessoClinico para utente %d: %v\n", user.ID, err)
-	} else {
-		fmt.Printf("[DEBUG] ProcessoClinico criado para utente %d\n", user.ID)
+		log.Printf("Erro ao criar ProcessoClinico para utente %d: %v", user.ID, err)
 	}
 
 	response := UtenteDetailResponse{
