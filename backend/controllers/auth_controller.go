@@ -317,7 +317,6 @@ func GoogleLogin(c *gin.Context) {
 		if err := config.DB.Where("user_id = ?", user.ID).First(&terapeuta).Error; err != nil {
 			log.Printf("Erro ao buscar terapeuta: %v", err)
 		} else {
-			log.Printf("Terapeuta encontrado: user_id=%d, tipo=%s, area_clinica_id=%v", terapeuta.UserID, terapeuta.Tipo, terapeuta.AreaClinicaID)
 			tipo = terapeuta.Tipo
 			areaClinicaID = terapeuta.AreaClinicaID
 		}
